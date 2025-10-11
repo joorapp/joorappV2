@@ -90,8 +90,7 @@ const AppRoutes: React.FC = () => {
             <Navigate to="/login" replace />
           )
         } 
-      />
-      
+      />      
       {/* Catch all route */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
