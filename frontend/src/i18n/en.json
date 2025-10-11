@@ -1,0 +1,43 @@
+{
+  "Login": {
+    "title": "Login",
+    "label": "Login",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign In",
+    "forgotPassword": "Forgot Password?",
+    "rememberMe": "Remember Me"
+  },
+  "Navigation": {
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout",
+    "userManagement": "User Management",
+    "companyManagement": "Company Management",
+    "reports": "Reports"
+  },
+  "Dashboard": {
+    "welcome": "Welcome",
+    "overview": "Overview",
+    "recentActivity": "Recent Activity",
+    "statistics": "Statistics"
+  },
+  "Common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous"
+  },
+  "Roles": {
+    "superadmin": "Super Admin",
+    "company": "Company"
+  }
+}
