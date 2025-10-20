@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../../context/AuthContext';
 import SuperAdminHeader from '../SuperAdminHeader/SuperAdminHeader';
@@ -7,7 +8,7 @@ import SuperAdminFooter from '../SuperAdminFooter/SuperAdminFooter';
 import './SuperAdminDashboard.scss';
 
 // Placeholder components for superadmin pages
-const SuperAdminOverview: React.FC = () => {
+export const SuperAdminOverview: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -106,7 +107,8 @@ const SuperAdminOverview: React.FC = () => {
   );
 };
 
-const UserManagement: React.FC = () => {
+export const UserManagement: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="user-management">
       <h2>{t('Navigation.userManagement')}</h2>
@@ -115,7 +117,8 @@ const UserManagement: React.FC = () => {
   );
 };
 
-const CompanyManagement: React.FC = () => {
+export const CompanyManagement: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="company-management">
       <h2>{t('Navigation.companyManagement')}</h2>
@@ -124,7 +127,8 @@ const CompanyManagement: React.FC = () => {
   );
 };
 
-const Reports: React.FC = () => {
+export const Reports: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="reports">
       <h2>{t('Navigation.reports')}</h2>
@@ -133,7 +137,7 @@ const Reports: React.FC = () => {
   );
 };
 
-const SystemSettings: React.FC = () => {
+export const SystemSettings: React.FC = () => {
   return (
     <div className="system-settings">
       <h2>System Settings</h2>
@@ -142,7 +146,7 @@ const SystemSettings: React.FC = () => {
   );
 };
 
-const AuditLogs: React.FC = () => {
+export const AuditLogs: React.FC = () => {
   return (
     <div className="audit-logs">
       <h2>Audit Logs</h2>
@@ -151,7 +155,7 @@ const AuditLogs: React.FC = () => {
   );
 };
 
-const SuperAdminProfile: React.FC = () => {
+export const SuperAdminProfile: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -179,11 +183,6 @@ const SuperAdminDashboard: React.FC = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // For now, always show the overview
-  const renderContent = () => {
-    return <SuperAdminOverview />;
-  };
-
   return (
     <div className="superadmin-dashboard">
       <SuperAdminHeader onMenuClick={toggleSidebar} />
@@ -193,7 +192,7 @@ const SuperAdminDashboard: React.FC = () => {
         
         <main className="superadmin-dashboard__main">
           <div className="superadmin-dashboard__content">
-            {renderContent()}
+            <Outlet />
           </div>
           
           <SuperAdminFooter />

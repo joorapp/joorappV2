@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../../context/AuthContext';
 import CompanyHeader from '../CompanyHeader/CompanyHeader';
@@ -7,7 +8,7 @@ import CompanyFooter from '../CompanyFooter/CompanyFooter';
 import './CompanyDashboard.scss';
 
 // Placeholder components for company pages
-const CompanyOverview: React.FC = () => {
+export const CompanyOverview: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -103,7 +104,7 @@ const CompanyOverview: React.FC = () => {
   );
 };
 
-const CompanyProfile: React.FC = () => {
+export const CompanyProfile: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -124,7 +125,7 @@ const CompanyProfile: React.FC = () => {
   );
 };
 
-const CompanyOrders: React.FC = () => {
+export const CompanyOrders: React.FC = () => {
   return (
     <div className="company-orders">
       <h2>Orders Management</h2>
@@ -133,7 +134,7 @@ const CompanyOrders: React.FC = () => {
   );
 };
 
-const CompanyProducts: React.FC = () => {
+export const CompanyProducts: React.FC = () => {
   return (
     <div className="company-products">
       <h2>Products Management</h2>
@@ -142,7 +143,7 @@ const CompanyProducts: React.FC = () => {
   );
 };
 
-const CompanyCustomers: React.FC = () => {
+export const CompanyCustomers: React.FC = () => {
   return (
     <div className="company-customers">
       <h2>Customers Management</h2>
@@ -151,7 +152,7 @@ const CompanyCustomers: React.FC = () => {
   );
 };
 
-const CompanyAnalytics: React.FC = () => {
+export const CompanyAnalytics: React.FC = () => {
   return (
     <div className="company-analytics">
       <h2>Analytics & Reports</h2>
@@ -160,7 +161,7 @@ const CompanyAnalytics: React.FC = () => {
   );
 };
 
-const CompanySettings: React.FC = () => {
+export const CompanySettings: React.FC = () => {
   return (
     <div className="company-settings">
       <h2>Company Settings</h2>
@@ -176,11 +177,6 @@ const CompanyDashboard: React.FC = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // For now, always show the overview
-  const renderContent = () => {
-    return <CompanyOverview />;
-  };
-
   return (
     <div className="company-dashboard">
       <CompanyHeader onMenuClick={toggleSidebar} />
@@ -190,7 +186,7 @@ const CompanyDashboard: React.FC = () => {
         
         <main className="company-dashboard__main">
           <div className="company-dashboard__content">
-            {renderContent()}
+            <Outlet />
           </div>
           
           <CompanyFooter />
