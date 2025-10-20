@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import Login from '../components/auth/Login/Login';
 import CompanyRoutes from '../components/modules/company/CompanyRoutes';
 import SuperAdminRoutes from '../components/modules/superadmin/SuperAdminRoutes';
-
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: 'superadmin' | 'company';
