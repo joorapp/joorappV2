@@ -1,0 +1,43 @@
+{
+  "Login": {
+    "title": "Anmelden",
+    "label": "Anmelden",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "submit": "Anmelden",
+    "forgotPassword": "Passwort vergessen?",
+    "rememberMe": "Angemeldet bleiben"
+  },
+  "Navigation": {
+    "dashboard": "Dashboard",
+    "profile": "Profil",
+    "settings": "Einstellungen",
+    "logout": "Abmelden",
+    "userManagement": "Benutzerverwaltung",
+    "companyManagement": "Unternehmensverwaltung",
+    "reports": "Berichte"
+  },
+  "Dashboard": {
+    "welcome": "Willkommen",
+    "overview": "Übersicht",
+    "recentActivity": "Letzte Aktivitäten",
+    "statistics": "Statistiken"
+  },
+  "Common": {
+    "loading": "Lädt...",
+    "error": "Fehler",
+    "success": "Erfolgreich",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "confirm": "Bestätigen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Vorherige"
+  },
+  "Roles": {
+    "superadmin": "Super Administrator",
+    "company": "Unternehmen"
+  }
+}
