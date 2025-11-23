@@ -5,130 +5,18 @@
  */
 
 import { createModuleLogger, logBusiness, logSecurity, logPerformance } from '../../utils/logger.js';
+import { successResponse } from '../../utils/responseHelpers.js';
 
 // Create module-specific logger
 const logger = createModuleLogger('admin');
 
 /**
- * Get all users with pagination and filtering
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
-export const getUsers = (req, res) => {
-  const startTime = Date.now();
-  
-  try {
-    const { page = 1, limit = 10, search = '' } = req.query;
-    
-    logger.info('Users list requested', {
-      requestId: req.id,
-      userId: req.user?.id || 'anonymous',
-      ip: req.ip || req.socket?.remoteAddress,
-      filters: { page, limit, search }
-    });
-    
-    // Mock data - replace with actual database query
-    const mockUsers = [
-      {
-        id: "user123",
-        username: "john_doe",
-        email: "john@example.com",
-        role: "user",
-        createdAt: "2024-01-01T00:00:00.000Z",
-        lastLogin: "2024-01-01T12:00:00.000Z"
-      },
-      {
-        id: "user456",
-        username: "jane_smith",
-        email: "jane@example.com",
-        role: "admin",
-        createdAt: "2024-01-01T01:00:00.000Z",
-        lastLogin: "2024-01-01T13:00:00.000Z"
-      }
-    ];
-
-    const filteredUsers = mockUsers.filter(user => 
-      user.username.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase())
-    );
-
-    const total = filteredUsers.length;
-    const pages = Math.ceil(total / limit);
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + parseInt(limit);
-    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-
-    const duration = Date.now() - startTime;
-    
-    logger.info('Users list retrieved successfully', {
-      requestId: req.id,
-      userId: req.user?.id || 'anonymous',
-      duration: `${duration}ms`,
-      totalUsers: total,
-      returnedUsers: paginatedUsers.length,
-      page,
-      pages
-    });
-    
-    // Log business event
-    logBusiness('Users list accessed', {
-      requestId: req.id,
-      userId: req.user?.id || 'anonymous',
-      totalUsers: total,
-      filters: { page, limit, search }
-    });
-    
-    // Log performance if duration is significant
-    if (duration > 500) {
-      logPerformance('Get users', duration, {
-        requestId: req.id,
-        module: 'admin',
-        totalUsers: total
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Users retrieved successfully",
-      data: {
-        users: paginatedUsers,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          pages
-        }
-      },
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    
-    logger.error('Get users failed', {
-      requestId: req.id,
-      userId: req.user?.id || 'anonymous',
-      error: {
-        message: error.message,
-        stack: error.stack
-      },
-      duration: `${duration}ms`
-    });
-    
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve users',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-};
-
-/**
  * Get system settings
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
+ * @returns {Promise<void>}
  */
-export const getSettings = (req, res) => {
+export const getSettings = async (req, res) => {
   const startTime = Date.now();
   
   try {
@@ -166,14 +54,9 @@ export const getSettings = (req, res) => {
       userId: req.user?.id || 'anonymous'
     });
 
-    res.status(200).json({
-      success: true,
-      message: "Settings retrieved successfully",
-      data: {
-        settings
-      },
-      timestamp: new Date().toISOString()
-    });
+    res.status(200).json(
+      successResponse("Settings retrieved successfully", { settings }, {}, req, startTime)
+    );
   } catch (error) {
     const duration = Date.now() - startTime;
     
@@ -187,12 +70,8 @@ export const getSettings = (req, res) => {
       duration: `${duration}ms`
     });
     
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve settings',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
+    // Re-throw to let errorHandler handle
+    throw error;
   }
 };
 
@@ -200,8 +79,9 @@ export const getSettings = (req, res) => {
  * Update system settings
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
+ * @returns {Promise<void>}
  */
-export const updateSettings = (req, res) => {
+export const updateSettings = async (req, res) => {
   const startTime = Date.now();
   
   try {
@@ -251,14 +131,9 @@ export const updateSettings = (req, res) => {
       });
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Settings updated successfully",
-      data: {
-        settings: updatedSettings
-      },
-      timestamp: new Date().toISOString()
-    });
+    res.status(200).json(
+      successResponse("Settings updated successfully", { settings: updatedSettings }, {}, req, startTime)
+    );
   } catch (error) {
     const duration = Date.now() - startTime;
     
@@ -272,12 +147,8 @@ export const updateSettings = (req, res) => {
       duration: `${duration}ms`
     });
     
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update settings',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
+    // Re-throw to let errorHandler handle
+    throw error;
   }
 };
 
@@ -285,8 +156,9 @@ export const updateSettings = (req, res) => {
  * Get system statistics
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
+ * @returns {Promise<void>}
  */
-export const getStats = (req, res) => {
+export const getStats = async (req, res) => {
   const startTime = Date.now();
   
   try {
@@ -342,14 +214,9 @@ export const getStats = (req, res) => {
       });
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Statistics retrieved successfully",
-      data: {
-        stats
-      },
-      timestamp: new Date().toISOString()
-    });
+    res.status(200).json(
+      successResponse("Statistics retrieved successfully", { stats }, {}, req, startTime)
+    );
   } catch (error) {
     const duration = Date.now() - startTime;
     
@@ -363,11 +230,7 @@ export const getStats = (req, res) => {
       duration: `${duration}ms`
     });
     
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve statistics',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
+    // Re-throw to let errorHandler handle
+    throw error;
   }
 };

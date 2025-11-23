@@ -1,0 +1,388 @@
+---
+description: Authentication middleware application rules
+globs: ["nodeBE/src/modules/**/*Routes.js", "nodeBE/src/middleware/**/*.js"]
+alwaysApply: true
+---
+
+# Authentication Middleware Rules
+
+## Overview
+
+This rule defines when and how to apply authentication middleware in route definitions. All routes MUST explicitly declare their authentication requirements.
+
+## When to Apply Middleware
+
+### Public Routes (No Middleware)
+Apply NO authentication middleware for:
+- Documentation endpoints: `router.get('/', ...)`
+- Login/registration endpoints
+- **Token refresh endpoints** (refresh token is the credential)
+- Health check endpoints
+- Public API endpoints that don't require user identity
+- Password reset endpoints (before authentication)
+
+**Example:**
+```javascript
+/**
+ * @route   POST /api/v2/auth/login
+ * @desc    Login user with email and password
+ * @access  Public
+ */
+router.post('/login', asyncHandler(login)); // No middleware - public endpoint
+
+/**
+ * @route   POST /api/v2/auth/refresh
+ * @desc    Refresh access token using refresh token
+ * @access  Public
+ */
+router.post('/refresh', asyncHandler(refreshToken)); // No middleware - refresh token is the credential
+
+/**
+ * @route   GET /api/v2/health/status
+ * @desc    Get system health status
+ * @access  Public
+ */
+router.get('/status', getHealthStatus); // No middleware - public endpoint
+```
+
+### Protected Routes (Require authMiddleware)
+Apply `authMiddleware` for:
+- User-specific data endpoints
+- Resource creation/update/delete endpoints
+- Admin endpoints
+- Any endpoint that needs `req.user`
+- Profile management endpoints
+- Settings endpoints
+- **Logout endpoints** (needs `req.user` for session cleanup)
+
+**Example:**
+```javascript
+/**
+ * @route   GET /api/v2/users/profile
+ * @desc    Get current user profile
+ * @access  Protected (requires authentication)
+ */
+router.get('/profile', authMiddleware, asyncHandler(getProfile));
+
+/**
+ * @route   POST /api/v2/users
+ * @desc    Create new user
+ * @access  Protected (requires authentication)
+ */
+router.post('/users', authMiddleware, asyncHandler(createUser));
+
+/**
+ * @route   POST /api/v2/auth/logout
+ * @desc    Logout user and invalidate session
+ * @access  Protected (requires authentication)
+ */
+router.post('/logout', authMiddleware, asyncHandler(logout)); // Protected - needs req.user for cleanup
+```
+
+### Company Context Routes (Require Both Middlewares)
+Apply BOTH `authMiddleware` AND `companyContextMiddleware` for:
+- Routes that need `req.company` (company-specific data)
+- Company-scoped resources (invoices, reports, etc.)
+- Multi-tenant data endpoints
+- Company settings endpoints
+
+**IMPORTANT**: `companyContextMiddleware` MUST come AFTER `authMiddleware` because it requires `req.user`.
+
+**Example:**
+```javascript
+/**
+ * @route   GET /api/v2/invoices
+ * @desc    Get company invoices
+ * @access  Protected (requires authentication and company context)
+ */
+router.get('/invoices', authMiddleware, companyContextMiddleware, asyncHandler(getInvoices));
+
+/**
+ * @route   POST /api/v2/reports
+ * @desc    Generate company report
+ * @access  Protected (requires authentication and company context)
+ */
+router.post('/reports', authMiddleware, companyContextMiddleware, asyncHandler(generateReport));
+```
+
+### Optional Authentication Routes
+Use `optionalAuthMiddleware` for:
+- Public endpoints that can provide enhanced features if user is authenticated
+- Search endpoints that can personalize results
+- Public data endpoints that can filter by user preferences if logged in
+
+**Example:**
+```javascript
+/**
+ * @route   GET /api/v2/products
+ * @desc    Get products (personalized if authenticated)
+ * @access  Public (optional authentication)
+ */
+router.get('/products', optionalAuthMiddleware, asyncHandler(getProducts));
+```
+
+## Middleware Order
+
+**CRITICAL**: Middleware order matters. Always apply in this order:
+
+1. **authMiddleware** - Verifies token, sets `req.user`
+2. **companyContextMiddleware** - Loads company, sets `req.company` (requires `req.user`)
+3. **Route handler** - Business logic
+
+**Correct Order:**
+```javascript
+// ✅ Correct: authMiddleware first, then companyContextMiddleware
+router.get('/data', authMiddleware, companyContextMiddleware, asyncHandler(getData));
+```
+
+**Wrong Order:**
+```javascript
+// ❌ Wrong: companyContextMiddleware requires req.user from authMiddleware
+router.get('/data', companyContextMiddleware, authMiddleware, asyncHandler(getData));
+```
+
+## Import Pattern
+
+Always import middleware at the top of routes file:
+
+```javascript
+import express from 'express';
+import { handler1, handler2 } from './moduleController.js';
+import { authMiddleware } from '../../middleware/authMiddleware.js';
+import { companyContextMiddleware } from '../../middleware/companyContextMiddleware.js';
+import { optionalAuthMiddleware } from '../../middleware/authMiddleware.js';
+import { asyncHandler } from '../../middleware/errorHandler.js';
+
+const router = express.Router();
+```
+
+## Documentation Requirements
+
+Every route MUST document access level in JSDoc comment:
+
+```javascript
+/**
+ * @route   GET /api/v2/module/endpoint
+ * @desc    Description of endpoint functionality
+ * @access  Public | Protected (requires authentication) | Protected (requires authentication and company context)
+ */
+router.get('/endpoint', authMiddleware, asyncHandler(handler));
+```
+
+### Access Level Values
+
+- **`Public`** - No authentication required
+- **`Protected (requires authentication)`** - Requires `authMiddleware`
+- **`Protected (requires authentication and company context)`** - Requires both `authMiddleware` and `companyContextMiddleware`
+- **`Public (optional authentication)`** - Uses `optionalAuthMiddleware`
+
+## Common Patterns
+
+### Pattern 1: Public Module (No Auth)
+```javascript
+// Health module - all public endpoints
+/**
+ * @route   GET /api/v2/health/status
+ * @desc    Get system health status
+ * @access  Public
+ */
+router.get('/status', getStatus);
+
+/**
+ * @route   GET /api/v2/health/ping
+ * @desc    Simple ping test
+ * @access  Public
+ */
+router.get('/ping', getPing);
+```
+
+### Pattern 2: Mixed Module (Some Public, Some Protected)
+```javascript
+// Auth module - mix of public and protected
+/**
+ * @route   POST /api/v2/auth/login
+ * @desc    Login user with email and password
+ * @access  Public
+ */
+router.post('/login', asyncHandler(login)); // Public
+
+/**
+ * @route   GET /api/v2/auth/companies
+ * @desc    Get user's associated companies
+ * @access  Protected (requires authentication)
+ */
+router.get('/companies', authMiddleware, asyncHandler(getCompanies)); // Protected
+```
+
+### Pattern 3: Fully Protected Module
+```javascript
+// User module - all protected endpoints
+/**
+ * @route   GET /api/v2/users/profile
+ * @desc    Get current user profile
+ * @access  Protected (requires authentication)
+ */
+router.get('/profile', authMiddleware, asyncHandler(getProfile));
+
+/**
+ * @route   PUT /api/v2/users/profile
+ * @desc    Update current user profile
+ * @access  Protected (requires authentication)
+ */
+router.put('/profile', authMiddleware, asyncHandler(updateProfile));
+```
+
+### Pattern 4: Company-Specific Module
+```javascript
+// Invoice module - requires company context
+/**
+ * @route   GET /api/v2/invoices
+ * @desc    Get company invoices
+ * @access  Protected (requires authentication and company context)
+ */
+router.get('/invoices', authMiddleware, companyContextMiddleware, asyncHandler(getInvoices));
+
+/**
+ * @route   POST /api/v2/invoices
+ * @desc    Create new invoice
+ * @access  Protected (requires authentication and company context)
+ */
+router.post('/invoices', authMiddleware, companyContextMiddleware, asyncHandler(createInvoice));
+```
+
+### Pattern 5: Role-Based Access
+```javascript
+// Super admin module - requires SUPER_ADMIN role
+/**
+ * @route   GET /api/v2/superAdmin/dashboard
+ * @desc    Get super admin dashboard
+ * @access  Protected (requires SUPER_ADMIN role)
+ */
+router.get('/dashboard', authMiddleware, asyncHandler(getDashboard));
+// Note: Role checking happens in controller using req.user.keycloakGlobalRole
+```
+
+## Error Responses
+
+### authMiddleware Errors
+- **401 Unauthorized**: Missing or invalid token
+  ```json
+  {
+    "success": false,
+    "error": "No token provided",
+    "message": "Authorization header is required"
+  }
+  ```
+- **401 Unauthorized**: Expired token
+  ```json
+  {
+    "success": false,
+    "error": "Token expired",
+    "message": "Token has expired"
+  }
+  ```
+
+### companyContextMiddleware Behavior
+- **Does NOT block requests** if company not selected
+- Sets `req.company = null` if no company context found
+- Routes should check `req.company` and return appropriate error if required
+
+**Example in Controller:**
+```javascript
+export const getInvoices = async (req, res) => {
+  if (!req.company) {
+    return res.status(400).json({
+      success: false,
+      error: 'Company context required',
+      message: 'Please select a company first'
+    });
+  }
+  // ... rest of handler
+};
+```
+
+## Request Object Properties
+
+After middleware execution, request object has:
+
+### After authMiddleware
+```javascript
+req.user = {
+  id: 'user-uuid',
+  keycloakId: 'keycloak-user-id',
+  email: 'user@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+  keycloakGlobalRole: 'SUPER_ADMIN' | 'COMPANY_USER',
+  sessionState: 'keycloak-session-id'
+};
+```
+
+### After companyContextMiddleware
+```javascript
+req.company = {
+  id: 'company-uuid',
+  name: 'Company Name',
+  isActive: true
+};
+// OR
+req.company = null; // If no company selected
+```
+
+## Testing Requirements
+
+When creating new routes, test:
+
+1. **Public routes**: Should work without token
+2. **Protected routes**: 
+   - Should return 401 without token
+   - Should return 401 with invalid token
+   - Should work with valid token
+3. **Company context routes**:
+   - Should work after selecting company
+   - Should handle missing company context appropriately
+
+## Best Practices
+
+1. **Be Explicit**: Always apply middleware explicitly on each route
+2. **Document Access**: Always document access level in JSDoc
+3. **Check Company**: If route requires company, check `req.company` in controller
+4. **Error Messages**: Provide clear error messages for authentication failures
+5. **Logging**: Authentication events are automatically logged by middleware
+6. **Consistency**: Follow the same pattern across all routes in a module
+
+## Anti-Patterns (DO NOT DO)
+
+### ❌ Applying Middleware at Module Level
+```javascript
+// DON'T: Apply middleware to all routes
+const router = express.Router();
+router.use(authMiddleware); // ❌ Too broad, blocks public routes
+```
+
+### ❌ Missing Documentation
+```javascript
+// DON'T: Missing @access documentation
+router.get('/data', authMiddleware, asyncHandler(getData)); // ❌ No @access tag
+```
+
+### ❌ Wrong Middleware Order
+```javascript
+// DON'T: Wrong order
+router.get('/data', companyContextMiddleware, authMiddleware, asyncHandler(getData)); // ❌
+```
+
+### ❌ Assuming Company Context
+```javascript
+// DON'T: Assume req.company exists without checking
+export const getData = async (req, res) => {
+  const companyId = req.company.id; // ❌ Could be null
+};
+```
+
+## Related Rules
+
+- **keycloak.mdc** - Keycloak integration patterns
+- **module-structure.mdc** - Module creation guidelines
+- **error-handling.mdc** - Error handling patterns
+- **security.mdc** - Security best practices

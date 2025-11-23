@@ -1,0 +1,371 @@
+---
+description: Module creation and structure requirements
+globs: ["nodeBE/src/modules/**/*.js"]
+alwaysApply: true
+---
+# Module Structure Rules
+
+## Creating New Modules
+1. Create directory: `src/modules/{moduleName}/`
+2. Create `{module}Routes.js` - Route definitions (exports default router)
+3. Create `{module}Controller.js` - Request handlers (exports named functions)
+4. Create `{module}Docs.js` - API documentation (exports named docs object)
+5. Create `index.js` - Module exports (exports routes and docs)
+6. Register in `app.js`: `app.use('/api/v2/{module}', {module}Routes)`
+7. **Add to `registeredModules` array in `app.js`** - Required for startup logging
+
+## Route Handler Pattern
+```javascript
+import { validateUUID } from '../../utils/validators.js';
+import { successResponse } from '../../utils/responseHelpers.js';
+
+export const handler = async (req, res) => {
+  const startTime = Date.now();
+  const logger = createModuleLogger('moduleName');
+  
+  try {
+    // Validate inputs first
+    validateUUID(req.params.id, 'id', req.id);
+    
+    logger.info('Operation started', { requestId: req.id });
+    
+    // Business logic
+    
+    const duration = Date.now() - startTime;
+    logger.info('Operation completed', { 
+      requestId: req.id, 
+      duration: `${duration}ms` 
+    });
+    
+    res.status(200).json(
+      successResponse('Operation successful', result, {}, req, startTime)
+    );
+  } catch (error) {
+    logger.error('Operation failed', { requestId: req.id, error });
+    throw error; // Let errorHandler handle
+  }
+};
+```
+
+## API Documentation
+
+### Documentation Requirements
+- Every module MUST have `{module}Docs.js`
+- Documentation endpoint: `GET /api/v2/{module}` returns docs
+- **MUST follow standardized format** (authDocs style - see Docs File section below)
+- Include: path, method, description, access, request details, responses with full examples
+- **Documentation MUST be complete and up-to-date**
+
+### When to Update Documentation
+
+**CRITICAL**: Documentation examples MUST match actual API responses. Update `{module}Docs.js` whenever:
+
+1. **Adding new endpoints** - Add complete endpoint documentation with:
+   - Request/response examples
+   - Error response examples with `meta` field
+   - All status codes
+
+2. **Changing response format** - Update all affected examples:
+   - When using new response helpers (`successResponse`, `errorResponse`, `paginatedResponse`)
+   - When adding/removing fields from responses
+   - When changing error codes or messages
+   - **MUST include `meta` field** in all standard response examples (except health/docs endpoints)
+
+3. **Modifying endpoint behavior** - Update:
+   - Description if functionality changes
+   - Request/response examples if structure changes
+   - Error responses if new error codes are added
+
+4. **Response standardization changes** - When implementing standardized responses:
+   - Update ALL response examples to include `meta` field
+   - Update error response examples to match `errorResponse()` format
+   - Ensure paginated responses show correct structure (data as array, pagination at root)
+
+### Documentation Checklist
+
+When creating or updating endpoints, verify:
+- ✅ All response examples include `meta` field (except health/docs)
+- ✅ `meta` includes: `requestId`, `endpoint`, `method`, `duration` (if applicable)
+- ✅ Error response examples match `errorResponse()` format
+- ✅ Paginated responses show correct structure with `hasNext`/`hasPrev`
+- ✅ All status codes have example responses
+- ✅ Request examples match actual request format
+- ✅ Response examples match actual controller responses
+
+### Standard Documentation Format (authDocs Style)
+
+**CRITICAL**: All module documentation MUST follow this standardized format. See `authDocs.js` as the reference implementation.
+
+**Structure:**
+```javascript
+export const {module}Docs = {
+  module: 'Module Name',
+  description: 'Module description',
+  version: '2.0.0',
+  endpoints: [
+    {
+      method: 'GET|POST|PUT|DELETE',
+      path: '/api/v2/{module}/endpoint',
+      description: 'Endpoint description',
+      access: 'Public|Protected (requires Bearer token)',
+      
+      // Request details (if applicable)
+      requestBody: {
+        required: true|false,
+        contentType: 'application/json',
+        schema: { ... },
+        example: { ... }
+      },
+      headers: {
+        Authorization: {
+          type: 'string',
+          required: true,
+          description: 'Bearer token',
+          example: 'Bearer ...'
+        }
+      },
+      queryParameters: {
+        paramName: {
+          type: 'string|number|boolean',
+          required: true|false,
+          description: '...',
+          example: '...'
+        }
+      },
+      
+      // Responses - ALL in one object
+      responses: {
+        200: {
+          description: 'Success description',
+          example: {
+            success: true,
+            message: '...',
+            data: { ... },
+            timestamp: '...',
+            meta: { ... }  // Always include
+          }
+        },
+        400: {
+          description: 'Error description',
+          example: {
+            success: false,
+            error: 'ERROR_CODE',
+            message: '...',
+            timestamp: '...',
+            meta: { ... }  // Always include
+          }
+        }
+        // ... other status codes
+      }
+    }
+  ]
+};
+```
+
+**Key Requirements:**
+- ✅ Use `responses` object with status codes as keys
+- ✅ Each status code has `description` and `example` (full JSON)
+- ✅ All examples include `meta` field (except health/docs)
+- ❌ DO NOT use `responseExample` (single success example)
+- ❌ DO NOT use `errorResponses` array
+- ❌ DO NOT use `statusCodes` object
+- ❌ DO NOT use `requestExample` (use `requestBody`, `headers`, `queryParameters`)
+
+### Example: Converting to Standard Format
+
+```javascript
+// BEFORE (inconsistent format)
+{
+  path: "/api/v2/admin/users",
+  method: "GET",
+  responseExample: { /* success only */ },
+  errorResponses: [
+    { code: 401, message: "...", description: "..." }
+  ],
+  statusCodes: { 200: "...", 401: "..." }
+}
+
+// AFTER (standardized format)
+{
+  method: 'GET',
+  path: '/api/v2/admin/users',
+  description: 'Get all users',
+  access: 'Protected (requires Bearer token)',
+  responses: {
+    200: {
+      description: 'Users retrieved successfully',
+      example: { /* full JSON with meta */ }
+    },
+    401: {
+      description: 'Authentication required',
+      example: { /* full JSON error with meta */ }
+    }
+  }
+}
+```
+
+### Anti-Patterns (DO NOT DO)
+
+- ❌ Documentation examples that don't match actual API responses
+- ❌ Missing `meta` field in response examples (except health/docs)
+- ❌ Outdated error response formats
+- ❌ Paginated responses with wrong structure (data as object instead of array)
+- ❌ Missing error response examples for common status codes
+
+## Module Exports Pattern
+
+### Routes File ({module}Routes.js)
+```javascript
+import express from 'express';
+import { handler1, handler2 } from './{module}Controller.js';
+import { {module}Docs } from './{module}Docs.js';
+
+const router = express.Router();
+
+// Documentation route
+router.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: '{Module} module documentation',
+    data: {module}Docs,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Action routes
+router.get('/action1', handler1);
+router.get('/action2', handler2);
+
+export default router;  // Default export
+```
+
+### Controller File ({module}Controller.js)
+```javascript
+import { createModuleLogger } from '../../utils/logger.js';
+
+const logger = createModuleLogger('moduleName');
+
+export const handler1 = async (req, res) => {
+  // Handler implementation
+};
+
+export const handler2 = async (req, res) => {
+  // Handler implementation
+};
+```
+
+### Docs File ({module}Docs.js)
+
+**CRITICAL**: All module documentation MUST follow the standardized format (authDocs style).
+
+**Standard Structure:**
+```javascript
+export const {module}Docs = {
+  module: "{Module}",
+  description: "...",
+  version: "2.0.0",
+  endpoints: [
+    {
+      method: "GET|POST|PUT|DELETE",
+      path: "/api/v2/{module}/endpoint",
+      description: "Endpoint description",
+      access: "Public|Protected (requires Bearer token)",
+      
+      // Request (if applicable)
+      requestBody: { ... },      // For POST/PUT
+      headers: { ... },          // If required
+      queryParameters: { ... },  // If query params
+      pathParameters: { ... },   // If path params
+      
+      // Responses - ALL in one object (NOT separate responseExample/errorResponses)
+      responses: {
+        200: {
+          description: "Success description",
+          example: {
+            success: true,
+            message: "...",
+            data: { ... },
+            timestamp: "...",
+            meta: { ... }  // Always include meta field
+          }
+        },
+        400: {
+          description: "Error description",
+          example: {
+            success: false,
+            error: "ERROR_CODE",
+            message: "...",
+            timestamp: "...",
+            meta: { ... }  // Always include meta field
+          }
+        },
+        401: { ... },
+        403: { ... },
+        500: { ... }
+      }
+    }
+  ]
+};
+```
+
+**Key Requirements:**
+- ✅ Use `responses` object with status codes as keys (200, 400, 401, etc.)
+- ✅ Each status code has `description` and `example` (full JSON response)
+- ✅ All examples include `meta` field (except health/docs endpoints)
+- ❌ DO NOT use `responseExample` (single success example)
+- ❌ DO NOT use `errorResponses` array
+- ❌ DO NOT use `statusCodes` object (redundant)
+
+### Index File (index.js)
+```javascript
+import {module}Routes from './{module}Routes.js';
+import { {module}Docs } from './{module}Docs.js';
+
+// Named exports
+export { {module}Routes, {module}Docs };
+
+// Default export (optional, for convenience)
+export default {
+  routes: {module}Routes,
+  docs: {module}Docs,
+  moduleName: '{module}'
+};
+```
+
+## Route Structure
+- Documentation route: `router.get('/', (req, res) => { /* return docs */ })`
+- Action routes: `router.get('/action', controller.handler)`
+- All routes are relative to `/api/v2/{module}`
+
+## Module Registration
+
+### Registering Routes
+```javascript
+// In app.js
+import { {module}Routes } from './modules/{module}/index.js';
+
+// Register route
+app.use('/api/v2/{module}', {module}Routes);
+```
+
+### Registering for Startup Logging
+**CRITICAL**: After registering routes, add module to `registeredModules` array:
+
+```javascript
+// In app.js, at the bottom before export default app
+export const registeredModules = [
+  { path: '/api/v2/health', name: 'Health' },
+  { path: '/api/v2/auth', name: 'Auth' },
+  { path: '/api/v2/admin', name: 'Admin' },
+  { path: '/api/v2/superAdmin', name: 'Super Admin' },
+  { path: '/api/v2/{module}', name: '{Module}' }  // Add your new module here
+];
+```
+
+**Why**: The `registeredModules` array is used by `server.js` to automatically list all documentation endpoints in startup logs. If you don't add your module here, it won't appear in the startup logs.
+
+## Request Logger Availability
+- `req.logger` is automatically attached by requestLogger middleware
+- Use `req.logger` for request-specific logging
+- `req.id` is automatically generated and available on all requests
+- Example: `req.logger.info('Message', { requestId: req.id })`

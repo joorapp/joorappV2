@@ -1,0 +1,557 @@
+---
+description: Model creation guidelines and AuditableEntity integration patterns
+globs: ["nodeBE/src/models/**/*.js"]
+alwaysApply: true
+---
+
+# Model Creation Rules
+
+## Overview
+
+This document defines the standard pattern for creating Sequelize models in this codebase. All models (except reference tables like User) must follow the AuditableEntity pattern for consistent audit tracking, soft delete, and optimistic locking.
+
+**⚠️ IMPORTANT**: Before creating any model, read this entire document and follow the checklist.
+
+## File Structure & Naming
+
+- **Location**: All models in `src/models/` directory
+- **File naming**: PascalCase matching model name (e.g., `Product.js`, `OrderItem.js`)
+- **Export**: Default export of model instance
+- **File extension**: Always `.js` (ES6 modules)
+
+## Required Imports
+
+```javascript
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/database.js';
+
+// For auditable models (most models):
+import {
+  getAuditableFields,
+  getAuditableHooks,
+  getDefaultScope,
+  getScopes,
+  applyOptimisticLocking
+} from './base/AuditableEntity.js';
+```
+
+## Model Documentation (JSDoc)
+
+**REQUIRED**: Every model file must have file-level JSDoc:
+
+```javascript
+/**
+ * @author Bhavesh Venugopal
+ * ModelName
+ * Brief description of what this model represents
+ * Note: Uses AuditableEntity mixin for audit tracking
+ */
+```
+
+## Field Definition Requirements
+
+### Mandatory Properties
+
+Every field MUST include:
+1. **`type`**: DataTypes (UUID, STRING, INTEGER, DATE, BOOLEAN, TEXT, etc.)
+2. **`field`**: **REQUIRED** - Explicit database column name (snake_case)
+3. **`allowNull`**: Explicitly set (true/false)
+4. **`comment`**: Description of the field's purpose
+
+### Field Mapping Rules
+
+- **ALWAYS include explicit `field` property** for ALL fields
+- Map camelCase attribute names to snake_case database column names
+- Examples:
+  - `createdDate` → `field: 'created_date'`
+  - `keycloakId` → `field: 'keycloak_id'`
+  - `isActive` → `field: 'is_active'`
+- **Even if names match**, include `field` for consistency:
+  - `name` → `field: 'name'`
+  - `email` → `field: 'email'`
+
+### Field Definition Template
+
+```javascript
+fieldName: {
+  type: DataTypes.STRING(255),
+  allowNull: false,
+  field: 'field_name',  // REQUIRED: Explicit database column name
+  defaultValue: 'default',  // Optional: if needed
+  validate: {  // Optional: validation rules
+    notEmpty: true
+  },
+  comment: 'Description of what this field stores'  // REQUIRED
+}
+```
+
+## AuditableEntity Integration
+
+### When to Use AuditableEntity
+
+- ✅ **USE for**: All business models that need audit tracking
+- ❌ **DON'T USE for**: Reference tables (like User model - it's the reference for audit foreign keys)
+
+### Required Steps for AuditableEntity Models
+
+1. **Spread audit fields** in model definition:
+   ```javascript
+   const ModelName = sequelize.define('ModelName', {
+     // Business fields
+     name: { type: DataTypes.STRING, field: 'name', ... },
+     // Spread audit fields from mixin
+     ...getAuditableFields()
+   }, { ... });
+   ```
+
+2. **Apply hooks** after model definition:
+   ```javascript
+   const auditHooks = getAuditableHooks();
+   ModelName.addHook('beforeValidate', auditHooks.beforeValidate);
+   ModelName.addHook('beforeCreate', auditHooks.beforeCreate);
+   ModelName.addHook('beforeUpdate', auditHooks.beforeUpdate);
+   ```
+
+3. **Apply optimistic locking**:
+   ```javascript
+   applyOptimisticLocking(ModelName);
+   ```
+
+4. **Override destroy method** for soft delete:
+   ```javascript
+   const originalDestroy = ModelName.prototype.destroy;
+   ModelName.prototype.destroy = async function(options = {}) {
+     const userId = options?.context?.userId;
+     if (!userId) {
+       throw new Error('userId must be provided in options.context for soft delete');
+     }
+     
+     this.isDeleted = true;
+     this.deletedUserId = userId;
+     this.updatedDate = new Date();
+     this.updatedUserId = userId;
+     
+     await this.save({ hooks: false, context: options.context });
+     return this;
+   };
+   ```
+
+## Model Options
+
+### Required Options
+
+```javascript
+{
+  tableName: 'table_name',  // Explicit table name (snake_case, plural)
+  timestamps: false,  // REQUIRED when using AuditableEntity (we use custom audit fields)
+  underscored: true,  // For snake_case column naming convention
+  freezeTableName: true,  // Prevent Sequelize from pluralizing table name
+  defaultScope: getDefaultScope(),  // REQUIRED: Soft delete filtering
+  scopes: getScopes(),  // REQUIRED: Additional scopes for soft delete
+  indexes: [ /* ... */ ]  // Define indexes
+}
+```
+
+## Scopes
+
+### Default Scope
+
+- **Automatically applied** to all queries
+- **Purpose**: Excludes soft-deleted records (`isDeleted = false`)
+- **Applied via**: `defaultScope: getDefaultScope()`
+- **Usage**: No special syntax needed - it's automatic:
+  ```javascript
+  const records = await ModelName.findAll();  // Only non-deleted records
+  ```
+
+### Named Scopes
+
+Available scopes from `getScopes()`:
+
+#### 1. `withDeleted` Scope
+- **Purpose**: Include both deleted and non-deleted records
+- **Usage**: 
+  ```javascript
+  const allRecords = await ModelName.scope('withDeleted').findAll();
+  const record = await ModelName.scope('withDeleted').findByPk(id);
+  ```
+
+#### 2. `onlyDeleted` Scope
+- **Purpose**: Only get deleted records
+- **Usage**:
+  ```javascript
+  const deletedRecords = await ModelName.scope('onlyDeleted').findAll();
+  ```
+
+#### 3. `unscoped()` Method
+- **Purpose**: Remove all scopes (including default scope)
+- **Usage**:
+  ```javascript
+  const allRecords = await ModelName.unscoped().findAll();
+  ```
+- **Note**: Use `unscoped()` sparingly - prefer named scopes
+
+### Scope Examples
+
+```javascript
+// Default behavior (excludes deleted)
+const active = await Product.findAll();
+
+// Include deleted records
+const all = await Product.scope('withDeleted').findAll();
+
+// Only deleted records
+const deleted = await Product.scope('onlyDeleted').findAll();
+
+// Remove all scopes
+const everything = await Product.unscoped().findAll();
+```
+
+## Indexes
+
+### Required Indexes
+
+- **Index on `is_deleted`**: Required for soft delete performance
+  ```javascript
+  {
+    fields: ['is_deleted'],
+    name: '{table_name}_is_deleted_idx'
+  }
+  ```
+
+### Recommended Indexes
+
+- Indexes on frequently queried fields
+- Indexes on foreign keys
+- Unique indexes where needed
+
+### Index Naming Convention
+
+- Format: `{table_name}_{field}_idx`
+- Example: `products_name_idx`, `orders_user_id_idx`
+- For unique indexes: `{table_name}_{field}_unique`
+
+## Soft Delete Implementation
+
+### Override destroy() Method
+
+All auditable models must override the `destroy()` method:
+
+```javascript
+const originalDestroy = ModelName.prototype.destroy;
+ModelName.prototype.destroy = async function(options = {}) {
+  const userId = options?.context?.userId;
+  
+  if (!userId) {
+    throw new Error('userId must be provided in options.context for soft delete');
+  }
+  
+  // Soft delete: update the record instead of deleting
+  this.isDeleted = true;
+  this.deletedUserId = userId;
+  this.updatedDate = new Date();
+  this.updatedUserId = userId;
+  
+  // Save the changes (skip hooks to avoid recursion)
+  await this.save({ 
+    hooks: false,
+    context: options.context 
+  });
+  
+  // Don't call the original destroy - just return the instance
+  return this;
+};
+```
+
+## Context Requirements
+
+### CRITICAL: All Operations Require Context
+
+All create/update/delete operations **MUST** include `context: { userId }`:
+
+```javascript
+// Create
+await ModelName.create(data, { context: { userId: user.id } });
+
+// Update
+await instance.update(data, { context: { userId: user.id } });
+await instance.save({ context: { userId: user.id } });
+
+// Delete (soft delete)
+await instance.destroy({ context: { userId: user.id } });
+```
+
+**Why?** Audit hooks require `options.context.userId` to populate:
+- `createdUserId` / `updatedUserId` / `deletedUserId`
+- `createdDate` / `updatedDate`
+
+## Model Registration
+
+### Export from models/index.js
+
+1. **Import the model**:
+   ```javascript
+   import ModelName from './ModelName.js';
+   ```
+
+2. **Export the model**:
+   ```javascript
+   export { ModelName };
+   ```
+
+3. **Add to default export**:
+   ```javascript
+   export default {
+     User,
+     ModelName,
+     initializeModels
+   };
+   ```
+
+4. **Add model to models object in `initializeAssociations()`**:
+   ```javascript
+   const initializeAssociations = () => {
+     const models = {
+       User,
+       Company,
+       ModelName,
+       // ... other models
+     };
+     
+     if (ModelName.associate) {
+       ModelName.associate(models);
+     }
+   };
+   ```
+
+### Define Associations in Model File
+
+**REQUIRED**: All model associations must be defined in the model file itself using the `associate` method pattern.
+
+Add an `associate` static method to your model file (after the model definition, before export):
+
+```javascript
+/**
+ * Define model associations
+ * @param {Object} models - Object containing all models
+ * @returns {void}
+ */
+ModelName.associate = (models) => {
+  // BelongsTo relationships (this model belongs to others)
+  ModelName.belongsTo(models.User, { 
+    foreignKey: 'userId', 
+    as: 'user' 
+  });
+  ModelName.belongsTo(models.Company, { 
+    foreignKey: 'companyId', 
+    as: 'company' 
+  });
+  ModelName.belongsTo(models.Company, { 
+    foreignKey: 'createdCompanyId', 
+    as: 'createdByCompany' 
+  });
+
+  // HasMany relationships (this model has many of others)
+  ModelName.hasMany(models.OtherModel, { 
+    foreignKey: 'modelNameId', 
+    as: 'otherModels' 
+  });
+
+  // Note: hasMany relationships for audit fields (createdUserId, updatedUserId, deletedUserId)
+  // are typically defined in User.associate(), not in the model's own associate method
+};
+```
+
+**Association Guidelines:**
+- **belongsTo**: Define in the model that has the foreign key (e.g., `ModelName.belongsTo(models.User)` if ModelName has `userId`)
+- **hasMany**: Define in the model that is referenced (e.g., `User.hasMany(models.ModelName)` if ModelName has `userId`)
+- **Audit field associations**: Usually defined in `User.associate()` since User is the reference table
+- **createdCompanyId associations**: Define `belongsTo(models.Company)` in each auditable model's associate method
+- Use descriptive `as` aliases (e.g., `'user'`, `'company'`, `'createdByCompany'`)
+
+## Complete Model Template
+
+```javascript
+/**
+ * @author Bhavesh Venugopal
+ * ModelName
+ * Brief description of what this model represents
+ * Note: Uses AuditableEntity mixin for audit tracking
+ */
+
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/database.js';
+import {
+  getAuditableFields,
+  getAuditableHooks,
+  getDefaultScope,
+  getScopes,
+  applyOptimisticLocking
+} from './base/AuditableEntity.js';
+
+/**
+ * ModelName definition
+ * Detailed description of the model's purpose
+ */
+const ModelName = sequelize.define('ModelName', {
+  // Business fields
+  name: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    field: 'name',
+    comment: 'Name of the record'
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'description',
+    comment: 'Description of the record'
+  },
+  // Spread audit fields from mixin
+  ...getAuditableFields()
+}, {
+  tableName: 'model_names',
+  timestamps: false, // We use custom audit fields (createdDate, updatedDate)
+  underscored: true,
+  freezeTableName: true,
+  // Apply default scope for soft delete
+  defaultScope: getDefaultScope(),
+  // Apply additional scopes
+  scopes: getScopes(),
+  indexes: [
+    {
+      fields: ['name'],
+      name: 'model_names_name_idx'
+    },
+    {
+      fields: ['is_deleted'],
+      name: 'model_names_is_deleted_idx'
+    }
+  ]
+});
+
+// Apply audit hooks using addHook (ensures they run in correct order)
+const auditHooks = getAuditableHooks();
+ModelName.addHook('beforeValidate', auditHooks.beforeValidate);
+ModelName.addHook('beforeCreate', auditHooks.beforeCreate);
+ModelName.addHook('beforeUpdate', auditHooks.beforeUpdate);
+
+// Apply optimistic locking (overrides save() method)
+applyOptimisticLocking(ModelName);
+
+// Override destroy method to implement soft delete
+const originalDestroy = ModelName.prototype.destroy;
+ModelName.prototype.destroy = async function(options = {}) {
+  const userId = options?.context?.userId;
+  
+  if (!userId) {
+    throw new Error('userId must be provided in options.context for soft delete');
+  }
+  
+  // Soft delete: update the record instead of deleting
+  this.isDeleted = true;
+  this.deletedUserId = userId;
+  this.updatedDate = new Date();
+  this.updatedUserId = userId;
+  
+  // Save the changes (skip hooks to avoid recursion)
+  await this.save({ 
+    hooks: false,
+    context: options.context 
+  });
+  
+  // Don't call the original destroy - just return the instance
+  return this;
+};
+
+/**
+ * Define model associations
+ * @param {Object} models - Object containing all models
+ * @returns {void}
+ */
+ModelName.associate = (models) => {
+  // Define all belongsTo and hasMany relationships here
+  // Example:
+  // ModelName.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
+  // ModelName.belongsTo(models.Company, { foreignKey: 'createdCompanyId', as: 'createdByCompany' });
+};
+
+export default ModelName;
+```
+
+## Exceptions & Special Cases
+
+### User Model (Reference Table)
+
+The `User` model is **special** - it does NOT use AuditableEntity because:
+- It's the reference table for audit foreign keys
+- Using AuditableEntity would create circular dependency
+- Users are primarily managed in Keycloak
+
+**User model pattern**:
+- No audit fields
+- No hooks
+- No optimistic locking
+- No soft delete
+- Standard Sequelize model
+
+### Other Reference Tables
+
+If creating lookup/reference tables that don't need audit tracking:
+- Follow User model pattern
+- Document why audit fields are not needed
+- Still include explicit `field` mappings
+
+## Model Creation Checklist
+
+Before considering a model complete, verify:
+
+- [ ] File has JSDoc with `@author` tag
+- [ ] All imports are correct (DataTypes, sequelize, AuditableEntity functions)
+- [ ] All fields have explicit `field` property
+- [ ] All fields have `comment` property
+- [ ] All fields have explicit `allowNull` value
+- [ ] Audit fields are spread: `...getAuditableFields()`
+- [ ] Model options include: `tableName`, `timestamps: false`, `underscored: true`, `freezeTableName: true`
+- [ ] Default scope applied: `defaultScope: getDefaultScope()`
+- [ ] Additional scopes applied: `scopes: getScopes()`
+- [ ] Index on `is_deleted` is defined
+- [ ] Hooks are applied: `beforeValidate`, `beforeCreate`, `beforeUpdate`
+- [ ] Optimistic locking is applied: `applyOptimisticLocking(ModelName)`
+- [ ] `destroy()` method is overridden for soft delete
+- [ ] Model is exported from `models/index.js`
+- [ ] Model is added to `models` object in `initializeAssociations()` 
+- [ ] `associate` method is defined in model file with all belongsTo/hasMany relationships
+- [ ] Migration file is created before model
+- [ ] Model is tested (create, update, soft delete, scopes, optimistic locking)
+
+## Testing Requirements
+
+Every new model should have tests verifying:
+
+1. **Create**: Audit fields are populated correctly
+2. **Update**: `updatedDate` and `version` increment
+3. **Default Scope**: Deleted records are excluded
+4. **withDeleted Scope**: Deleted records are included
+5. **onlyDeleted Scope**: Only deleted records are returned
+6. **Soft Delete**: Record is marked as deleted, not actually deleted
+7. **Optimistic Locking**: Concurrent updates are prevented
+
+See `scripts/test-demo-auditable-model.js` for reference implementation.
+
+## Common Mistakes to Avoid
+
+❌ **Forgetting `field` property** - Always include explicit field mapping
+❌ **Missing `context: { userId }`** - All operations require context
+❌ **Using `timestamps: true`** - Use `false` when using AuditableEntity
+❌ **Not overriding `destroy()`** - Soft delete won't work without it
+❌ **Forgetting to apply hooks** - Audit fields won't be populated
+❌ **Missing index on `is_deleted`** - Performance issue with soft delete queries
+❌ **Not applying scopes** - Default scope and named scopes won't work
+❌ **Skipping optimistic locking** - Concurrent updates won't be prevented
+
+## Reference Examples
+
+- **Auditable Model**: See `src/models/DemoAuditableModel.js`
+- **Reference Model**: See `src/models/User.js`
+- **Test Example**: See `scripts/test-demo-auditable-model.js`

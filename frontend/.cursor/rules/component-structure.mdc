@@ -1,0 +1,79 @@
+---
+description: React component patterns and structure
+globs: ["ReactFE/**/*.jsx", "ReactFE/**/*.tsx", "ReactFE/**/*.js"]
+alwaysApply: true
+---
+# Component Structure Rules
+
+## Component Organization
+- One component per file
+- Component name must match file name
+- Use functional components with hooks
+- Keep components small and focused (single responsibility)
+
+## Component Structure Pattern
+```javascript
+// UserProfile.jsx
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+
+/**
+ * UserProfile component displays user information
+ * @param {Object} props - Component props
+ * @param {string} props.userId - User ID
+ * @param {Function} props.onUpdate - Callback when user updates
+ */
+const UserProfile = ({ userId, onUpdate }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch user data
+    fetchUser(userId).then(setUser).finally(() => setLoading(false));
+  }, [userId]);
+
+  if (loading) return <div>Loading...</div>;
+  if (!user) return <div>User not found</div>;
+
+  return (
+    <div className="user-profile">
+      {/* Component JSX */}
+    </div>
+  );
+};
+
+UserProfile.propTypes = {
+  userId: PropTypes.string.isRequired,
+  onUpdate: PropTypes.func
+};
+
+export default UserProfile;
+```
+
+## File Naming
+- Components: PascalCase - `UserProfile.jsx`, `ProductCard.tsx`
+- Utilities: camelCase - `formatDate.js`, `apiClient.js`
+- Constants: UPPER_SNAKE_CASE - `API_BASE_URL.js`
+
+## Directory Structure
+```
+src/
+├── components/      # Reusable components
+├── pages/          # Page components
+├── hooks/          # Custom hooks
+├── utils/          # Utility functions
+├── services/       # API services
+├── context/        # React context
+└── styles/         # CSS/styled components
+```
+
+## Hooks
+- Use custom hooks for reusable logic
+- Keep hooks focused on single responsibility
+- Name hooks starting with "use": `useUserData`, `useApiCall`
+
+## State Management
+- Use useState for local component state
+- Use useContext for shared state
+- Use Redux/Zustand for global state (if needed)
+- Avoid prop drilling - use context or state management

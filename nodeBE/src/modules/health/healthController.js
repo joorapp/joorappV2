@@ -5,6 +5,7 @@
  */
 
 import { createModuleLogger, logPerformance } from '../../utils/logger.js';
+import { testDatabaseConnection } from '../../config/database.js';
 
 // Create module-specific logger
 const logger = createModuleLogger('health');
@@ -199,6 +200,97 @@ export const getSystemMetrics = (req, res) => {
       message: 'Failed to retrieve system metrics',
       error: error.message,
       timestamp: new Date().toISOString()
+    });
+  }
+};
+
+/**
+ * Database health check endpoint handler
+ * Returns database connection status and information
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const getDatabaseHealth = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    req.logger.info('Database health check requested', {
+      requestId: req.id,
+      ip: req.ip || req.socket?.remoteAddress
+    });
+    
+    const connectionResult = await testDatabaseConnection();
+    const duration = Date.now() - startTime;
+    
+    if (connectionResult.success) {
+      req.logger.info('Database health check completed successfully', {
+        requestId: req.id,
+        duration: `${duration}ms`,
+        database: connectionResult.database,
+        host: connectionResult.host
+      });
+      
+      // Log performance if duration is significant
+      if (duration > 500) {
+        logPerformance('Database health check', duration, {
+          requestId: req.id,
+          module: 'health'
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Database connection is healthy',
+        timestamp: new Date().toISOString(),
+        responseTime: `${duration}ms`,
+        database: {
+          connected: true,
+          database: connectionResult.database,
+          host: connectionResult.host,
+          port: connectionResult.port,
+          sequelizeVersion: connectionResult.sequelizeVersion
+        }
+      });
+    } else {
+      req.logger.warn('Database health check failed', {
+        requestId: req.id,
+        duration: `${duration}ms`,
+        error: connectionResult.error,
+        database: connectionResult.database
+      });
+
+      res.status(503).json({
+        success: false,
+        message: 'Database connection is unhealthy',
+        timestamp: new Date().toISOString(),
+        responseTime: `${duration}ms`,
+        database: {
+          connected: false,
+          database: connectionResult.database,
+          host: connectionResult.host,
+          port: connectionResult.port,
+          error: connectionResult.error
+        }
+      });
+    }
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    req.logger.error('Database health check failed with exception', {
+      requestId: req.id,
+      error: {
+        message: error.message,
+        stack: error.stack
+      },
+      duration: `${duration}ms`
+    });
+    
+    res.status(500).json({
+      success: false,
+      message: 'Database health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+      responseTime: `${duration}ms`
     });
   }
 };

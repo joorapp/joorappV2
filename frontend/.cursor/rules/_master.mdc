@@ -1,0 +1,26 @@
+---
+description: Master frontend rules - ALWAYS apply these critical rules
+globs: ["ReactFE/**/*"]
+alwaysApply: true
+priority: 1
+---
+# Master Frontend Rules
+
+## Critical Rules (MUST FOLLOW)
+1. **Functional Components** - Use functional components with hooks, not class components
+2. **Component Structure** - Keep components small, focused, and reusable
+3. **Naming Conventions** - PascalCase for components, camelCase for functions
+4. **State Management** - Use appropriate state management (Context, Redux, etc.)
+5. **Code Organization** - Follow component-based architecture
+
+## Quick Reference
+- Component naming: `UserProfile.jsx` (PascalCase)
+- Function naming: `const handleSubmit = () => {}` (camelCase)
+- File structure: One component per file
+- Props: Use TypeScript or PropTypes for type checking
+
+## Prohibited
+- ❌ Class components (use functional components)
+- ❌ Console.log in production code (use proper logging)
+- ❌ Inline styles (use CSS modules or styled-components)
+- ❌ Direct DOM manipulation (use React patterns)

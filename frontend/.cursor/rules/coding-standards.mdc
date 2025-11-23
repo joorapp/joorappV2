@@ -1,0 +1,55 @@
+---
+description: Frontend coding standards and best practices
+globs: ["ReactFE/**/*.jsx", "ReactFE/**/*.tsx", "ReactFE/**/*.js"]
+alwaysApply: true
+---
+# Frontend Coding Standards
+
+## Naming Conventions
+- Components: PascalCase - `UserProfile.jsx`
+- Functions: camelCase - `const handleSubmit = () => {}`
+- Constants: UPPER_SNAKE_CASE - `const API_BASE_URL = '...'`
+- Files: Match component/function name
+
+## Code Quality
+- Keep functions small and focused
+- Use meaningful variable names
+- Avoid deep nesting (max 3 levels)
+- Use early returns to reduce nesting
+- Extract complex logic into custom hooks
+
+## React Best Practices
+- Use functional components with hooks
+- Avoid unnecessary re-renders (use useMemo, useCallback)
+- Keep state as local as possible
+- Use proper key props in lists
+- Avoid direct DOM manipulation
+
+## Styling
+- Use CSS modules or styled-components
+- Avoid inline styles (except for dynamic styles)
+- Follow BEM naming convention for CSS classes
+- Keep styles scoped to components
+
+## Performance
+- Lazy load routes and heavy components
+- Use React.memo for expensive components
+- Optimize images and assets
+- Minimize bundle size
+- Use code splitting
+
+## Prohibited Patterns
+- ❌ Class components (use functional components)
+- ❌ Console.log in production (use proper logging)
+- ❌ Inline styles for static styles
+- ❌ Direct DOM manipulation
+- ❌ Mutating state directly
+- ❌ Missing key props in lists
+
+## Required Patterns
+- ✅ Functional components with hooks
+- ✅ Proper error handling
+- ✅ Loading states
+- ✅ TypeScript or PropTypes
+- ✅ Accessibility considerations
+- ✅ Responsive design

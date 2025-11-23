@@ -1,0 +1,417 @@
+---
+description: Error handling patterns and error categorization
+globs: ["nodeBE/**/*.js", "nodeBE/**/middleware/*.js"]
+alwaysApply: true
+---
+# Error Handling Rules
+
+## Error Handling Pattern
+- **ALWAYS throw errors** - Don't manually return error responses
+- Use `asyncHandler` wrapper for route handlers
+- Errors must be logged with full context (requestId, userId, error details)
+- Use centralized `errorHandler` middleware
+- Use custom error classes for specific error types
+
+## Custom Error Classes
+
+**CRITICAL**: Use custom error classes from `src/utils/errors.js` instead of generic `Error` objects.
+
+### Available Error Classes
+
+1. **`NotFoundError`** - Resource not found (404)
+   ```javascript
+   throw new NotFoundError('User', userId, { requestId: req.id });
+   // Error code: USER_NOT_FOUND
+   ```
+
+2. **`ValidationError`** - Input validation failed (400)
+   ```javascript
+   throw new ValidationError('Email is required', { field: 'email' }, { requestId: req.id });
+   // Error code: VALIDATION_ERROR
+   ```
+
+3. **`ForbiddenError`** - Permission denied (403)
+   ```javascript
+   throw new ForbiddenError('Access forbidden', { requestId: req.id, userId: req.user.id });
+   // Error code: FORBIDDEN
+   ```
+
+4. **`UnauthorizedError`** - Authentication required (401)
+   ```javascript
+   throw new UnauthorizedError('Authentication required', { requestId: req.id });
+   // Error code: AUTHENTICATION_REQUIRED
+   ```
+
+5. **`AuthenticationFailedError`** - Authentication failed (401)
+   ```javascript
+   throw new AuthenticationFailedError('Invalid credentials', { requestId: req.id });
+   // Error code: AUTHENTICATION_FAILED
+   ```
+
+6. **`ConflictError`** - Resource conflict (409)
+   ```javascript
+   throw new ConflictError('Email already exists', { field: 'email' }, { requestId: req.id });
+   // Error code: RESOURCE_CONFLICT
+   ```
+
+7. **`BadRequestError`** - Invalid request (400)
+   ```javascript
+   throw new BadRequestError('Invalid request format', { details: '...' }, { requestId: req.id });
+   // Error code: BAD_REQUEST
+   ```
+
+8. **`SessionError`** - Session-related error (400)
+   ```javascript
+   throw new SessionError('Session expired', { requestId: req.id });
+   // Error code: SESSION_ERROR
+   ```
+
+9. **`InternalServerError`** - Server errors (500)
+   ```javascript
+   throw new InternalServerError('Database connection failed', { requestId: req.id });
+   // Error code: INTERNAL_SERVER_ERROR
+   ```
+
+### Import Pattern
+
+```javascript
+import { 
+  NotFoundError, 
+  ValidationError, 
+  ForbiddenError,
+  UnauthorizedError 
+} from '../../utils/errors.js';
+```
+
+## Error Throwing Pattern
+
+### ✅ DO: Throw Errors
+
+```javascript
+export const getUser = async (req, res) => {
+  const startTime = Date.now();
+  
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    throw new NotFoundError('User', req.params.id, { requestId: req.id });
+  }
+  
+  return res.status(200).json(
+    successResponse('User retrieved', user, {}, req, startTime)
+  );
+  // Error handler automatically catches and formats errors
+};
+```
+
+### ❌ DON'T: Return Error Responses
+
+```javascript
+// DON'T: Manually return error responses
+if (!user) {
+  return res.status(404).json(
+    errorResponse('User not found', 'NOT_FOUND', 404, null, req)
+  );
+}
+```
+
+## Error Code Constants
+
+Use error code constants from `src/constants/errorCodes.js`:
+
+```javascript
+import { ERROR_CODES } from '../../constants/errorCodes.js';
+
+// Use constants instead of hardcoded strings
+if (errorCode === ERROR_CODES.USER_NOT_FOUND) {
+  // Handle user not found
+}
+```
+
+## Error Logging
+
+Errors are automatically logged by `errorHandler` middleware. In controllers, just throw:
+
+```javascript
+try {
+  // operation
+} catch (error) {
+  logger.error('Operation failed', {
+    requestId: req.id,
+    userId: req.user?.id,
+    error: {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    }
+  });
+  throw error; // Let errorHandler middleware handle response
+}
+```
+
+## Error Response Format
+
+All errors are automatically formatted by `errorHandler` using `errorResponse()` helper:
+
+```javascript
+{
+  success: false,
+  error: "ERROR_CODE",        // From error.errorCode
+  message: "Human-readable message",
+  timestamp: "2024-11-23T12:00:00.000Z",
+  meta: {
+    requestId: "req-1234567890",
+    endpoint: "/api/v2/users/123",
+    method: "GET"
+  }
+}
+```
+
+**Special Cases:**
+- Health endpoints: Errors formatted without `meta` field
+- Documentation endpoints: Errors formatted without `meta` field
+- All other endpoints: Errors include `meta` field
+
+## Error Handler Middleware
+
+- Use centralized `errorHandler` from `src/middleware/errorHandler.js`
+- Automatically handles all custom error classes
+- Automatically formats responses with `errorResponse()` helper
+- Automatically logs errors with full context
+- Handles backward compatibility with existing error types
+
+## Middleware vs Controller Error Handling
+
+**CRITICAL**: Different error handling patterns for middleware vs controllers.
+
+### Middleware Error Pattern
+
+**ALWAYS use `next(error)`** - Middleware must explicitly pass errors to Express error handler.
+
+```javascript
+// ✅ CORRECT - Middleware pattern
+export const authMiddleware = async (req, res, next) => {
+  try {
+    const token = extractToken(req);
+    
+    if (!token) {
+      // Pass error to error handler via next()
+      return next(new UnauthorizedError('No token provided', { requestId: req.id }));
+    }
+    
+    // ... validation logic ...
+    
+    if (!isValid) {
+      return next(new AuthenticationFailedError('Invalid token', { requestId: req.id }));
+    }
+    
+    // Success - call next() without error
+    next();
+  } catch (error) {
+    // Pass caught errors to error handler
+    return next(error);
+  }
+};
+```
+
+**Why `next(error)`?**
+- Express routes errors to error handler middleware when you call `next(error)`
+- Middleware is part of the request pipeline and must explicitly pass control
+- Without `next(error)`, Express won't catch the error properly
+
+**❌ DON'T throw in middleware:**
+```javascript
+// ❌ WRONG - Throwing in middleware won't be caught
+if (!token) {
+  throw new UnauthorizedError('No token provided'); // Won't work!
+}
+```
+
+### Controller Error Pattern
+
+**ALWAYS throw errors** - Controllers can throw if wrapped with `asyncHandler`.
+
+```javascript
+// ✅ CORRECT - Controller with asyncHandler
+export const getUser = async (req, res) => {
+  const startTime = Date.now();
+  
+  // Can throw errors directly
+  if (!req.user) {
+    throw new UnauthorizedError('User not found', { requestId: req.id });
+  }
+  
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    throw new NotFoundError('User', req.params.id, { requestId: req.id });
+  }
+  
+  return res.status(200).json(
+    successResponse('User retrieved', user, {}, req, startTime)
+  );
+};
+
+// In routes.js - MUST wrap with asyncHandler
+router.get('/users/:id', authMiddleware, asyncHandler(getUser));
+```
+
+**How `asyncHandler` works:**
+- Wraps async route handlers
+- Catches any thrown errors or rejected promises
+- Automatically calls `next(error)` to pass to error handler
+- Allows controllers to use natural `throw` syntax
+
+**❌ DON'T use `next(error)` in controllers:**
+```javascript
+// ❌ WRONG - Controllers shouldn't use next(error)
+export const getUser = async (req, res, next) => {
+  if (!user) {
+    return next(new NotFoundError('User', id)); // Don't do this in controllers
+  }
+};
+```
+
+### Summary Table
+
+| Type | Error Pattern | Wrapper Required | Example |
+|------|--------------|------------------|---------|
+| **Middleware** | `next(error)` | No | `return next(new UnauthorizedError(...))` |
+| **Controller** | `throw error` | Yes (`asyncHandler`) | `throw new NotFoundError(...)` |
+
+### Route Registration Pattern
+
+```javascript
+// ✅ CORRECT - Middleware uses next(), Controller throws
+router.get('/users/:id', 
+  authMiddleware,           // Middleware - uses next(error)
+  asyncHandler(getUser)     // Controller - throws errors
+);
+
+// ✅ CORRECT - Multiple middleware
+router.post('/users',
+  authMiddleware,           // Middleware 1 - uses next(error)
+  validateUserInput,        // Middleware 2 - uses next(error)
+  asyncHandler(createUser)  // Controller - throws errors
+);
+```
+
+### Key Rules
+
+1. **Middleware**: Always use `next(error)` to pass errors to error handler
+2. **Controllers**: Always throw errors (wrapped with `asyncHandler`)
+3. **Never mix patterns**: Don't use `next(error)` in controllers or `throw` in middleware
+4. **Always wrap controllers**: Use `asyncHandler` for all async route handlers
+5. **Error handler catches all**: Both patterns route to the same `errorHandler` middleware
+
+## Error Categorization
+
+- **SECURITY**: Authentication, authorization, security violations
+- **VALIDATION**: Input validation errors
+- **DATABASE**: Database connection, query errors
+- **EXTERNAL_API**: Third-party API failures
+- **APPLICATION**: General application errors
+
+## Examples
+
+### Example 1: Validation Error
+
+```javascript
+import { validateRequired, validateEmail } from '../../utils/validators.js';
+
+export const createUser = async (req, res) => {
+  const startTime = Date.now();
+  const { email, password } = req.body;
+  
+  // Use validation utilities
+  validateRequired({ email, password }, req.id);
+  validateEmail(email, 'email', req.id);
+  
+  // ... create user ...
+  
+  return res.status(201).json(
+    successResponse('User created', newUser, {}, req, startTime)
+  );
+};
+```
+
+### Example 2: Not Found Error
+
+```javascript
+export const getUser = async (req, res) => {
+  const startTime = Date.now();
+  const user = await User.findById(req.params.id);
+  
+  if (!user) {
+    throw new NotFoundError('User', req.params.id, { requestId: req.id });
+  }
+  
+  return res.status(200).json(
+    successResponse('User retrieved', user, {}, req, startTime)
+  );
+};
+```
+
+### Example 3: Forbidden Error
+
+```javascript
+export const deleteUser = async (req, res) => {
+  const startTime = Date.now();
+  
+  // Check permissions
+  if (!hasPermission(req.user, 'DELETE_USER')) {
+    throw new ForbiddenError('Insufficient permissions to delete users', 
+      { requestId: req.id, userId: req.user.id }
+    );
+  }
+  
+  // ... delete user ...
+  
+  return res.status(200).json(
+    successResponse('User deleted', null, {}, req, startTime)
+  );
+};
+```
+
+## Anti-Patterns (DO NOT DO)
+
+### ❌ Manual Error Response Construction
+
+```javascript
+// DON'T: Manually construct error responses
+if (!user) {
+  return res.status(404).json({
+    success: false,
+    error: 'NOT_FOUND',
+    message: 'User not found',
+    timestamp: new Date().toISOString()
+  });
+}
+```
+
+### ❌ Generic Error Objects
+
+```javascript
+// DON'T: Use generic Error objects
+if (!user) {
+  throw new Error('User not found');
+}
+```
+
+### ❌ Try-Catch with Manual Error Responses
+
+```javascript
+// DON'T: Catch and return error response manually
+try {
+  // operation
+} catch (error) {
+  return res.status(500).json(
+    errorResponse('Operation failed', 'INTERNAL_SERVER_ERROR', 500, null, req)
+  );
+}
+```
+
+## Related Rules
+
+- **validation.mdc** - Request validation patterns and utilities
+- **api-responses.mdc** - API response standardization
+- **coding-standards.mdc** - General coding standards
+- **module-structure.mdc** - Module creation guidelines

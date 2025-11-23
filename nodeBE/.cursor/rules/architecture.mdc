@@ -1,0 +1,238 @@
+---
+description: Core architecture patterns and module structure
+globs: ["nodeBE/**/*.js"]
+alwaysApply: true
+---
+# Architecture Rules
+
+## Module-Based Architecture
+- All features must be self-contained modules in `src/modules/{moduleName}/`
+- Each module must have: {module}Routes.js, {module}Controller.js, {module}Docs.js, index.js
+- Modules export routes and docs from index.js
+- Register modules in app.js: `app.use('/api/v2/{module}', {module}Routes)`
+
+## Directory Structure
+```
+src/
+├── modules/          # Feature modules (health, admin, auth, etc.)
+├── middleware/       # Express middleware
+├── services/         # Business logic services (for future use - not yet implemented)
+├── config/          # Configuration files
+├── utils/           # Utility functions
+└── app.js           # Express app setup
+```
+
+**Note**: The `services/` directory is reserved for future business logic services. Currently, business logic is in controllers. When implementing complex business logic, move it to services.
+
+## ES6 Modules
+- ALWAYS use ES6 import/export syntax
+- NEVER use require() or module.exports
+- Include .js extension: `import { x } from './file.js'`
+- Use default exports for main exports: `export default router`
+
+## API Versioning
+- All routes under `/api/v2/`
+- Documentation endpoint: `GET /api/v2/{module}` returns module docs
+- Actual endpoints: `GET /api/v2/{module}/{action}`
+
+## Environment Variables
+- NEVER use hardcoded fallbacks (`|| 'default'`)
+- ALWAYS validate required env vars and exit if missing
+- Use `process.env.VARIABLE_NAME` directly
+- Document all env vars in `env.example`
+
+## Request Object Extensions
+- `req.id` - Automatically generated request ID (available after requestLogger middleware)
+- `req.logger` - Request-specific Winston logger (available after requestLogger middleware)
+- Use `req.logger` for request-scoped logging instead of creating new loggers
+- Example: `req.logger.info('Message', { requestId: req.id })`
+
+## Import Order and Database Access
+
+### Critical Rule: Prevent Import-Time Database Access
+
+**Problem**: Importing models at the top level in middleware/services causes database configuration to be accessed before environment variables are loaded, causing server crashes.
+
+**Root Cause**:
+- Models import `sequelize` from `database.js` at the top level
+- When `sequelize.define()` is called, it triggers database config validation
+- Middleware/services imported by `app.js` execute at import time
+- Environment variables are loaded in `server.js` AFTER `app.js` is imported
+- This creates a race condition: database access before env vars are ready
+
+### Import Rules
+
+#### ✅ SAFE: Static Imports (Top-Level)
+
+Use static imports for:
+- **Models** (in model files themselves)
+- **Controllers** (only executed at runtime, not import time)
+- **Services** (only executed at runtime, not import time)
+- **Utilities** (no database access)
+- **Constants** (no database access)
+
+**Example - Models (SAFE)**:
+```javascript
+// ✅ SAFE: Models can import sequelize statically
+// They're only loaded after env vars are ready in server.js
+import { sequelize } from '../config/database.js';
+const User = sequelize.define('User', { ... });
+```
+
+**Example - Controllers (SAFE)**:
+```javascript
+// ✅ SAFE: Controllers are only executed at runtime
+import { User } from '../models/index.js';
+
+export const getUser = async (req, res) => {
+  const user = await User.findByPk(req.params.id);
+  // ...
+};
+```
+
+#### ❌ UNSAFE: Static Imports in Middleware/Services
+
+**NEVER** use static imports for models in:
+- **Middleware** (imported by `app.js` at startup)
+- **Services** (if imported by middleware or `app.js`)
+- **Any file imported directly by `app.js`**
+
+**Example - Middleware (UNSAFE)**:
+```javascript
+// ❌ UNSAFE: This causes import-time database access
+import { User, Company } from '../models/index.js';
+
+export const authMiddleware = async (req, res, next) => {
+  const user = await User.findByPk(...);
+  // ...
+};
+```
+
+#### ✅ SAFE: Dynamic Imports in Middleware/Services
+
+**ALWAYS** use dynamic imports for models in:
+- **Middleware** (imported by `app.js`)
+- **Services** (if imported by middleware or `app.js`)
+- **Any file in the import chain from `app.js`**
+
+**Example - Middleware (SAFE)**:
+```javascript
+// ✅ SAFE: Dynamic import - models loaded only when function executes
+export const authMiddleware = async (req, res, next) => {
+  // Import models dynamically inside the function
+  const { User, Company } = await import('../models/index.js');
+  
+  const user = await User.findByPk(...);
+  // ...
+};
+```
+
+**Example - Service Function (SAFE)**:
+```javascript
+// ✅ SAFE: Dynamic import in service function
+export const syncUser = async (userInfo) => {
+  // Import models dynamically inside the function
+  const { User } = await import('../models/index.js');
+  
+  const user = await User.create({ ... });
+  // ...
+};
+```
+
+### Import Chain Analysis
+
+**Safe Import Chain**:
+```
+server.js (loads env vars)
+  → app.js (imports routes)
+    → routes (import controllers)
+      → controllers (import models) ✅ SAFE
+```
+
+**Unsafe Import Chain**:
+```
+server.js (loads env vars)
+  → app.js (imports middleware) ❌ UNSAFE
+    → middleware (imports models) ❌ CRASHES
+```
+
+**Fixed Import Chain**:
+```
+server.js (loads env vars)
+  → app.js (imports middleware) ✅ SAFE
+    → middleware (dynamic import models) ✅ SAFE
+```
+
+### Testing Requirements
+
+**Before creating new middleware/services**:
+1. ✅ Verify the file is NOT imported by `app.js` at the top level
+2. ✅ If imported by `app.js`, use dynamic imports for models
+3. ✅ Test server startup: `npm run dev` should start without errors
+4. ✅ Test with missing `.env` file - should fail gracefully with clear error
+
+**Test Checklist**:
+- [ ] Server starts without database env vars error
+- [ ] Models are only accessed at runtime (not import time)
+- [ ] Dynamic imports are used in middleware/services imported by `app.js`
+- [ ] Static imports are used in controllers (safe - only executed at runtime)
+
+### Common Patterns
+
+#### Pattern 1: Middleware with Models
+```javascript
+// ✅ CORRECT: Dynamic import in middleware
+export const authMiddleware = async (req, res, next) => {
+  const { User } = await import('../models/index.js');
+  // Use User here
+};
+```
+
+#### Pattern 2: Service with Models
+```javascript
+// ✅ CORRECT: Dynamic import in service function
+export const userService = {
+  async createUser(data) {
+    const { User } = await import('../models/index.js');
+    return await User.create(data);
+  }
+};
+```
+
+#### Pattern 3: Controller with Models
+```javascript
+// ✅ CORRECT: Static import in controller (safe - only executed at runtime)
+import { User } from '../models/index.js';
+
+export const getUser = async (req, res) => {
+  const user = await User.findByPk(req.params.id);
+  // ...
+};
+```
+
+### Quick Reference
+
+| File Type | Import Models | When Executed | Safe? |
+|-----------|--------------|---------------|-------|
+| Model files | Static | After env vars loaded | ✅ Yes |
+| Controllers | Static | Runtime only | ✅ Yes |
+| Middleware | **Dynamic** | Import time | ❌ No (use dynamic) |
+| Services (imported by app.js) | **Dynamic** | Import time | ❌ No (use dynamic) |
+| Services (imported by controllers) | Static | Runtime only | ✅ Yes |
+
+### Error Prevention
+
+**If you see this error**:
+```
+Error: Missing required database environment variables: DB_NAME, DB_USER, ...
+```
+
+**Check**:
+1. Are you importing models at the top level in middleware/service?
+2. Is that middleware/service imported by `app.js`?
+3. If yes → Change to dynamic import: `const { Model } = await import('../models/index.js');`
+
+### References
+- See `authMiddleware.js` for correct pattern (dynamic imports)
+- See `superAdminController.js` for safe pattern (static imports in controllers)
+- See `server.js` for initialization order

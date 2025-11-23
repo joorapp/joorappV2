@@ -11,6 +11,9 @@ import morgan from 'morgan';
 // Import modules
 import { healthRoutes } from './modules/health/index.js';
 import { adminRoutes } from './modules/admin/index.js';
+import { superAdminRoutes } from './modules/superAdmin/index.js';
+import { authRoutes } from './modules/auth/index.js';
+import { userRoutes } from './modules/users/index.js';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js';
@@ -75,7 +78,10 @@ app.get('/', (req, res) => {
 
 // API routes - Module-based routing
 app.use('/api/v2/health', healthRoutes);
+app.use('/api/v2/auth', authRoutes);
 app.use('/api/v2/admin', adminRoutes);
+app.use('/api/v2/superAdmin', superAdminRoutes);
+app.use('/api/v2/users', userRoutes);
 
 // 404 handler for undefined routes
 app.use('*', (req, res) => {
@@ -99,5 +105,15 @@ app.use(errorLogger);
 
 // Global error handler middleware (must be last)
 app.use(errorHandler);
+
+// Module registry for startup logging
+// Add new modules here when registering routes above
+export const registeredModules = [
+  { path: '/api/v2/health', name: 'Health' },
+  { path: '/api/v2/auth', name: 'Auth' },
+  { path: '/api/v2/admin', name: 'Admin' },
+  { path: '/api/v2/superAdmin', name: 'Super Admin' },
+  { path: '/api/v2/users', name: 'Users' }
+];
 
 export default app;

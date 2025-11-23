@@ -5,7 +5,7 @@
  */
 
 import express from 'express';
-import { getHealthStatus, getPing, getSystemMetrics } from './healthController.js';
+import { getHealthStatus, getPing, getSystemMetrics, getDatabaseHealth } from './healthController.js';
 import { healthDocs } from './healthDocs.js';
 
 const router = express.Router();
@@ -44,5 +44,12 @@ router.get('/ping', getPing);
  * @access  Public
  */
 router.get('/metrics', getSystemMetrics);
+
+/**
+ * @route   GET /api/v2/health/database
+ * @desc    Get database connection health status
+ * @access  Public
+ */
+router.get('/database', getDatabaseHealth);
 
 export default router;
