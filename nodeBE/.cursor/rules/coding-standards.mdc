@@ -1,0 +1,120 @@
+---
+description: General coding standards and best practices
+globs: ["nodeBE/**/*.js"]
+alwaysApply: true
+---
+# Coding Standards
+
+## Naming Conventions
+- Files: camelCase - `healthController.js`, `adminRoutes.js`
+- Classes: PascalCase - `class UserService {}`
+- Functions: camelCase - `const getUserById = () => {}`
+- Constants: UPPER_SNAKE_CASE - `const MAX_RETRIES = 3`
+
+## Code Quality
+- Keep functions small and focused (single responsibility)
+- Use meaningful variable names
+- Avoid deep nesting (max 3 levels)
+- Handle errors explicitly
+- Use async/await, not callbacks
+- Return early to reduce nesting
+
+## API Response Format
+
+**CRITICAL**: All API responses MUST follow standardized formats. See **api-responses.mdc** for complete rules.
+
+### Quick Reference
+- ✅ Use `successResponse()`, `errorResponse()`, `paginatedResponse()` from `responseHelpers.js`
+- ✅ Always include `meta` field with `requestId`, `endpoint`, `method` (auto-extracted from `req`)
+- ❌ DO NOT use helpers for health endpoints (`/api/v2/health/*`)
+- ❌ DO NOT use helpers for documentation endpoints (`GET /api/v2/{module}`)
+
+### Example
+```javascript
+import { successResponse, errorResponse } from '../../utils/responseHelpers.js';
+
+export const getUser = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const user = await User.findById(req.params.id);
+    return res.status(200).json(
+      successResponse('User retrieved', user, {}, req, startTime)
+    );
+  } catch (error) {
+    return res.status(500).json(
+      errorResponse('Failed to retrieve user', 'INTERNAL_SERVER_ERROR', 500, null, req)
+    );
+  }
+};
+```
+
+**See api-responses.mdc for complete rules, examples, and special cases.**
+
+## Code Comments and Documentation
+
+### Function Documentation (REQUIRED)
+- **ALL functions MUST have meaningful JSDoc docstrings**
+- Use JSDoc format for all functions: `@param`, `@returns`, `@throws`
+- Include `@author` tag: `@author Bhavesh Venugopal`
+- **Docstrings MUST be updated whenever the function signature, behavior, or purpose changes**
+- Docstrings should explain:
+  - What the function does (brief description)
+  - Parameters: `@param {Type} paramName - Description`
+  - Return value: `@returns {Type} Description`
+  - Errors thrown: `@throws {ErrorType} Description`
+  - Side effects (if any)
+
+### Documentation Requirements
+- Document complex logic
+- Explain "why" not "what"
+- Keep docstrings in sync with code changes
+- Update docstrings when refactoring functions
+
+### Example
+```javascript
+/**
+ * @author Bhavesh Venugopal
+ * Get user by ID from database
+ * @param {string} userId - UUID of the user to retrieve
+ * @param {Object} options - Sequelize query options
+ * @param {boolean} options.includeDeleted - Whether to include soft-deleted users
+ * @returns {Promise<User|null>} User object if found, null otherwise
+ * @throws {Error} If database query fails
+ */
+export const getUserById = async (userId, options = {}) => {
+  // Implementation
+};
+```
+
+## Prohibited Patterns
+- ❌ console.log, console.error, console.warn
+- ❌ require() or module.exports
+- ❌ Hardcoded values (use env vars)
+- ❌ Fallback values with || for required config
+- ❌ req.connection (use req.socket)
+- ❌ Synchronous file operations
+- ❌ Unhandled promise rejections
+- ❌ Direct database queries in controllers
+
+## Required Patterns
+- ✅ Use ES6 modules
+- ✅ Use Winston logger
+- ✅ Include requestId in logs
+- ✅ **Validate all inputs** - Use validators from `src/utils/validators.js` or express-validator
+- ✅ Handle errors with try-catch
+- ✅ Document API endpoints
+- ✅ Use module-based architecture
+- ✅ Include error context in logs
+- ✅ Use async/await
+- ✅ Follow existing code patterns
+- ✅ **All functions must have JSDoc docstrings**
+- ✅ **Update docstrings when functions change**
+
+**See validation.mdc for complete validation rules and patterns.**
+
+## Response Format (DEPRECATED - See api-responses.mdc)
+
+**⚠️ This section is deprecated. See api-responses.mdc for current standards.**
+
+All API responses MUST use response helpers from `responseHelpers.js` and include `meta` field (except health/docs endpoints). See **api-responses.mdc** for complete rules.

@@ -1,0 +1,481 @@
+---
+description: API response standardization rules
+globs: ["nodeBE/src/modules/**/*Controller.js", "nodeBE/src/middleware/**/*.js"]
+alwaysApply: true
+---
+
+# API Response Standardization Rules
+
+## Overview
+
+All API responses MUST follow standardized formats for consistency, debugging, and frontend integration. This rule defines the standard response structure and when to use response helpers.
+
+## Standard Response Format
+
+### Success Response (Standard)
+
+**MUST include `meta` field** with requestId, endpoint, method, and optional duration:
+
+```javascript
+{
+  success: true,
+  message: string,
+  data: any,              // Can be object, array, or null
+  timestamp: string,      // ISO 8601 format
+  meta: {
+    requestId: string,    // From req.id
+    endpoint: string,     // From req.originalUrl or req.path
+    method: string,       // From req.method
+    duration?: number     // Optional: Response time in milliseconds
+  }
+}
+```
+
+**Usage:**
+```javascript
+import { successResponse } from '../../utils/responseHelpers.js';
+
+const startTime = Date.now();
+// ... business logic ...
+return res.status(200).json(
+  successResponse('Operation successful', data, {}, req, startTime)
+);
+```
+
+### Error Response (Standard)
+
+**MUST include `meta` field** with requestId, endpoint, and method:
+
+```javascript
+{
+  success: false,
+  error: string,          // Error code (e.g., 'VALIDATION_ERROR', 'NOT_FOUND')
+  message: string,        // Human-readable message
+  timestamp: string,
+  details?: any,          // Optional error details
+  meta: {
+    requestId: string,
+    endpoint: string,
+    method: string
+  }
+}
+```
+
+**Usage:**
+```javascript
+import { errorResponse } from '../../utils/responseHelpers.js';
+
+return res.status(400).json(
+  errorResponse('Email is required', 'VALIDATION_ERROR', 400, null, req)
+);
+```
+
+### Paginated Response (Standard)
+
+**MUST include `meta` field** and `pagination` object:
+
+```javascript
+{
+  success: true,
+  message: string,
+  data: any[],            // Array of items
+  pagination: {
+    page: number,
+    limit: number,
+    total: number,
+    pages: number,
+    hasNext: boolean,
+    hasPrev: boolean
+  },
+  timestamp: string,
+  meta: {
+    requestId: string,
+    endpoint: string,
+    method: string,
+    duration?: number
+  }
+}
+```
+
+**Usage:**
+```javascript
+import { paginatedResponse } from '../../utils/responseHelpers.js';
+
+const startTime = Date.now();
+// ... fetch data ...
+return res.status(200).json(
+  paginatedResponse('Users retrieved', users, { page, limit, total }, {}, req, startTime)
+);
+```
+
+## Special Cases (NO Meta Field)
+
+### Health Endpoints
+
+**DO NOT use response helpers** - Keep current structure with system metrics at root level:
+
+```javascript
+{
+  success: true,
+  message: string,
+  timestamp: string,
+  uptime: number,         // At root level
+  environment: string,    // At root level
+  version: string,        // At root level
+  memory: {               // At root level
+    used: string,
+    total: string
+  }
+  // NO meta field
+}
+```
+
+**Example:**
+```javascript
+// Health controller - DO NOT use response helpers
+res.status(200).json({
+  success: true,
+  message: 'API is running',
+  timestamp: new Date().toISOString(),
+  uptime: process.uptime(),
+  environment: process.env.NODE_ENV,
+  version: '2.0.0',
+  memory: {
+    used: '25 MB',
+    total: '50 MB'
+  }
+});
+```
+
+### Documentation Endpoints
+
+**DO NOT use response helpers** - Keep current structure:
+
+```javascript
+{
+  success: true,
+  message: string,
+  data: {
+    module: string,
+    description: string,
+    version: string,
+    endpoints: [...]
+  },
+  timestamp: string
+  // NO meta field
+}
+```
+
+**Example:**
+```javascript
+// Route file - DO NOT use response helpers for documentation
+router.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Module documentation',
+    data: moduleDocs,
+    timestamp: new Date().toISOString()
+  });
+});
+```
+
+## Response Helpers
+
+### Available Functions
+
+All helpers are in `src/utils/responseHelpers.js`:
+
+1. **`successResponse(message, data, meta, req, startTime)`**
+   - Standard success response
+   - Auto-extracts endpoint, method, requestId from `req`
+   - Calculates duration if `startTime` provided
+
+2. **`errorResponse(message, error, statusCode, details, req)`**
+   - Standard error response
+   - Auto-extracts endpoint, method, requestId from `req`
+   - Always includes `meta` field
+
+3. **`paginatedResponse(message, data, pagination, meta, req, startTime)`**
+   - Paginated response
+   - Auto-calculates `pages`, `hasNext`, `hasPrev`
+   - Auto-extracts endpoint, method, requestId from `req`
+
+4. **`emptySuccessResponse(message, meta, req, startTime)`**
+   - For DELETE operations or empty responses
+   - Same as `successResponse` with `data: null`
+
+### Import Pattern
+
+```javascript
+import { successResponse, errorResponse, paginatedResponse } from '../../utils/responseHelpers.js';
+```
+
+## Meta Field Structure
+
+The `meta` field is **ALWAYS included** in standard responses (success, error, paginated) and contains:
+
+```javascript
+meta: {
+  requestId: string,      // Request ID for tracing (from req.id)
+  endpoint: string,        // API endpoint called (from req.originalUrl or req.path)
+  method: string,         // HTTP method (from req.method)
+  duration?: number      // Optional: Response time in milliseconds (if startTime provided)
+}
+```
+
+**Why include endpoint?**
+- Frontend can log which endpoint returned the response
+- Debugging: "This error came from /api/v2/auth/login"
+- Analytics: Track which endpoints are called
+- Client-side routing: Know which API call succeeded/failed
+
+**Additional meta fields:**
+- Can add custom fields via `meta` parameter
+- Example: `successResponse('Message', data, { customField: 'value' }, req, startTime)`
+
+## Error Codes
+
+Use consistent error codes:
+
+- `VALIDATION_ERROR` - Input validation failed
+- `AUTHENTICATION_REQUIRED` - No token provided
+- `AUTHENTICATION_FAILED` - Invalid credentials
+- `FORBIDDEN` - User doesn't have permission
+- `NOT_FOUND` - Resource not found
+- `CONFLICT` - Resource conflict (e.g., duplicate)
+- `TOKEN_EXPIRED` - JWT token expired
+- `INVALID_TOKEN` - JWT token invalid
+- `SESSION_ERROR` - Session-related error
+- `INTERNAL_SERVER_ERROR` - Server error
+
+## Examples
+
+### Success Response Example
+
+```javascript
+export const getUser = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const user = await User.findById(req.params.id);
+    
+    return res.status(200).json(
+      successResponse('User retrieved successfully', user, {}, req, startTime)
+    );
+  } catch (error) {
+    return res.status(500).json(
+      errorResponse('Failed to retrieve user', 'INTERNAL_SERVER_ERROR', 500, null, req)
+    );
+  }
+};
+```
+
+### Error Response Example
+
+```javascript
+export const createUser = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json(
+        errorResponse('Email and password are required', 'VALIDATION_ERROR', 400, null, req)
+      );
+    }
+    
+    // ... create user ...
+    
+    return res.status(201).json(
+      successResponse('User created successfully', newUser, {}, req, startTime)
+    );
+  } catch (error) {
+    return res.status(500).json(
+      errorResponse('Failed to create user', 'INTERNAL_SERVER_ERROR', 500, null, req)
+    );
+  }
+};
+```
+
+### Paginated Response Example
+
+```javascript
+export const getUsers = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    const users = await User.findAll({ limit, offset });
+    const total = await User.count();
+    
+    return res.status(200).json(
+      paginatedResponse('Users retrieved successfully', users, { page, limit, total }, {}, req, startTime)
+    );
+  } catch (error) {
+    return res.status(500).json(
+      errorResponse('Failed to retrieve users', 'INTERNAL_SERVER_ERROR', 500, null, req)
+    );
+  }
+};
+```
+
+## When to Use Response Helpers
+
+### ✅ USE Response Helpers For:
+- All business logic endpoints
+- CRUD operations
+- Authentication endpoints (login, refresh, logout)
+- Company selection endpoints
+- User management endpoints
+- Any endpoint that needs request context
+
+### ❌ DO NOT Use Response Helpers For:
+- Health check endpoints (`/api/v2/health/*`)
+- Documentation endpoints (`GET /api/v2/{module}` - root route)
+- System-level endpoints that don't need request context
+
+## Common Patterns
+
+### Pattern 1: Standard CRUD Operation
+
+```javascript
+export const createResource = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    // Validation
+    if (!req.body.name) {
+      return res.status(400).json(
+        errorResponse('Name is required', 'VALIDATION_ERROR', 400, null, req)
+      );
+    }
+    
+    // Business logic
+    const resource = await Resource.create(req.body);
+    
+    // Success response
+    return res.status(201).json(
+      successResponse('Resource created successfully', resource, {}, req, startTime)
+    );
+  } catch (error) {
+    return res.status(500).json(
+      errorResponse('Failed to create resource', 'INTERNAL_SERVER_ERROR', 500, null, req)
+    );
+  }
+};
+```
+
+### Pattern 2: With Duration Tracking
+
+```javascript
+export const getData = async (req, res) => {
+  const startTime = Date.now();  // Always capture start time
+  
+  try {
+    // ... business logic ...
+    
+    // Include startTime to get duration in meta
+    return res.status(200).json(
+      successResponse('Data retrieved', data, {}, req, startTime)
+    );
+  } catch (error) {
+    return res.status(500).json(
+      errorResponse('Failed to retrieve data', 'INTERNAL_SERVER_ERROR', 500, null, req)
+    );
+  }
+};
+```
+
+### Pattern 3: Custom Meta Fields
+
+```javascript
+export const getData = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    // ... business logic ...
+    
+    // Add custom meta fields
+    return res.status(200).json(
+      successResponse('Data retrieved', data, { 
+        customField: 'value',
+        anotherField: 123
+      }, req, startTime)
+    );
+  } catch (error) {
+    return res.status(500).json(
+      errorResponse('Failed to retrieve data', 'INTERNAL_SERVER_ERROR', 500, null, req)
+    );
+  }
+};
+```
+
+## Anti-Patterns (DO NOT DO)
+
+### ❌ Manual Response Construction
+
+```javascript
+// DON'T: Manually construct responses
+return res.status(200).json({
+  success: true,
+  message: 'Success',
+  data: data,
+  timestamp: new Date().toISOString()
+  // Missing meta field!
+});
+```
+
+### ❌ Inconsistent Error Format
+
+```javascript
+// DON'T: Different error formats
+return res.status(400).json({ error: 'Bad request' });  // Missing success, message, meta
+return res.status(400).json({ message: 'Bad request' }); // Missing success, error, meta
+```
+
+### ❌ Using Helpers for Health/Docs
+
+```javascript
+// DON'T: Use helpers for health endpoints
+return res.status(200).json(
+  successResponse('API is running', healthData, {}, req, startTime)
+);
+// Should keep current structure with uptime, memory at root
+```
+
+## Migration Notes
+
+- Existing health endpoints: **Keep as-is** (special case)
+- Existing documentation endpoints: **Keep as-is** (special case)
+- All other endpoints: **Update to use response helpers**
+- Error handler: **Already updated** to use `errorResponse`
+
+## Testing
+
+When testing endpoints, verify:
+- ✅ `meta` field is present (except health/docs)
+- ✅ `meta.endpoint` matches the called endpoint
+- ✅ `meta.method` matches HTTP method
+- ✅ `meta.requestId` is present
+- ✅ `meta.duration` is present if `startTime` was provided
+- ✅ Response structure matches standard format
+
+## Documentation Updates
+
+**CRITICAL**: When implementing standardized responses, you MUST update API documentation:
+
+1. **Update `{module}Docs.js`** - All response examples must include `meta` field
+2. **Update error examples** - Include `meta` field in all error response examples
+3. **Verify structure** - Ensure documentation examples match actual controller responses
+4. **Test consistency** - Documentation should be accurate reflection of API behavior
+
+**See module-structure.mdc for complete documentation update requirements.**
+
+## Related Rules
+
+- **coding-standards.mdc** - General coding standards
+- **error-handling.mdc** - Error handling patterns
+- **module-structure.mdc** - Module creation guidelines and **documentation update requirements**

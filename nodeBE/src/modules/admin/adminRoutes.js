@@ -5,8 +5,10 @@
  */
 
 import express from 'express';
-import { getUsers, getSettings, updateSettings, getStats } from './adminController.js';
+import { getSettings, updateSettings, getStats } from './adminController.js';
 import { adminDocs } from './adminDocs.js';
+import { authMiddleware } from '../../middleware/authMiddleware.js';
+import { asyncHandler } from '../../middleware/errorHandler.js';
 
 const router = express.Router();
 
@@ -25,31 +27,24 @@ router.get('/', (req, res) => {
 });
 
 /**
- * @route   GET /api/v2/admin/users
- * @desc    Get all users with pagination and filtering
- * @access  Admin
- */
-router.get('/users', getUsers);
-
-/**
  * @route   GET /api/v2/admin/settings
  * @desc    Get system settings
- * @access  Admin
+ * @access  Admin (requires authentication)
  */
-router.get('/settings', getSettings);
+router.get('/settings', authMiddleware, asyncHandler(getSettings));
 
 /**
  * @route   PUT /api/v2/admin/settings
  * @desc    Update system settings
- * @access  Admin
+ * @access  Admin (requires authentication)
  */
-router.put('/settings', updateSettings);
+router.put('/settings', authMiddleware, asyncHandler(updateSettings));
 
 /**
  * @route   GET /api/v2/admin/stats
  * @desc    Get system statistics
- * @access  Admin
+ * @access  Admin (requires authentication)
  */
-router.get('/stats', getStats);
+router.get('/stats', authMiddleware, asyncHandler(getStats));
 
 export default router;

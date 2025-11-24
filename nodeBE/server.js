@@ -3,11 +3,33 @@
  * This file starts the Express server and handles graceful shutdown
  */
 
+// IMPORTANT: Load environment variables FIRST before any other imports
 import dotenv from 'dotenv';
-import app from './src/app.js';
-import { logInfo, logError, logWarn } from './src/utils/logger.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const envPath = path.resolve(__dirname, '.env');
+
+// Verify .env file exists and load it
+if (existsSync(envPath)) {
+  const result = dotenv.config({ path: envPath, override: true });
+  if (result.error) {
+    console.error('❌ Error loading .env file:', result.error.message);
+    process.exit(1);
+  }
+} else {
+  console.error(`❌ Error: .env file not found at: ${envPath}`);
+  console.error('   Please create a .env file in the nodeBE directory');
+  process.exit(1);
+}
+
+import app, { registeredModules } from './src/app.js';
+import { logInfo, logError, logWarn } from './src/utils/logger.js';
+import { initializeDatabase, closeDatabase } from './src/config/database.js';
+// Note: Models are imported dynamically after env vars are loaded to avoid import-time errors
 
 // Get configuration from environment variables - NO FALLBACKS
 const PORT = process.env.PORT;
@@ -33,6 +55,22 @@ if (!NODE_ENV) {
   process.exit(1);
 }
 
+// Initialize database connection and models
+(async () => {
+  try {
+    await initializeDatabase();
+    logInfo('✅ Database connection initialized successfully');
+    
+    // Dynamically import models after env vars are loaded and database is ready
+    const { initializeModels } = await import('./src/models/index.js');
+    initializeModels();
+    logInfo('✅ Models initialized successfully');
+  } catch (error) {
+    logError('❌ Failed to initialize database connection', error);
+    logWarn('⚠️  Server will start but database operations may fail');
+  }
+})();
+
 // Start the server
 const server = app.listen(PORT, () => {
   // Get the actual server address (handles different environments)
@@ -56,35 +94,52 @@ const server = app.listen(PORT, () => {
   // Log startup information for console display
   logInfo(`📡 Environment: ${NODE_ENV}`);
   logInfo(`🌐 Server Address: ${baseUrl}`);
-  logInfo(`\n📚 API Documentation:`);
-  logInfo(`   🔗 Health Module: ${baseUrl}/api/v2/health`);
-  logInfo(`   🔗 Admin Module:  ${baseUrl}/api/v2/admin`);
-  logInfo(`\n🔧 API Endpoints:`);
+  logInfo(`\n\t\t📚 API Documentation:`);
+  
+  // Dynamically list all module documentation endpoints
+  registeredModules.forEach(module => {
+    logInfo(`   🔗 ${module.name} Module: ${baseUrl}${module.path}`);
+  });
+  
+  // Only log health endpoints (system-level)
+  logInfo(`\n\t\t🔧 Health Endpoints:`);
   logInfo(`   📊 Health Status: ${baseUrl}/api/v2/health/status`);
   logInfo(`   🏓 Health Ping:   ${baseUrl}/api/v2/health/ping`);
   logInfo(`   📈 Health Metrics: ${baseUrl}/api/v2/health/metrics`);
-  logInfo(`   👥 Admin Users:   ${baseUrl}/api/v2/admin/users`);
-  logInfo(`   ⚙️  Admin Settings: ${baseUrl}/api/v2/admin/settings`);
-  logInfo(`   📊 Admin Stats:   ${baseUrl}/api/v2/admin/stats`);
-  logInfo(`🚀 JoorApp Backend API V2 is running on port ${PORT}`);
+  logInfo(`   🗄️  Health Database: ${baseUrl}/api/v2/health/database`);
+  
+  logInfo(`\n\t\t🚀 JoorApp Backend API V2 is running on port ${PORT}`);
 });
 
 // Graceful shutdown handling
-process.on('SIGTERM', () => {
-  logWarn('SIGTERM received. Shutting down gracefully...');
-  server.close(() => {
+const gracefulShutdown = async (signal) => {
+  logWarn(`${signal} received. Shutting down gracefully...`);
+  
+  // Close server
+  server.close(async () => {
+    logInfo('HTTP server closed');
+    
+    // Close database connection
+    try {
+      await closeDatabase();
+      logInfo('Database connection closed');
+    } catch (error) {
+      logError('Error closing database connection', error);
+    }
+    
     logInfo('Process terminated');
     process.exit(0);
   });
-});
+  
+  // Force shutdown after 10 seconds
+  setTimeout(() => {
+    logError('Forced shutdown after timeout', null, { timeout: '10s' });
+    process.exit(1);
+  }, 10000);
+};
 
-process.on('SIGINT', () => {
-  logWarn('SIGINT received. Shutting down gracefully...');
-  server.close(() => {
-    logInfo('Process terminated');
-    process.exit(0);
-  });
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {

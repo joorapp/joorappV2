@@ -1,0 +1,663 @@
+---
+description: Request validation patterns and utilities
+globs: ["nodeBE/**/*.js"]
+alwaysApply: true
+---
+# Validation Rules
+
+## Validation Strategy
+
+**CRITICAL**: All request inputs MUST be validated before processing.
+
+### Two-Tier Validation Approach
+
+1. **Simple Validators** (`src/utils/validators.js`) - For common validation cases
+   - UUID format validation
+   - Email format validation
+   - Required field checks
+   - Number/string/enum/boolean/date validation
+   - Use these for most validation needs
+
+2. **Express-Validator** (`express-validator` + `validationMiddleware.js`) - For complex validation
+   - Complex validation chains
+   - Cross-field validation
+   - Custom validation rules
+   - Use when simple validators are insufficient
+
+## Decision Guide: When to Use Which Validator
+
+**CRITICAL RULE OF THUMB:** If you need 3+ validation rules on a single field, or need to compare/validate across multiple fields, use **Express-Validator**. Otherwise, use **Simple Validators**.
+
+### ✅ Use Simple Validators (`validators.js`)
+
+**Use for:**
+- UUID validation (path parameters, IDs)
+- Email validation (single format check)
+- Required field checks
+- Number range validation
+- String length validation (single constraint)
+- Enum value validation
+- Boolean validation
+- Date validation
+
+**When to use:**
+- ✅ Single validation rule per field
+- ✅ No cross-field dependencies
+- ✅ Simple format/length/range checks
+- ✅ Independent field validation
+
+**Example:**
+```javascript
+import { validateUUID, validateEmail, validateRequired } from '../../utils/validators.js';
+
+export const getUser = async (req, res) => {
+  // Validate path parameter - single rule, simple
+  validateUUID(req.params.id, 'id', req.id);
+  
+  // ... rest of handler
+};
+
+export const login = async (req, res) => {
+  // Validate required fields - simple check
+  validateRequired({ email: req.body.email, password: req.body.password }, req.id);
+  
+  // Validate email format - single rule
+  validateEmail(req.body.email, 'email', req.id);
+  
+  // ... rest of handler
+};
+```
+
+### ✅ Use Express-Validator (`validationMiddleware.js`)
+
+**Use for:**
+- **Multiple validation rules on same field** (3+ rules)
+- **Cross-field validation** (comparing two fields)
+- **Custom validation logic** (complex business rules)
+- **Conditional validation** (validate only if another field exists)
+- **Data transformation** (normalize, trim, sanitize)
+
+**When to use:**
+- ✅ 3+ validation rules on a single field
+- ✅ Need to compare field A with field B
+- ✅ Need custom validation logic (regex, database checks, etc.)
+- ✅ Need to transform data (normalize email, trim strings)
+- ✅ Conditional validation based on other fields
+
+**Example:**
+```javascript
+import { body } from 'express-validator';
+import { createValidationChain } from '../../middleware/validationMiddleware.js';
+
+// In routes.js
+router.post('/users/register',
+  createValidationChain(
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail(),  // Data transformation
+    body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters')
+      .matches(/[A-Z]/)
+      .withMessage('Password must contain at least one uppercase letter')
+      .matches(/[a-z]/)
+      .withMessage('Password must contain at least one lowercase letter')
+      .matches(/[0-9]/)
+      .withMessage('Password must contain at least one number'),
+    body('confirmPassword')
+      .custom((value, { req }) => {
+        // Cross-field validation
+        if (value !== req.body.password) {
+          throw new Error('Passwords do not match');
+        }
+        return true;
+      })
+  ),
+  asyncHandler(register)
+);
+```
+
+## Decision Flowchart
+
+```
+Start: Need to validate input?
+│
+├─ Is it a single field with ONE simple rule?
+│  ├─ YES → Use Simple Validator ✅
+│  │        (validateUUID, validateEmail, validateRequired, etc.)
+│  └─ NO → Continue
+│
+├─ Need 3+ validation rules on same field?
+│  ├─ YES → Use Express-Validator ✅
+│  └─ NO → Continue
+│
+├─ Need to compare/validate across multiple fields?
+│  ├─ YES → Use Express-Validator ✅
+│  │        (password confirmation, date ranges, etc.)
+│  └─ NO → Continue
+│
+├─ Need custom validation logic?
+│  ├─ YES → Use Express-Validator ✅
+│  │        (.custom() for complex rules)
+│  └─ NO → Continue
+│
+├─ Need data transformation?
+│  ├─ YES → Use Express-Validator ✅
+│  │        (.normalizeEmail(), .trim(), etc.)
+│  └─ NO → Continue
+│
+└─ Need conditional validation?
+   ├─ YES → Use Express-Validator ✅
+   │        (.optional(), .if(), etc.)
+   └─ NO → Use Simple Validator ✅
+```
+
+## Warning: Don't Force Complex Validation into Simple Validators
+
+**CRITICAL:** If you find yourself writing multiple validation checks in a controller, you should be using Express-Validator instead.
+
+**Red Flags (Switch to Express-Validator):**
+- 🔴 Writing 3+ `if` statements for validation in controller
+- 🔴 Manually checking password strength with multiple regex tests
+- 🔴 Comparing two fields manually (e.g., `if (password !== confirmPassword)`)
+- 🔴 Writing custom validation logic that could use `.custom()`
+- 🔴 Manually transforming data after validation (e.g., `email.toLowerCase()`)
+
+## Available Simple Validators
+
+### `validateUUID(id, fieldName, requestId)`
+Validates UUID format.
+
+```javascript
+validateUUID(req.params.userId, 'userId', req.id);
+// Throws ValidationError if invalid
+```
+
+### `validateEmail(email, fieldName, requestId)`
+Validates email format.
+
+```javascript
+validateEmail(req.body.email, 'email', req.id);
+// Throws ValidationError if invalid
+```
+
+### `validateRequired(fields, requestId)`
+Validates that all provided fields have non-empty values.
+
+```javascript
+validateRequired({ email: req.body.email, password: req.body.password }, req.id);
+// Throws ValidationError if any field is missing
+```
+
+### `validateNumber(value, fieldName, options, requestId)`
+Validates number with optional range.
+
+```javascript
+const page = validateNumber(req.query.page, 'page', { min: 1 }, req.id);
+const limit = validateNumber(req.query.limit, 'limit', { min: 1, max: 100 }, req.id);
+// Returns parsed number or throws ValidationError
+```
+
+### `validateString(value, fieldName, options, requestId)`
+Validates string with optional length constraints.
+
+```javascript
+const name = validateString(req.body.name, 'name', { minLength: 2, maxLength: 100 }, req.id);
+// Returns validated string or throws ValidationError
+```
+
+### `validateEnum(value, allowedValues, fieldName, requestId)`
+Validates enum value.
+
+```javascript
+const status = validateEnum(req.body.status, ['active', 'inactive', 'pending'], 'status', req.id);
+// Returns validated value or throws ValidationError
+```
+
+### `validateBoolean(value, fieldName, options, requestId)`
+Validates boolean value.
+
+```javascript
+const isActive = validateBoolean(req.body.isActive, 'isActive', { required: false }, req.id);
+// Returns validated boolean or throws ValidationError
+```
+
+### `validateDate(value, fieldName, options, requestId)`
+Validates date string or Date object.
+
+```javascript
+const startDate = validateDate(req.body.startDate, 'startDate', { required: true }, req.id);
+// Returns validated Date object or throws ValidationError
+```
+
+## Validation Error Handling
+
+All validators throw `ValidationError` from `src/utils/errors.js`, which is automatically handled by the global error handler.
+
+**No manual error handling needed:**
+```javascript
+// ✅ CORRECT - Validator throws, errorHandler catches
+export const getUser = async (req, res) => {
+  validateUUID(req.params.id, 'id', req.id); // Throws if invalid
+  // ... rest of handler
+};
+
+// ❌ DON'T - Manual error handling not needed
+export const getUser = async (req, res) => {
+  try {
+    validateUUID(req.params.id, 'id', req.id);
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+```
+
+## Validation Patterns
+
+### Pattern 1: Path Parameter Validation
+
+```javascript
+export const getUser = async (req, res) => {
+  const startTime = Date.now();
+  
+  // Validate path parameter
+  validateUUID(req.params.id, 'id', req.id);
+  
+  // ... rest of handler
+};
+```
+
+### Pattern 2: Request Body Validation
+
+```javascript
+export const createUser = async (req, res) => {
+  const startTime = Date.now();
+  
+  // Validate required fields
+  validateRequired({ email: req.body.email, password: req.body.password }, req.id);
+  
+  // Validate individual fields
+  validateEmail(req.body.email, 'email', req.id);
+  validateString(req.body.password, 'password', { minLength: 8 }, req.id);
+  
+  // ... rest of handler
+};
+```
+
+### Pattern 3: Query Parameter Validation
+
+```javascript
+export const getUsers = async (req, res) => {
+  const startTime = Date.now();
+  
+  // Validate pagination
+  const page = validateNumber(req.query.page, 'page', { min: 1, required: false }, req.id) || 1;
+  const limit = validateNumber(req.query.limit, 'limit', { min: 1, max: 100, required: false }, req.id) || 10;
+  
+  // ... rest of handler
+};
+```
+
+### Pattern 4: Complex Validation with Express-Validator
+
+```javascript
+// In routes.js
+import { body, query } from 'express-validator';
+import { createValidationChain } from '../../middleware/validationMiddleware.js';
+
+router.post('/users',
+  createValidationChain(
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail(),
+    body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters')
+      .matches(/[A-Z]/)
+      .withMessage('Password must contain at least one uppercase letter')
+      .matches(/[a-z]/)
+      .withMessage('Password must contain at least one lowercase letter')
+      .matches(/[0-9]/)
+      .withMessage('Password must contain at least one number'),
+    body('age')
+      .optional()
+      .isInt({ min: 0, max: 150 })
+      .withMessage('Age must be between 0 and 150')
+  ),
+  asyncHandler(createUser)
+);
+```
+
+## Validation Best Practices
+
+### ✅ DO
+
+1. **Validate early** - Validate inputs at the start of handler
+2. **Use appropriate validator** - Simple validators for common cases, express-validator for complex
+3. **Include requestId** - Always pass `req.id` for error context
+4. **Validate all inputs** - Path params, query params, request body
+5. **Use descriptive field names** - Clear error messages
+
+### ❌ DON'T
+
+1. **Don't skip validation** - Always validate user inputs
+2. **Don't validate in multiple places** - Validate once at handler start
+3. **Don't catch ValidationError** - Let errorHandler handle it
+4. **Don't use manual regex** - Use validators instead (e.g., `validateUUID` instead of regex)
+5. **Don't validate after business logic** - Validate before processing
+6. **Don't force complex validation into simple validators** - Use express-validator for complex cases
+7. **Don't write multiple manual validation checks** - If you need 3+ checks, use express-validator
+8. **Don't do cross-field validation manually** - Use express-validator `.custom()` instead
+
+## Anti-Patterns (DO NOT DO)
+
+### ❌ Forcing Complex Validation into Simple Validators
+
+**WRONG:** Trying to do complex validation with simple validators
+
+```javascript
+// ❌ WRONG - Multiple manual validation checks in controller
+export const register = async (req, res) => {
+  const { email, password, confirmPassword } = req.body;
+  
+  // Simple validators for basic checks
+  validateRequired({ email, password, confirmPassword }, req.id);
+  validateEmail(email, 'email', req.id);
+  validateString(password, 'password', { minLength: 8 }, req.id);
+  
+  // ❌ Manual cross-field check - should use express-validator
+  if (password !== confirmPassword) {
+    throw new ValidationError('Passwords do not match', 
+      { field: 'confirmPassword' }, 
+      { requestId: req.id }
+    );
+  }
+  
+  // ❌ Manual password strength checks - should use express-validator
+  if (!/[A-Z]/.test(password)) {
+    throw new ValidationError('Password must contain at least one uppercase letter',
+      { field: 'password' },
+      { requestId: req.id }
+    );
+  }
+  if (!/[a-z]/.test(password)) {
+    throw new ValidationError('Password must contain at least one lowercase letter',
+      { field: 'password' },
+      { requestId: req.id }
+    );
+  }
+  if (!/[0-9]/.test(password)) {
+    throw new ValidationError('Password must contain at least one number',
+      { field: 'password' },
+      { requestId: req.id }
+    );
+  }
+  if (!/[!@#$%^&*]/.test(password)) {
+    throw new ValidationError('Password must contain at least one special character',
+      { field: 'password' },
+      { requestId: req.id }
+    );
+  }
+  
+  // ... rest of handler
+};
+```
+
+**CORRECT:** Use express-validator for complex validation
+
+```javascript
+// ✅ CORRECT - Use express-validator in routes.js
+import { body } from 'express-validator';
+import { createValidationChain } from '../../middleware/validationMiddleware.js';
+
+router.post('/register',
+  createValidationChain(
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail(),
+    body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters')
+      .matches(/[A-Z]/)
+      .withMessage('Password must contain at least one uppercase letter')
+      .matches(/[a-z]/)
+      .withMessage('Password must contain at least one lowercase letter')
+      .matches(/[0-9]/)
+      .withMessage('Password must contain at least one number')
+      .matches(/[!@#$%^&*]/)
+      .withMessage('Password must contain at least one special character'),
+    body('confirmPassword')
+      .custom((value, { req }) => {
+        if (value !== req.body.password) {
+          throw new Error('Passwords do not match');
+        }
+        return true;
+      })
+  ),
+  asyncHandler(register)
+);
+
+// Controller is now clean - validation already done
+export const register = async (req, res) => {
+  // Validation already done by middleware!
+  const { email, password } = req.body; // email is already normalized
+  
+  // ... create user logic
+};
+```
+
+### ❌ Validating in Controller When Express-Validator is Better
+
+**WRONG:** Complex validation logic in controller
+
+```javascript
+// ❌ WRONG - Complex validation in controller
+export const createUser = async (req, res) => {
+  const { email, password, age, phone } = req.body;
+  
+  // Multiple validation checks...
+  if (!email || !email.includes('@')) {
+    throw new ValidationError('Invalid email', ...);
+  }
+  if (email.length < 5) {
+    throw new ValidationError('Email too short', ...);
+  }
+  if (password && password.length < 8) {
+    throw new ValidationError('Password too short', ...);
+  }
+  if (age && (age < 0 || age > 150)) {
+    throw new ValidationError('Invalid age', ...);
+  }
+  if (phone && !/^\d{10}$/.test(phone)) {
+    throw new ValidationError('Invalid phone format', ...);
+  }
+  // ... many more checks
+};
+```
+
+**CORRECT:** Use express-validator middleware
+
+```javascript
+// ✅ CORRECT - Use express-validator middleware
+router.post('/users',
+  createValidationChain(
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail(),
+    body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters'),
+    body('age')
+      .optional()
+      .isInt({ min: 0, max: 150 })
+      .withMessage('Age must be between 0 and 150'),
+    body('phone')
+      .optional()
+      .matches(/^\d{10}$/)
+      .withMessage('Phone must be 10 digits')
+  ),
+  asyncHandler(createUser)
+);
+
+// Controller is clean
+export const createUser = async (req, res) => {
+  // All validation done - just use the data
+  // ... create user logic
+};
+```
+
+### ❌ Manual Data Transformation After Validation
+
+**WRONG:** Validate then manually transform
+
+```javascript
+// ❌ WRONG - Manual transformation after validation
+export const createUser = async (req, res) => {
+  validateEmail(req.body.email, 'email', req.id);
+  
+  // Manual transformation - should use express-validator
+  const normalizedEmail = req.body.email.toLowerCase().trim();
+  
+  // ... rest
+};
+```
+
+**CORRECT:** Use express-validator transformation
+
+```javascript
+// ✅ CORRECT - Use express-validator transformation
+router.post('/users',
+  createValidationChain(
+    body('email')
+      .isEmail()
+      .withMessage('Invalid email format')
+      .normalizeEmail()  // Auto-normalizes email
+      .trim()            // Auto-trims whitespace
+  ),
+  asyncHandler(createUser)
+);
+
+// Controller receives already-transformed data
+export const createUser = async (req, res) => {
+  const { email } = req.body; // Already normalized and trimmed
+  // ... rest
+};
+```
+
+## Common Validation Scenarios
+
+### Scenario 1: UUID Path Parameter (Simple Validator)
+
+```javascript
+export const getUser = async (req, res) => {
+  validateUUID(req.params.id, 'id', req.id);
+  // ... rest
+};
+```
+
+### Scenario 2: Email and Password (Simple Validator)
+
+```javascript
+export const login = async (req, res) => {
+  validateRequired({ email: req.body.email, password: req.body.password }, req.id);
+  validateEmail(req.body.email, 'email', req.id);
+  // ... rest
+};
+```
+
+### Scenario 3: Pagination (Simple Validator)
+
+```javascript
+export const getUsers = async (req, res) => {
+  const page = validateNumber(req.query.page, 'page', { min: 1, required: false }, req.id) || 1;
+  const limit = validateNumber(req.query.limit, 'limit', { min: 1, max: 100, required: false }, req.id) || 10;
+  // ... rest
+};
+```
+
+### Scenario 4: Optional Fields (Simple Validator)
+
+```javascript
+export const updateUser = async (req, res) => {
+  // Only validate if provided
+  if (req.body.email) {
+    validateEmail(req.body.email, 'email', req.id);
+  }
+  if (req.body.age) {
+    validateNumber(req.body.age, 'age', { min: 0, max: 150 }, req.id);
+  }
+  // ... rest
+};
+```
+
+### Scenario 5: Complex Password Validation (Express-Validator)
+
+```javascript
+// ✅ Use express-validator for multiple password rules
+router.post('/users/register',
+  createValidationChain(
+    body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters')
+      .matches(/[A-Z]/)
+      .withMessage('Password must contain uppercase letter')
+      .matches(/[a-z]/)
+      .withMessage('Password must contain lowercase letter')
+      .matches(/[0-9]/)
+      .withMessage('Password must contain number')
+      .matches(/[!@#$%^&*]/)
+      .withMessage('Password must contain special character')
+  ),
+  asyncHandler(register)
+);
+```
+
+### Scenario 6: Cross-Field Validation (Express-Validator)
+
+```javascript
+// ✅ Use express-validator for cross-field validation
+router.post('/users/register',
+  createValidationChain(
+    body('password').isLength({ min: 8 }),
+    body('confirmPassword')
+      .custom((value, { req }) => {
+        if (value !== req.body.password) {
+          throw new Error('Passwords do not match');
+        }
+        return true;
+      })
+  ),
+  asyncHandler(register)
+);
+```
+
+## Integration with Business Helpers
+
+Validation often works with business helpers for pagination, filtering, and sorting:
+
+```javascript
+import { validateNumber } from '../../utils/validators.js';
+import { buildPaginationQuery } from '../../utils/businessHelpers.js';
+
+export const getUsers = async (req, res) => {
+  // Option 1: Manual validation
+  const page = validateNumber(req.query.page, 'page', { min: 1, required: false }, req.id) || 1;
+  const limit = validateNumber(req.query.limit, 'limit', { min: 1, max: 100, required: false }, req.id) || 10;
+  
+  // Option 2: Use business helper (includes validation)
+  const { page, limit, offset } = buildPaginationQuery(req.query, { defaultLimit: 10, maxLimit: 100 }, req.id);
+  
+  // ... rest
+};
+```
+
+## Related Rules
+
+- **error-handling.mdc** - Error handling patterns (ValidationError)
+- **api-responses.mdc** - API response format
+- **module-structure.mdc** - Module creation guidelines
+- **coding-standards.mdc** - General coding standards

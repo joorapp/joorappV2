@@ -1,0 +1,20 @@
+---
+description: Frontend rules index - always read this first
+globs: ["ReactFE/**/*"]
+alwaysApply: true
+priority: 1
+---
+# Frontend Development Rules
+
+## Required Reading
+Before writing any frontend code, follow these rules:
+1. **component-structure.mdc** - React component patterns
+2. **coding-standards.mdc** - General coding standards
+3. **todo.mdc** - General todo and task management
+
+## Quick Reference
+- Use functional components with hooks
+- Follow component-based architecture
+- Use proper state management
+- Follow naming conventions
+- Keep components small and focused

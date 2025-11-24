@@ -1,0 +1,35 @@
+---
+description: Master backend rules - ALWAYS apply these critical rules
+globs: ["nodeBE/**/*"]
+alwaysApply: true
+priority: 1
+---
+# Master Backend Rules
+
+## Critical Rules (MUST FOLLOW)
+1. **NO console.log** - Use Winston logger only: `import { logInfo } from '../utils/logger.js'`
+2. **ES6 modules only** - NO require() or module.exports
+3. **Module-based architecture** - All features in modules/
+4. **Environment variables** - NO hardcoded fallbacks (|| 'default')
+5. **Request ID** - Always include `requestId: req.id` in all logs
+6. **Import order** - Use dynamic imports for models in middleware/services imported by `app.js` (see architecture.mdc)
+
+## Quick Commands
+- Import logger: `import { logInfo, logError } from '../utils/logger.js'`
+- Request logger: `req.logger.info('Message', { requestId: req.id })` (preferred in route handlers)
+- Module logger: `const logger = createModuleLogger('moduleName')`
+- Request context: Include `requestId: req.id` in all logs
+- Error logging: `logError('message', error, { requestId: req.id })`
+
+## Architecture Pattern
+- All modules in: `src/modules/{moduleName}/`
+- Each module: routes (default export), controller (named exports), docs (named export), index.js
+- Routes: `/api/v2/{module}` for docs, `/api/v2/{module}/{action}` for endpoints
+- Request logger: `req.logger` is automatically available in all route handlers
+
+## Prohibited
+- ❌ console.log, console.error, console.warn
+- ❌ require() or module.exports
+- ❌ Hardcoded values (use env vars)
+- ❌ Fallback values with || for required config
+- ❌ req.connection (use req.socket)

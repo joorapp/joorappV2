@@ -30,7 +30,7 @@ export const requestLogger = (req, res, next) => {
     method: req.method,
     url: req.originalUrl,
     userAgent: req.get('User-Agent'),
-    ip: req.ip || req.connection.remoteAddress,
+    ip: req.ip || req.socket?.remoteAddress,
     headers: {
       'content-type': req.get('Content-Type'),
       'authorization': req.get('Authorization') ? '[REDACTED]' : undefined
@@ -56,7 +56,7 @@ export const requestLogger = (req, res, next) => {
       requestId: req.id,
       statusCode: res.statusCode,
       duration: `${duration}ms`,
-      ip: req.ip || req.connection.remoteAddress,
+      ip: req.ip || req.socket?.remoteAddress,
       userAgent: req.get('User-Agent'),
       userId: req.user?.id || 'anonymous'
     });

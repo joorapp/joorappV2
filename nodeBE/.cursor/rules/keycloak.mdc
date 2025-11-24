@@ -1,0 +1,133 @@
+---
+description: Keycloak integration patterns
+globs: ["nodeBE/src/**/*.js"]
+alwaysApply: true
+---
+
+# Keycloak Rules
+
+## Keycloak Service
+
+- Keycloak operations in `src/services/keycloakService.js` ✅ Implemented
+- Use `@keycloak/keycloak-admin-client` for admin operations
+- All Keycloak API calls must be logged using Winston
+- Handle Keycloak errors gracefully with proper error messages
+- Available functions: `getPublicKey()`, `verifyToken()`, `getUserFromToken()`, `getAdminClient()`, `loginUser()`, `refreshToken()`, `logoutUser()`
+
+## Keycloak Configuration
+
+- Use environment variables: `KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`
+- NO hardcoded Keycloak URLs or credentials
+- Validate required environment variables on service initialization
+
+## Authentication
+
+- JWT tokens from Keycloak must be verified
+- Use Keycloak public keys for token verification
+- Token verification in authentication middleware
+- Store user information from token in `req.user`
+
+## Authentication Middleware
+
+- Create authentication middleware in `src/middleware/authMiddleware.js`
+- Verify JWT tokens using Keycloak public keys
+- Extract user information from token claims
+- Attach user to request: `req.user = { id, email, roles, ... }`
+- Use Winston logger for authentication events
+
+## Keycloak Service Pattern
+
+```javascript
+import KcAdminClient from '@keycloak/keycloak-admin-client';
+import { createModuleLogger, logError } from '../utils/logger.js';
+
+const logger = createModuleLogger('keycloak');
+
+const kcAdminClient = new KcAdminClient({
+  baseUrl: process.env.KEYCLOAK_URL,
+  realmName: process.env.KEYCLOAK_REALM
+});
+
+// Authenticate admin client
+await kcAdminClient.auth({
+  grantType: 'client_credentials',
+  clientId: process.env.KEYCLOAK_CLIENT_ID,
+  clientSecret: process.env.KEYCLOAK_CLIENT_SECRET
+});
+```
+
+## Token Verification
+
+- Verify JWT tokens using Keycloak's public keys
+- Use `jwk-to-pem` or `jsonwebtoken` for token verification
+- Validate token expiration, issuer, and audience
+- Extract user claims from token payload
+
+## User Management
+
+- All user creation/updates should sync with Keycloak
+- Use Keycloak admin client for user operations
+- Log all user management operations
+- Handle Keycloak API errors appropriately
+
+## Security Logging
+
+- Log all authentication attempts (success and failure)
+- Log authorization failures
+- Use `logSecurity()` helper for security events
+- Include requestId, userId, IP address in security logs
+
+## Error Handling
+
+- Handle Keycloak connection errors (503 Service Unavailable)
+- Handle authentication failures (401 Unauthorized)
+- Handle authorization failures (403 Forbidden)
+- Log all Keycloak errors with full context
+
+## Token Refresh
+
+- Use `refreshToken(refreshToken)` function in `keycloakService.js`
+- Calls Keycloak token endpoint with `grant_type=refresh_token`
+- Extracts `session_state` from new access token (preserves session continuity)
+- Returns new access_token and refresh_token
+- Handles expired/invalid refresh tokens with appropriate error codes
+
+**Pattern:**
+```javascript
+import { refreshToken } from '../services/keycloakService.js';
+
+const refreshResponse = await refreshToken(refreshToken);
+if (refreshResponse.success) {
+  // Use refreshResponse.data.access_token and refreshResponse.data.refresh_token
+  // session_state is preserved in refreshResponse.data.session_state
+}
+```
+
+## User Logout
+
+- Use `logoutUser(refreshToken)` function in `keycloakService.js`
+- Calls Keycloak logout endpoint to invalidate session
+- Handles Keycloak 204 (No Content) response for successful logout
+- Should be followed by UserCompanyContext cleanup in controller
+
+**Pattern:**
+```javascript
+import { logoutUser } from '../services/keycloakService.js';
+
+const logoutResponse = await logoutUser(refreshToken);
+if (logoutResponse.success) {
+  // Session invalidated in Keycloak
+  // Proceed with local cleanup (UserCompanyContext, etc.)
+}
+```
+
+## Best Practices
+
+- Cache Keycloak public keys to reduce API calls
+- ✅ Token refresh mechanism implemented (`refreshToken()` function)
+- ✅ Logout mechanism implemented (`logoutUser()` function)
+- Use role-based access control (RBAC) from Keycloak
+- Validate user roles before sensitive operations
+- Monitor Keycloak service health
+- Preserve session_state when refreshing tokens (extract from new access token)
+- Clean up UserCompanyContext on logout

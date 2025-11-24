@@ -1,0 +1,38 @@
+---
+description: Backend rules index - always read this first
+globs: ["nodeBE/**/*"]
+alwaysApply: true
+priority: 1
+---
+# Backend Development Rules
+
+## Required Reading
+Before writing any backend code, follow these rules:
+1. **architecture.mdc** - Module structure, patterns, and **IMPORT ORDER RULES** (CRITICAL - prevents server crashes)
+2. **logging.mdc** - Winston logging (NO console.log)
+3. **error-handling.mdc** - Error handling patterns, **MIDDLEWARE VS CONTROLLER ERROR PATTERNS** (CRITICAL - use `next(error)` in middleware, `throw` in controllers)
+4. **module-structure.mdc** - Module creation guidelines, **DOCUMENTATION UPDATE REQUIREMENTS**, and **STANDARD DOCUMENTATION FORMAT** (CRITICAL - when to update docs and standard format)
+5. **authentication.mdc** - **Authentication middleware application rules** (CRITICAL - when to apply authMiddleware)
+6. **api-responses.mdc** - **API response standardization rules** (CRITICAL - standardized response format with meta field)
+7. **validation.mdc** - **Request validation patterns and utilities** (CRITICAL - when to use simple validators vs express-validator)
+8. **security.mdc** - Security best practices
+9. **coding-standards.mdc** - General coding standards
+10. **database.mdc** - Database connection and Sequelize patterns
+11. **model-creation.mdc** - Model creation guidelines and AuditableEntity integration
+12. **keycloak.mdc** - Keycloak integration patterns
+
+**⚠️ IMPORTANT**: Before creating middleware or services, read the "Import Order and Database Access" section in `architecture.mdc` to prevent server startup crashes.
+
+## Quick Reference
+- Use ES6 modules: `import/export`
+- Use Winston logger: `import { logInfo } from '../utils/logger.js'`
+- Module structure: routes, controller, docs, index.js
+- All routes under `/api/v2/{module}`
+- NO console.log, NO require(), NO hardcoded fallbacks
+
+## Critical Rules (MUST FOLLOW)
+1. NO console.log - Use Winston logger only
+2. ES6 modules only - NO require()
+3. Module-based architecture - All features in modules/
+4. Environment variables - NO hardcoded fallbacks
+5. Request ID - Always include in logs

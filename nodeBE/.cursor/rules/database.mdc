@@ -1,0 +1,150 @@
+---
+description: Database connection and Sequelize patterns
+globs: ["nodeBE/src/**/*.js"]
+alwaysApply: true
+---
+
+# Database Rules
+
+## Sequelize Connection
+
+- Use Sequelize for PostgreSQL database operations
+- Connection configuration in `src/config/database.js`
+- Use environment variables: `DB_URL`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_PORT`
+- NO hardcoded connection strings or fallback values
+- Validate required environment variables on module load
+
+## Database Configuration
+
+- Import from `src/config/database.js`: `import { sequelize, testConnection } from '../config/database.js'`
+- Use `sequelize` instance for all database operations
+- Use `testConnection()` for health checks
+- Use `initializeDatabase()` on application startup
+- Use `closeDatabase()` on application shutdown
+
+## Models
+
+- Models should be placed in `src/models/` directory
+- Use Sequelize model definitions with proper validation
+- Document model relationships in comments
+- Use ES6 modules: `export default ModelName`
+
+**⚠️ IMPORTANT: Model Creation Rules**
+- **ALWAYS read `model-creation.mdc`** before creating any new model
+- All models (except reference tables) must follow AuditableEntity pattern
+- See `model-creation.mdc` for complete guidelines, templates, and checklist
+
+## Model Structure
+
+```javascript
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/database.js';
+
+const ModelName = sequelize.define('ModelName', {
+  // Define fields with DataTypes
+  // REQUIRED: Always include explicit 'field' property mapping to database column name
+  fieldName: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    field: 'field_name',  // REQUIRED: Explicit database column name
+    validate: {
+      notEmpty: true
+    },
+    comment: 'Description of the field'
+  }
+}, {
+  tableName: 'table_name',
+  timestamps: true
+});
+
+export default ModelName;
+```
+
+### Field Mapping Requirements
+
+- **ALWAYS include explicit `field` property** for all model fields
+- Map camelCase attribute names to snake_case database column names
+- Example: `createdDate` → `field: 'created_date'`
+- Example: `keycloakId` → `field: 'keycloak_id'`
+- Even if attribute name matches column name, include `field` for consistency
+- Example: `name` → `field: 'name'` (explicit is better than implicit)
+
+**Why explicit field mapping?**
+- Makes database column names clear and explicit
+- Doesn't rely on Sequelize's automatic conversion
+- Improves code readability and maintainability
+- Consistent with audit fields pattern
+- Easier to understand actual database schema
+
+## Migrations
+
+- Use sequelize-cli for migrations (when implemented)
+- Migrations in `src/migrations/` directory
+- Always create both `up` and `down` migrations
+- Test migrations in development before production
+
+## Database Logging
+
+- Use Winston logger for all database operations
+- Use module logger: `const logger = createModuleLogger('database')`
+- Log connection attempts, queries (in debug mode), and errors
+- Include requestId in logs when available
+
+## Error Handling
+
+- Handle database connection errors gracefully
+- Use try-catch blocks for all database operations
+- Log database errors with full context
+- Return appropriate HTTP status codes (503 for connection failures)
+
+## Connection Pooling
+
+- Sequelize connection pool is configured in `database.js`
+- Default pool settings: max 5, min 0, acquire 30000ms, idle 10000ms
+- Adjust pool settings based on application load
+
+## Optimistic Locking
+
+- All auditable models use optimistic locking via `version` field
+- Implemented in `src/models/base/AuditableEntity.js` using `applyOptimisticLocking()`
+- Version is automatically incremented on each update via `beforeUpdate` hook
+
+### Implementation Details
+
+**Current Approach: Pre-check before save**
+- Version is checked via `findByPk()` before calling `save()`
+- Uses original `save()` method to ensure audit fields (set by hooks) are included
+- If version mismatch detected, throws `OptimisticLockError`
+
+**⚠️ RACE CONDITION LIMITATION:**
+The current implementation has a small race condition window:
+1. Version is checked via `findByPk()`
+2. If version matches, `save()` is called
+3. **Between steps 1 and 2, another process could update the record**
+
+This means in rare high-concurrency scenarios, two processes could both pass the version check and both update the record. For most applications, this is acceptable.
+
+**If you encounter issues with concurrent updates:**
+- Use database-level row locking (`SELECT FOR UPDATE` in transactions)
+- Implement version check in WHERE clause using raw SQL
+- Use Sequelize transactions with appropriate isolation levels
+- Consider using pessimistic locking for critical operations
+
+**Why not use `Model.update()` with version in WHERE clause?**
+`Model.update()` filters out audit fields set by hooks, even when explicitly included in `updateData`. Using original `save()` ensures all changed fields (including hook-set audit fields) are included in the UPDATE query.
+
+### Error Handling
+
+When optimistic lock conflict occurs:
+- `OptimisticLockError` is thrown with message: "Record was modified by another process. Expected version: X, Current version: Y. Please reload the record and try again."
+- Application should catch this error and prompt user to reload the record
+- User should reload the record and retry the operation
+
+## Best Practices
+
+- Always use transactions for multi-step operations
+- Use parameterized queries (Sequelize handles this automatically)
+- Validate data before database operations
+- Use indexes for frequently queried fields
+- Monitor connection pool usage
+- Handle `OptimisticLockError` gracefully in UI/API layer

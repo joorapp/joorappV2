@@ -1,0 +1,49 @@
+---
+description: General todo and task management guidelines
+globs: ["ReactFE/**/*"]
+alwaysApply: true
+---
+# Todo and Task Management Rules
+
+## Code Organization
+- Break down large features into smaller, manageable tasks
+- Create TODO comments for future improvements
+- Use consistent TODO format: `// TODO: [description]`
+- Include context in TODOs: `// TODO: Add error handling for API failures`
+
+## Task Prioritization
+- High Priority: Critical bugs, security issues, blocking features
+- Medium Priority: Performance improvements, UX enhancements
+- Low Priority: Code refactoring, documentation updates
+
+## TODO Comment Format
+```javascript
+// TODO: Add loading state for user profile
+// TODO: Implement error boundary for this component
+// TODO: Add unit tests for this function
+// TODO: Optimize re-renders with useMemo
+```
+
+## Code Review Checklist
+- [ ] All TODOs have clear descriptions
+- [ ] No console.log in production code
+- [ ] Components are properly typed (TypeScript or PropTypes)
+- [ ] Error handling is implemented
+- [ ] Loading states are handled
+- [ ] Accessibility considerations (a11y)
+
+## Feature Development
+1. Plan the feature structure
+2. Create component skeleton
+3. Implement core functionality
+4. Add error handling
+5. Add loading states
+6. Write tests
+7. Document the component
+
+## Best Practices
+- Keep components focused on single responsibility
+- Extract reusable logic into custom hooks
+- Use proper error boundaries
+- Implement proper loading and error states
+- Follow accessibility guidelines

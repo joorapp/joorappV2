@@ -1,0 +1,44 @@
+---
+description: Security best practices and authentication
+globs: ["nodeBE/**/*.js", "nodeBE/**/middleware/*.js"]
+alwaysApply: true
+---
+# Security Rules
+
+## Authentication
+- Use Keycloak for authentication
+- Protect routes with authentication middleware
+- Verify JWT tokens on protected routes
+- Log all authentication attempts (success/failure)
+
+## Input Validation
+- Validate ALL inputs using express-validator
+- Sanitize HTML content using sanitize-html
+- Never trust user input
+- Validate data types, ranges, formats
+
+## Security Logging
+- Log all security events: `logSecurity('event', { context })`
+- Include: requestId, userId, ip, userAgent
+- Track: auth failures, authorization failures, suspicious activity
+
+## Sensitive Data
+- Never log passwords, tokens, or sensitive data
+- Redact authorization headers in logs: `[REDACTED]`
+- Use environment variables for secrets
+- Never commit .env files
+
+## Request Context
+- ALWAYS generate request ID: `req.id = 'req-${Date.now()}-${random}'`
+- Include requestId in all logs
+- Track user context: userId, ip, userAgent
+
+## CORS Configuration
+- Configure CORS properly for production
+- Use environment variables for allowed origins
+- Never use wildcard (*) in production
+
+## Rate Limiting
+- Implement rate limiting on all public endpoints
+- Use express-rate-limit middleware
+- Configure different limits for different endpoints
