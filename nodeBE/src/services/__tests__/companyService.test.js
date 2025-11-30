@@ -1,0 +1,662 @@
+/**
+ * @author Bhavesh Venugopal
+ * Company Service Tests
+ * Tests for companyService business logic layer
+ * Uses mocked repositories to test business logic, error handling, and DTO transformation
+ */
+
+import { jest, describe, it, expect, beforeEach, beforeAll } from '@jest/globals';
+import { v4 as uuidv4 } from 'uuid';
+import { ConflictError, NotFoundError } from '../../utils/errors.js';
+import { createMockCompany } from '../../../__tests__/mocks/models/CompanyMock.js';
+import { createMockCompanyUser } from '../../../__tests__/mocks/models/CompanyUserMock.js';
+import { createMockRole } from '../../../__tests__/mocks/models/CompanyRoleMock.js';
+import { createMockUser } from '../../../__tests__/mocks/models/UserMock.js';
+import { createMockContext } from '../../../__tests__/mocks/contextMock.js';
+
+// Mock the repositories using unstable_mockModule for ES modules
+jest.unstable_mockModule('../../repositories/companyRepository.js', () => ({
+  companyRepository: {
+    findOne: jest.fn(),
+    create: jest.fn(),
+    findByIdOrFail: jest.fn(),
+    findByIdIncludingDeletedOrFail: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    restore: jest.fn(),
+    findAndCountAll: jest.fn(),
+    searchCompanies: jest.fn()
+  }
+}));
+
+jest.unstable_mockModule('../../repositories/companyUserRepository.js', () => ({
+  companyUserRepository: {
+    findCompanyUsers: jest.fn()
+  }
+}));
+
+// Import after mocking (must use await import for ES modules)
+let companyService;
+let companyRepository;
+let companyUserRepository;
+
+beforeAll(async () => {
+  companyService = await import('../companyService.js');
+  const companyRepoModule = await import('../../repositories/companyRepository.js');
+  companyRepository = companyRepoModule.companyRepository;
+  const companyUserRepoModule = await import('../../repositories/companyUserRepository.js');
+  companyUserRepository = companyUserRepoModule.companyUserRepository;
+});
+
+describe('Company Service', () => {
+  let mockContext;
+  let mockCompany;
+  let mockCreatedCompany;
+  let mockUpdatedCompany;
+  let mockDeletedCompany;
+
+  beforeEach(() => {
+    // Reset all mocks
+    jest.clearAllMocks();
+    
+    // Ensure services and repositories are available
+    if (!companyService || !companyRepository || !companyUserRepository) {
+      throw new Error('companyService, companyRepository, or companyUserRepository not initialized');
+    }
+
+    // Setup test data using shared mocks
+    mockContext = createMockContext();
+    mockCompany = createMockCompany({
+      name: 'Acme Corp',
+      description: 'Leading technology company',
+      createdUserId: mockContext.userId,
+      updatedUserId: mockContext.userId
+    });
+
+    mockCreatedCompany = createMockCompany({
+      name: 'Acme Corp',
+      description: 'Leading technology company',
+      createdUserId: mockContext.userId
+    });
+
+    mockUpdatedCompany = createMockCompany({
+      ...mockCompany,
+      name: 'Updated Acme Corp',
+      version: 2
+    });
+
+    mockDeletedCompany = createMockCompany({
+      ...mockCompany,
+      isDeleted: true,
+      deletedDate: new Date(),
+      deletedUserId: mockContext.userId
+    });
+  });
+
+  describe('createCompany', () => {
+    it('should create company successfully when name is unique', async () => {
+      // Arrange
+      const companyData = {
+        name: 'New Company',
+        description: 'New company description',
+        isActive: true
+      };
+      
+      companyRepository.findOne.mockResolvedValue(null);
+      companyRepository.create.mockResolvedValue(mockCreatedCompany);
+
+      // Act
+      const result = await companyService.createCompany(companyData, mockContext);
+
+      // Assert
+      expect(companyRepository.findOne).toHaveBeenCalledWith({ name: 'New Company' });
+      expect(companyRepository.create).toHaveBeenCalledWith(
+        {
+          name: 'New Company',
+          description: 'New company description',
+          isActive: true
+        },
+        mockContext
+      );
+      
+      // Verify DTO transformation
+      expect(result).toEqual({
+        id: mockCreatedCompany.id,
+        name: mockCreatedCompany.name,
+        description: mockCreatedCompany.description,
+        isActive: mockCreatedCompany.isActive,
+        createdDate: mockCreatedCompany.createdDate,
+        createdUserId: mockCreatedCompany.createdUserId
+      });
+      expect(result).not.toHaveProperty('updatedDate');
+      expect(result).not.toHaveProperty('version');
+    });
+
+    it('should throw ConflictError when company name already exists', async () => {
+      // Arrange
+      const companyData = {
+        name: 'Acme Corp',
+        description: 'Test company'
+      };
+      
+      companyRepository.findOne.mockResolvedValue(mockCompany);
+
+      // Act & Assert
+      await expect(
+        companyService.createCompany(companyData, mockContext)
+      ).rejects.toThrow(ConflictError);
+      
+      expect(companyRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should use default isActive=true when not provided', async () => {
+      // Arrange
+      const companyData = {
+        name: 'New Company'
+      };
+      
+      companyRepository.findOne.mockResolvedValue(null);
+      companyRepository.create.mockResolvedValue(mockCreatedCompany);
+
+      // Act
+      await companyService.createCompany(companyData, mockContext);
+
+      // Assert
+      expect(companyRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ isActive: true }),
+        mockContext
+      );
+    });
+
+    it('should set description to null when not provided', async () => {
+      // Arrange
+      const companyData = {
+        name: 'New Company',
+        isActive: true
+      };
+      
+      companyRepository.findOne.mockResolvedValue(null);
+      companyRepository.create.mockResolvedValue(mockCreatedCompany);
+
+      // Act
+      await companyService.createCompany(companyData, mockContext);
+
+      // Assert
+      expect(companyRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ description: null }),
+        mockContext
+      );
+    });
+  });
+
+  describe('getCompanyById', () => {
+    it('should return company DTO when company exists', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      companyRepository.findByIdOrFail.mockResolvedValue(mockCompany);
+
+      // Act
+      const result = await companyService.getCompanyById(companyId);
+
+      // Assert
+      expect(companyRepository.findByIdOrFail).toHaveBeenCalledWith(companyId);
+      expect(result).toEqual({
+        id: mockCompany.id,
+        name: mockCompany.name,
+        description: mockCompany.description,
+        isActive: mockCompany.isActive,
+        createdDate: mockCompany.createdDate,
+        createdUserId: mockCompany.createdUserId,
+        updatedDate: mockCompany.updatedDate,
+        updatedUserId: mockCompany.updatedUserId
+      });
+    });
+
+    it('should throw NotFoundError when company does not exist', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      companyRepository.findByIdOrFail.mockRejectedValue(
+        new NotFoundError('Company', companyId)
+      );
+
+      // Act & Assert
+      await expect(
+        companyService.getCompanyById(companyId)
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('getCompanyByIdIncludingDeleted', () => {
+    it('should return company DTO including deleted fields', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      companyRepository.findByIdIncludingDeletedOrFail.mockResolvedValue(mockDeletedCompany);
+
+      // Act
+      const result = await companyService.getCompanyByIdIncludingDeleted(companyId);
+
+      // Assert
+      expect(companyRepository.findByIdIncludingDeletedOrFail).toHaveBeenCalledWith(companyId);
+      expect(result).toEqual({
+        id: mockDeletedCompany.id,
+        name: mockDeletedCompany.name,
+        description: mockDeletedCompany.description,
+        isActive: mockDeletedCompany.isActive,
+        isDeleted: mockDeletedCompany.isDeleted,
+        createdDate: mockDeletedCompany.createdDate,
+        createdUserId: mockDeletedCompany.createdUserId,
+        updatedDate: mockDeletedCompany.updatedDate,
+        updatedUserId: mockDeletedCompany.updatedUserId,
+        deletedDate: mockDeletedCompany.deletedDate,
+        deletedUserId: mockDeletedCompany.deletedUserId
+      });
+    });
+
+    it('should throw NotFoundError when company does not exist', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      companyRepository.findByIdIncludingDeletedOrFail.mockRejectedValue(
+        new NotFoundError('Company', companyId)
+      );
+
+      // Act & Assert
+      await expect(
+        companyService.getCompanyByIdIncludingDeleted(companyId)
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('updateCompany', () => {
+    it('should update company successfully when name is unique', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      const updateData = {
+        name: 'Updated Company',
+        description: 'Updated description'
+      };
+      
+      companyRepository.findByIdOrFail.mockResolvedValue(mockCompany);
+      companyRepository.findOne.mockResolvedValue(null);
+      companyRepository.update.mockResolvedValue(mockUpdatedCompany);
+
+      // Act
+      const result = await companyService.updateCompany(companyId, updateData, mockContext);
+
+      // Assert
+      expect(companyRepository.findByIdOrFail).toHaveBeenCalledWith(companyId);
+      expect(companyRepository.findOne).toHaveBeenCalledWith({ name: 'Updated Company' });
+      expect(companyRepository.update).toHaveBeenCalledWith(
+        companyId,
+        {
+          name: 'Updated Company',
+          description: 'Updated description'
+        },
+        mockContext
+      );
+      
+      expect(result).toEqual({
+        id: mockUpdatedCompany.id,
+        name: mockUpdatedCompany.name,
+        description: mockUpdatedCompany.description,
+        isActive: mockUpdatedCompany.isActive,
+        createdDate: mockUpdatedCompany.createdDate,
+        createdUserId: mockUpdatedCompany.createdUserId,
+        updatedDate: mockUpdatedCompany.updatedDate,
+        updatedUserId: mockUpdatedCompany.updatedUserId
+      });
+    });
+
+    it('should throw NotFoundError when company does not exist', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      companyRepository.findByIdOrFail.mockRejectedValue(
+        new NotFoundError('Company', companyId)
+      );
+
+      // Act & Assert
+      await expect(
+        companyService.updateCompany(companyId, { name: 'New Name' }, mockContext)
+      ).rejects.toThrow(NotFoundError);
+      
+      expect(companyRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw ConflictError when new name already exists', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      const existingCompany = { ...mockCompany, id: uuidv4() };
+      
+      companyRepository.findByIdOrFail.mockResolvedValue(mockCompany);
+      companyRepository.findOne.mockResolvedValue(existingCompany);
+
+      // Act & Assert
+      await expect(
+        companyService.updateCompany(companyId, { name: 'Existing Name' }, mockContext)
+      ).rejects.toThrow(ConflictError);
+      
+      expect(companyRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should not check uniqueness when name is not changed', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      const updateData = { description: 'New description' };
+      
+      companyRepository.findByIdOrFail.mockResolvedValue(mockCompany);
+      companyRepository.update.mockResolvedValue(mockUpdatedCompany);
+
+      // Act
+      await companyService.updateCompany(companyId, updateData, mockContext);
+
+      // Assert
+      expect(companyRepository.findOne).not.toHaveBeenCalled();
+      expect(companyRepository.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('listCompanies', () => {
+    it('should return paginated companies with search', async () => {
+      // Arrange
+      const companies = [mockCompany, { ...mockCompany, id: uuidv4(), name: 'Beta Corp' }];
+      const mockSearchResult = {
+        rows: companies,
+        count: 2
+      };
+      
+      companyRepository.searchCompanies.mockResolvedValue(mockSearchResult);
+
+      // Act
+      const result = await companyService.listCompanies(
+        { search: 'acme' },
+        { limit: 10, offset: 0 },
+        [['name', 'ASC']]
+      );
+
+      // Assert
+      expect(companyRepository.searchCompanies).toHaveBeenCalledWith(
+        'acme',
+        { limit: 10, offset: 0 },
+        [['name', 'ASC']]
+      );
+      
+      expect(result.companies).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.companies[0]).toEqual({
+        id: mockCompany.id,
+        name: mockCompany.name,
+        description: mockCompany.description,
+        isActive: mockCompany.isActive,
+        createdDate: mockCompany.createdDate
+      });
+    });
+
+    it('should filter by isActive when search is provided', async () => {
+      // Arrange
+      const companies = [
+        mockCompany,
+        { ...mockCompany, id: uuidv4(), name: 'Beta Corp', isActive: false }
+      ];
+      const mockSearchResult = {
+        rows: companies,
+        count: 2
+      };
+      
+      companyRepository.searchCompanies.mockResolvedValue(mockSearchResult);
+
+      // Act
+      const result = await companyService.listCompanies(
+        { search: 'corp', isActive: true },
+        { limit: 10, offset: 0 },
+        []
+      );
+
+      // Assert
+      expect(result.companies).toHaveLength(1);
+      expect(result.companies[0].isActive).toBe(true);
+      expect(result.total).toBe(1);
+    });
+
+    it('should use standard findAndCountAll when search is not provided', async () => {
+      // Arrange
+      const mockResult = { rows: [mockCompany], count: 1 };
+      companyRepository.findAndCountAll.mockResolvedValue(mockResult);
+
+      // Act
+      const result = await companyService.listCompanies(
+        { isActive: true },
+        { limit: 10, offset: 0 },
+        [['name', 'ASC']]
+      );
+
+      // Assert
+      expect(companyRepository.findAndCountAll).toHaveBeenCalledWith(
+        { isActive: true },
+        {
+          limit: 10,
+          offset: 0,
+          order: [['name', 'ASC']]
+        }
+      );
+      
+      expect(result.companies).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+
+    it('should use default sort when not provided', async () => {
+      // Arrange
+      const mockResult = { rows: [mockCompany], count: 1 };
+      companyRepository.findAndCountAll.mockResolvedValue(mockResult);
+
+      // Act
+      await companyService.listCompanies({}, {}, []);
+
+      // Assert
+      expect(companyRepository.findAndCountAll).toHaveBeenCalledWith(
+        {},
+        expect.objectContaining({
+          order: [['name', 'ASC']]
+        })
+      );
+    });
+  });
+
+  describe('deleteCompany', () => {
+    it('should delete company successfully', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      companyRepository.delete.mockResolvedValue(undefined);
+
+      // Act
+      await companyService.deleteCompany(companyId, mockContext);
+
+      // Assert
+      expect(companyRepository.delete).toHaveBeenCalledWith(companyId, mockContext);
+    });
+
+    it('should throw NotFoundError when company does not exist', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      companyRepository.delete.mockRejectedValue(
+        new NotFoundError('Company', companyId)
+      );
+
+      // Act & Assert
+      await expect(
+        companyService.deleteCompany(companyId, mockContext)
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('restoreCompany', () => {
+    it('should restore company successfully', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      const restoredCompany = { ...mockDeletedCompany, isDeleted: false };
+      companyRepository.restore.mockResolvedValue(restoredCompany);
+
+      // Act
+      const result = await companyService.restoreCompany(companyId, mockContext);
+
+      // Assert
+      expect(companyRepository.restore).toHaveBeenCalledWith(companyId, mockContext);
+      expect(result).toEqual({
+        id: restoredCompany.id,
+        name: restoredCompany.name,
+        description: restoredCompany.description,
+        isActive: restoredCompany.isActive,
+        createdDate: restoredCompany.createdDate,
+        updatedDate: restoredCompany.updatedDate
+      });
+    });
+
+    it('should throw NotFoundError when company does not exist', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      companyRepository.restore.mockRejectedValue(
+        new NotFoundError('Company', companyId)
+      );
+
+      // Act & Assert
+      await expect(
+        companyService.restoreCompany(companyId, mockContext)
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('getCompanyUsers', () => {
+    it('should return company users with DTO transformation', async () => {
+      // Arrange
+      const companyId = mockCompany.id;
+      const testUser = createMockUser({
+        email: 'user@example.com',
+        firstName: 'John',
+        lastName: 'Doe'
+      });
+      const testRole = createMockRole({
+        name: 'Admin',
+        code: 'ADMIN'
+      });
+      const mockCompanyUser = createMockCompanyUser({
+        userId: testUser.id,
+        companyId: companyId,
+        companyRoleId: testRole.id,
+        user: testUser,
+        role: testRole
+      });
+      
+      companyUserRepository.findCompanyUsers.mockResolvedValue([mockCompanyUser]);
+
+      // Act
+      const result = await companyService.getCompanyUsers(
+        companyId,
+        { isActive: true },
+        { limit: 10, offset: 0 }
+      );
+
+      // Assert
+      expect(companyUserRepository.findCompanyUsers).toHaveBeenCalledWith(companyId, {
+        limit: 10,
+        offset: 0
+      });
+      
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        id: mockCompanyUser.id,
+        userId: mockCompanyUser.userId,
+        companyId: mockCompanyUser.companyId,
+        roleId: mockCompanyUser.companyRoleId,
+        isActive: mockCompanyUser.isActive,
+        user: {
+          id: testUser.id,
+          email: testUser.email,
+          firstName: testUser.firstName,
+          lastName: testUser.lastName
+        },
+        role: {
+          id: testRole.id,
+          name: testRole.name,
+          code: testRole.code
+        }
+      });
+    });
+
+    it('should filter by isActive when provided', async () => {
+      // Arrange
+      const companyId = mockCompany.id;
+      const activeUser = createMockCompanyUser({
+        companyId: companyId,
+        isActive: true,
+        user: createMockUser({ email: 'active@example.com' }),
+        role: createMockRole({ name: 'Admin' })
+      });
+      const inactiveUser = createMockCompanyUser({
+        companyId: companyId,
+        isActive: false,
+        user: createMockUser({ email: 'inactive@example.com' }),
+        role: createMockRole({ name: 'Admin' })
+      });
+      
+      companyUserRepository.findCompanyUsers.mockResolvedValue([activeUser, inactiveUser]);
+
+      // Act
+      const result = await companyService.getCompanyUsers(
+        companyId,
+        { isActive: true },
+        {}
+      );
+
+      // Assert
+      expect(result).toHaveLength(1);
+      expect(result[0].isActive).toBe(true);
+    });
+
+    it('should handle paginated results', async () => {
+      // Arrange
+      const companyId = mockCompany.id;
+      const testUser = createMockUser({ email: 'user@example.com' });
+      const testRole = createMockRole({ name: 'Admin' });
+      const mockCompanyUser = createMockCompanyUser({
+        companyId: companyId,
+        user: testUser,
+        role: testRole
+      });
+      
+      // When pagination is provided, repository returns {rows, count}, but service expects array
+      // So we mock it to return the array directly (rows from the paginated result)
+      companyUserRepository.findCompanyUsers.mockResolvedValue([mockCompanyUser]);
+
+      // Act
+      const result = await companyService.getCompanyUsers(
+        companyId,
+        {},
+        { limit: 1, offset: 0 }
+      );
+
+      // Assert
+      expect(companyUserRepository.findCompanyUsers).toHaveBeenCalledWith(companyId, {
+        limit: 1,
+        offset: 0
+      });
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        id: mockCompanyUser.id,
+        userId: mockCompanyUser.userId,
+        companyId: mockCompanyUser.companyId,
+        roleId: mockCompanyUser.companyRoleId,
+        isActive: mockCompanyUser.isActive,
+        user: {
+          id: testUser.id,
+          email: testUser.email,
+          firstName: testUser.firstName,
+          lastName: testUser.lastName
+        },
+        role: {
+          id: testRole.id,
+          name: testRole.name,
+          code: testRole.code
+        }
+      });
+    });
+  });
+});
+

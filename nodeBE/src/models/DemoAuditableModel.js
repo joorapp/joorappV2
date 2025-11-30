@@ -87,16 +87,16 @@ DemoAuditableModel.prototype.destroy = async function(options = {}) {
     throw new Error('userId must be provided in options.context for soft delete');
   }
 
-  // Soft delete: update the record instead of deleting
+  // Set soft delete fields
   this.isDeleted = true;
   this.deletedUserId = userId;
-  this.updatedDate = new Date();
-  this.updatedUserId = userId;
   
-  // Save the changes (skip hooks to avoid recursion)
+  // Save with hooks enabled
+  // - beforeUpdate hook will set updatedDate, updatedUserId
+  // - beforeUpdate hook will increment version
+  // - Optimistic locking will detect concurrent modifications
   await this.save({ 
-    hooks: false,
-    context: options.context 
+    context: options.context
   });
   
   // Don't call the original destroy - just return the instance

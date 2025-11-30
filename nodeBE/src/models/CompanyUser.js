@@ -109,12 +109,15 @@ CompanyUser.prototype.destroy = async function(options = {}) {
     throw new Error('userId is required in options.context for soft delete');
   }
 
+  // Set soft delete fields
   this.isDeleted = true;
   this.deletedUserId = userId;
-  this.updatedDate = new Date();
-  this.updatedUserId = userId;
 
-  await this.save({ hooks: false, context: options.context });
+  // Save with hooks enabled
+  // - beforeUpdate hook will set updatedDate, updatedUserId
+  // - beforeUpdate hook will increment version
+  // - Optimistic locking will detect concurrent modifications
+  await this.save({ context: options.context });
   return this;
 };
 

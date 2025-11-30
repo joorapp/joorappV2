@@ -1,0 +1,687 @@
+---
+description: Repository and Service layer patterns and standards
+globs: ["nodeBE/src/repositories/**/*", "nodeBE/src/services/**/*"]
+alwaysApply: true
+priority: 2
+---
+# Repository and Service Layer Pattern
+
+## Overview
+
+This project follows a **layered architecture** with clear separation of concerns:
+
+```
+Controllers (HTTP) → Services (Business Logic) → Repositories (Data Access) → Models (Database)
+```
+
+## Related Rules
+
+**MUST READ** these rules before creating repositories or services:
+- **architecture.mdc** - Import order, module structure (CRITICAL)
+- **database.mdc** - Database connection, Sequelize patterns
+- **model-creation.mdc** - Model creation with AuditableEntity
+- **error-handling.mdc** - Error throwing patterns
+- **logging.mdc** - Winston logging standards
+- **coding-standards.mdc** - JSDoc, naming conventions
+
+## Repository Layer
+
+### Purpose
+
+Repositories provide **data access abstraction**:
+- Encapsulate all database operations
+- Hide Sequelize implementation details
+- Provide clean, semantic methods
+- Throw domain-specific errors
+
+### BaseRepository
+
+**Location**: `src/repositories/base/BaseRepository.js`
+
+All repositories MUST extend `BaseRepository`:
+
+```javascript
+import { BaseRepository } from './base/BaseRepository.js';
+import { ModelName } from '../models/index.js';
+
+export class ModelNameRepository extends BaseRepository {
+  constructor() {
+    super(ModelName, 'ModelName');
+  }
+  
+  // Only add complex queries here
+}
+
+export const modelNameRepository = new ModelNameRepository();
+```
+
+### BaseRepository Provides
+
+**Standard CRUD Operations** (no need to implement):
+- `findById(id, options)` - Find by ID (excludes deleted)
+- `findByIdOrFail(id, options)` - Find by ID or throw NotFoundError
+- `findAll(filters, options)` - Find all matching filters
+- `findOne(filters, options)` - Find one matching filters
+- `findOneOrFail(filters, options)` - Find one or throw NotFoundError
+- `count(filters)` - Count matching records
+- `findAndCountAll(filters, options)` - Find and count (for pagination)
+- `create(data, context, options)` - Create new record
+- `update(id, data, context, options)` - Update by ID
+- `delete(id, context, options)` - Soft delete by ID
+- `restore(id, context, options)` - Restore soft-deleted record
+- `exists(filters)` - Check if record exists
+- `bulkCreate(records, context, options)` - Bulk create
+
+**Methods Including Deleted**:
+- `findByIdIncludingDeleted(id, options)`
+- `findByIdIncludingDeletedOrFail(id, options)`
+- `findAllIncludingDeleted(filters, options)`
+- `findOneIncludingDeleted(filters, options)`
+- `findOneIncludingDeletedOrFail(filters, options)`
+- `countIncludingDeleted(filters)`
+- `findAndCountAllIncludingDeleted(filters, options)`
+
+**Methods for Deleted Only**:
+- `findByIdDeleted(id, options)`
+- `findAllDeleted(filters, options)`
+- `findOneDeleted(filters, options)`
+- `countDeleted(filters)`
+- `findAndCountAllDeleted(filters, options)`
+
+### When to Add Repository Methods
+
+**✅ ADD custom methods for:**
+- Complex joins (multiple includes)
+- OR conditions across multiple fields
+- Custom search queries
+- Aggregations
+- Business-specific queries
+
+**❌ DON'T ADD methods for:**
+- Simple findById - use BaseRepository
+- Simple findOne with single filter - use BaseRepository
+- Simple findAll - use BaseRepository
+- Standard CRUD - use BaseRepository
+
+### Repository Method Pattern
+
+```javascript
+/**
+ * Find users with all associated companies and roles
+ * Complex join query with CompanyUser and CompanyRole
+ * @param {string} userId - User UUID
+ * @param {Object} options - Additional Sequelize query options
+ * @returns {Promise<Object>} User object with companies and roles populated
+ * @throws {NotFoundError} If user not found
+ */
+async findUserWithCompanies(userId, options = {}) {
+  this.logger.debug('Finding user with companies', { userId });
+  
+  const user = await this.Model.findByPk(userId, {
+    ...options,
+    include: [
+      {
+        model: CompanyUser,
+        as: 'companyUsers',
+        include: [/* ... */]
+      }
+    ]
+  });
+  
+  if (!user) {
+    throw new NotFoundError(this.entityName, userId);
+  }
+  
+  return user;
+}
+```
+
+### Repository Standards
+
+1. **Extend BaseRepository**: All repositories extend BaseRepository
+2. **Singleton Export**: Export repository instance, not class
+3. **Complex Queries Only**: Only add methods for complex queries
+4. **Throw NotFoundError**: Use `NotFoundError` from `utils/errors.js`
+5. **Minimal Logging**: Only log errors and slow queries
+6. **Accept Options**: Always accept `options` parameter for transactions
+7. **Pass Through Options**: Pass `options.transaction` to Sequelize
+8. **JSDoc Required**: Every method must have complete JSDoc
+
+### Repository Example
+
+```javascript
+import { BaseRepository } from './base/BaseRepository.js';
+import { User, CompanyUser, Company, CompanyRole } from '../models/index.js';
+import { Op } from 'sequelize';
+
+export class UserRepository extends BaseRepository {
+  constructor() {
+    super(User, 'User');
+  }
+
+  async findUserWithCompanies(userId, options = {}) {
+    this.logger.debug('Finding user with companies', { userId });
+    
+    const user = await this.Model.findByPk(userId, {
+      ...options,
+      include: [
+        {
+          model: CompanyUser,
+          as: 'companyUsers',
+          include: [
+            { model: Company, as: 'company' },
+            { model: CompanyRole, as: 'role' }
+          ]
+        }
+      ]
+    });
+    
+    if (!user) {
+      throw new NotFoundError(this.entityName, userId);
+    }
+    
+    return user;
+  }
+
+  async searchUsers(searchTerm, pagination = {}, sort = [], options = {}) {
+    this.logger.debug('Searching users', { searchTerm, pagination, sort });
+    
+    const { limit = 10, offset = 0 } = pagination;
+    
+    const where = searchTerm ? {
+      [Op.or]: [
+        { email: { [Op.like]: `%${searchTerm}%` } },
+        { firstName: { [Op.like]: `%${searchTerm}%` } },
+        { lastName: { [Op.like]: `%${searchTerm}%` } }
+      ]
+    } : {};
+    
+    return await this.Model.findAndCountAll({
+      where,
+      limit,
+      offset,
+      order: sort.length > 0 ? sort : [['email', 'ASC']],
+      ...options
+    });
+  }
+}
+
+export const userRepository = new UserRepository();
+```
+
+### Context Requirements
+
+All audit operations **REQUIRE** context:
+
+```javascript
+// Create/Update/Delete require context { userId, companyId? }
+await repository.create(data, { userId: req.user.id });
+await repository.update(id, data, { userId: req.user.id });
+await repository.delete(id, { userId: req.user.id });
+
+// Queries don't require context
+await repository.findById(id);
+await repository.findAll({ email: 'test@example.com' });
+```
+
+## Service Layer
+
+### Purpose
+
+Services provide **business logic orchestration**:
+- Implement business rules
+- Orchestrate multiple repositories
+- Handle transactions
+- Integrate with external services (Keycloak, etc.)
+- Transform data for controllers
+- Validate business rules
+
+### Service Standards
+
+1. **Named Exports**: Export functions, not classes
+2. **Module Logger**: Use `createModuleLogger('serviceName')`
+3. **Static Imports**: Import repositories statically (safe after lazy app creation)
+4. **Repository Usage**: Call repository methods, don't access models directly
+5. **Transaction Management**: Create transactions when needed
+6. **Error Throwing**: Throw domain-specific errors
+7. **Data Transformation**: Return clean DTOs, not raw Sequelize models
+8. **JSDoc Required**: Every function must have complete JSDoc
+
+### Service Function Pattern
+
+```javascript
+/**
+ * Get user by ID
+ * @param {string} userId - User UUID
+ * @returns {Promise<Object>} User object (DTO)
+ * @throws {NotFoundError} If user not found
+ * 
+ * @example
+ * const user = await getUserById('user-uuid');
+ */
+export const getUserById = async (userId) => {
+  logger.debug('Getting user by ID', { userId });
+  
+  // Call repository
+  const user = await userRepository.findByIdOrFail(userId);
+  
+  // Transform to DTO
+  return {
+    id: user.id,
+    keycloakId: user.keycloakId,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    keycloakGlobalRole: user.keycloakGlobalRole,
+    isActive: user.isActive,
+    lastLoginAt: user.lastLoginAt
+  };
+};
+```
+
+### Service with Multiple Repositories
+
+```javascript
+/**
+ * Assign user to company with role
+ * Validates user, company, and role exist before assignment
+ * @param {string} userId - User UUID
+ * @param {string} companyId - Company UUID
+ * @param {string} roleId - CompanyRole UUID
+ * @param {Object} context - Audit context { userId }
+ * @returns {Promise<Object>} CompanyUser assignment object
+ * @throws {NotFoundError} If user, company, or role not found
+ * @throws {BadRequestError} If role is not active
+ */
+export const assignUserToCompany = async (userId, companyId, roleId, context) => {
+  logger.debug('Assigning user to company', { userId, companyId, roleId });
+  
+  // Validate all entities exist
+  const user = await userRepository.findByIdOrFail(userId);
+  const company = await companyRepository.findByIdOrFail(companyId);
+  const role = await roleRepository.findByIdOrFail(roleId);
+  
+  // Business validation
+  if (!role.isActive) {
+    throw new BadRequestError('Cannot assign inactive role to user');
+  }
+  
+  // Perform assignment
+  const assignment = await companyUserRepository.assignUserToCompany(
+    userId,
+    companyId,
+    roleId,
+    context
+  );
+  
+  logger.info('User assigned to company', { assignmentId: assignment.id });
+  
+  // Return DTO
+  return {
+    id: assignment.id,
+    userId: assignment.userId,
+    companyId: assignment.companyId,
+    roleId: assignment.companyRoleId,
+    isActive: assignment.isActive
+  };
+};
+```
+
+### Service with Transactions
+
+```javascript
+import sequelize from '../config/database.js';
+
+/**
+ * Create company with initial admin user
+ * Uses transaction to ensure atomicity
+ * @param {Object} companyData - Company data
+ * @param {Object} userData - User data
+ * @param {Object} context - Audit context
+ * @returns {Promise<Object>} Created company and user
+ */
+export const createCompanyWithAdmin = async (companyData, userData, context) => {
+  logger.debug('Creating company with admin user');
+  
+  const transaction = await sequelize.transaction();
+  
+  try {
+    // Create company
+    const company = await companyRepository.create(
+      companyData,
+      context,
+      { transaction }
+    );
+    
+    // Create user
+    const user = await userRepository.create(
+      userData,
+      context,
+      { transaction }
+    );
+    
+    // Assign user to company
+    const assignment = await companyUserRepository.create(
+      { userId: user.id, companyId: company.id, roleId: adminRoleId },
+      context,
+      { transaction }
+    );
+    
+    await transaction.commit();
+    
+    logger.info('Company with admin created', { companyId: company.id, userId: user.id });
+    
+    return { company, user, assignment };
+  } catch (error) {
+    await transaction.rollback();
+    logger.error('Failed to create company with admin', { error });
+    throw error;
+  }
+};
+```
+
+### Service Example (Complete)
+
+```javascript
+/**
+ * @author Bhavesh Venugopal
+ * User Service
+ * Business logic layer for user management
+ */
+
+import { createModuleLogger } from '../utils/logger.js';
+import { userRepository } from '../repositories/userRepository.js';
+import { ConflictError, NotFoundError } from '../utils/errors.js';
+
+const logger = createModuleLogger('userService');
+
+/**
+ * Get user by ID
+ * @param {string} userId - User UUID
+ * @returns {Promise<Object>} User object
+ * @throws {NotFoundError} If user not found
+ */
+export const getUserById = async (userId) => {
+  logger.debug('Getting user by ID', { userId });
+  
+  const user = await userRepository.findByIdOrFail(userId);
+  
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName
+  };
+};
+
+/**
+ * Create user
+ * @param {Object} userData - User data
+ * @param {Object} context - Audit context
+ * @returns {Promise<Object>} Created user
+ * @throws {ConflictError} If email already exists
+ */
+export const createUser = async (userData, context) => {
+  logger.debug('Creating user', { email: userData.email });
+  
+  // Check uniqueness
+  const existing = await userRepository.findOne({ email: userData.email });
+  if (existing) {
+    throw new ConflictError('User with this email already exists', 
+      { field: 'email', value: userData.email }
+    );
+  }
+  
+  // Create user
+  const user = await userRepository.create(userData, context);
+  
+  logger.info('User created', { userId: user.id });
+  
+  return {
+    id: user.id,
+    email: user.email
+  };
+};
+```
+
+## How Layers Work Together
+
+### Request Flow
+
+```
+1. HTTP Request
+   ↓
+2. Route Handler (with middleware)
+   ↓
+3. Controller
+   - Validates input (express-validator or simple validators)
+   - Calls service function
+   - Formats response (successResponse, paginatedResponse)
+   ↓
+4. Service
+   - Implements business logic
+   - Calls repository methods
+   - Orchestrates multiple repositories
+   - Manages transactions
+   - Throws business errors
+   ↓
+5. Repository
+   - Executes database queries
+   - Returns Sequelize models
+   - Throws NotFoundError if needed
+   ↓
+6. Model/Database
+```
+
+### Example: Complete Flow
+
+**Controller**:
+```javascript
+export const createUser = async (req, res) => {
+  const startTime = Date.now();
+  
+  // Validation
+  validateRequired({ email: req.body.email }, req.id);
+  validateEmail(req.body.email, 'email', req.id);
+  
+  // Call service
+  const user = await userService.createUser(
+    req.body,
+    { userId: req.user.id }
+  );
+  
+  // Format response
+  res.status(201).json(
+    successResponse('User created successfully', user, {}, req, startTime)
+  );
+};
+```
+
+**Service**:
+```javascript
+export const createUser = async (userData, context) => {
+  // Business logic
+  const existing = await userRepository.findOne({ email: userData.email });
+  if (existing) {
+    throw new ConflictError('Email already exists');
+  }
+  
+  // Create via repository
+  const user = await userRepository.create(userData, context);
+  
+  // Return DTO
+  return { id: user.id, email: user.email };
+};
+```
+
+**Repository**:
+```javascript
+// BaseRepository already provides create()
+// Only add method if it's complex
+```
+
+## Error Handling
+
+### Repository Errors
+
+Repositories throw:
+- `NotFoundError` - When entity not found
+- Let Sequelize errors bubble up (caught by service)
+
+```javascript
+const user = await userRepository.findByIdOrFail(userId);
+// Throws NotFoundError('User', userId) if not found
+```
+
+### Service Errors
+
+Services throw:
+- `NotFoundError` - When entity not found (from repository)
+- `ConflictError` - When uniqueness constraint violated
+- `BadRequestError` - When business rule violated
+- `ValidationError` - When validation fails
+
+```javascript
+if (existing) {
+  throw new ConflictError('Email already exists', { field: 'email', value: email });
+}
+
+if (!role.isActive) {
+  throw new BadRequestError('Cannot assign inactive role');
+}
+```
+
+### Controller Error Handling
+
+Controllers **throw errors** - `errorHandler` middleware catches them:
+
+```javascript
+export const createUser = async (req, res) => {
+  // Validation
+  validateEmail(req.body.email, 'email', req.id); // Throws ValidationError
+  
+  // Service call
+  const user = await userService.createUser(req.body, context);
+  // Service throws ConflictError/NotFoundError - errorHandler catches
+  
+  // Response
+  res.status(201).json(successResponse('Success', user, {}, req, startTime));
+};
+```
+
+## Testing
+
+### Repository Testing
+
+Test repositories with real database:
+- Test complex queries return correct data
+- Test error throwing (NotFoundError)
+- Test with transactions
+
+### Service Testing
+
+Test services with mocked repositories:
+- Test business logic
+- Test error throwing
+- Test DTO transformation
+- Test transaction management
+
+## Anti-Patterns (DO NOT DO)
+
+### ❌ Don't Access Models Directly in Services
+
+```javascript
+// DON'T
+import { User } from '../models/index.js';
+const user = await User.findByPk(userId); // Access model directly
+
+// DO
+const user = await userRepository.findByIdOrFail(userId); // Use repository
+```
+
+### ❌ Don't Put Business Logic in Repositories
+
+```javascript
+// DON'T - Business logic in repository
+async createUser(userData, context) {
+  const existing = await this.findOne({ email: userData.email });
+  if (existing) {
+    throw new ConflictError('Email exists'); // Business logic!
+  }
+  return await this.create(userData, context);
+}
+
+// DO - Keep repository simple, business logic in service
+async createUser(userData, context) {
+  // In service: check uniqueness, throw ConflictError
+  // In repository: just call create()
+  return await userRepository.create(userData, context);
+}
+```
+
+### ❌ Don't Return Sequelize Models from Services
+
+```javascript
+// DON'T - Return raw Sequelize model
+export const getUserById = async (userId) => {
+  return await userRepository.findByIdOrFail(userId); // Raw model!
+};
+
+// DO - Return DTO
+export const getUserById = async (userId) => {
+  const user = await userRepository.findByIdOrFail(userId);
+  return {
+    id: user.id,
+    email: user.email
+    // ... clean DTO
+  };
+};
+```
+
+### ❌ Don't Skip Repositories
+
+```javascript
+// DON'T - Controller calls model directly
+import { User } from '../../models/index.js';
+export const getUser = async (req, res) => {
+  const user = await User.findByPk(req.params.id); // Skip service AND repository!
+};
+
+// DO - Controller → Service → Repository → Model
+export const getUser = async (req, res) => {
+  const user = await userService.getUserById(req.params.id); // Proper flow
+  res.json(successResponse('Success', user, {}, req, Date.now()));
+};
+```
+
+## Checklist for New Repository
+
+- [ ] Extends `BaseRepository`
+- [ ] Constructor calls `super(Model, 'EntityName')`
+- [ ] Exports singleton instance
+- [ ] Only adds complex query methods
+- [ ] All methods have complete JSDoc
+- [ ] Throws `NotFoundError` appropriately
+- [ ] Accepts `options` parameter
+- [ ] Passes through `options.transaction`
+- [ ] Minimal logging (errors only)
+
+## Checklist for New Service
+
+- [ ] Uses `createModuleLogger('serviceName')`
+- [ ] Imports repositories statically
+- [ ] Exports named functions
+- [ ] All functions have complete JSDoc with `@example`
+- [ ] Calls repository methods (not models directly)
+- [ ] Returns DTOs, not raw models
+- [ ] Throws domain-specific errors
+- [ ] Handles transactions when needed
+- [ ] Includes debug and info logging
+
+## Related Patterns
+
+- **Controllers** - See module-structure.mdc
+- **Models** - See model-creation.mdc
+- **Validation** - See validation.mdc
+- **Error Handling** - See error-handling.mdc
+- **Transactions** - See database.mdc

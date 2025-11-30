@@ -24,8 +24,22 @@ const Company = sequelize.define('Company', {
   name: {
     type: DataTypes.STRING(255),
     allowNull: false,
+    unique: true,
     field: 'name',
     comment: 'Company name'
+  },
+  code: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    unique: true,
+    field: 'code',
+    comment: 'Company code/abbreviation'
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'description',
+    comment: 'Company description'
   },
   isActive: {
     type: DataTypes.BOOLEAN,
@@ -71,12 +85,15 @@ Company.prototype.destroy = async function(options = {}) {
     throw new Error('userId is required in options.context for soft delete');
   }
 
+  // Set soft delete fields
   this.isDeleted = true;
   this.deletedUserId = userId;
-  this.updatedDate = new Date();
-  this.updatedUserId = userId;
 
-  await this.save({ hooks: false, context: options.context });
+  // Save with hooks enabled
+  // - beforeUpdate hook will set updatedDate, updatedUserId
+  // - beforeUpdate hook will increment version
+  // - Optimistic locking will detect concurrent modifications
+  await this.save({ context: options.context });
   return this;
 };
 
