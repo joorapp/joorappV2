@@ -26,10 +26,10 @@ if (existsSync(envPath)) {
   process.exit(1);
 }
 
-import app, { registeredModules } from './src/app.js';
+import { createApp, registeredModules } from './src/app.js';
 import { logInfo, logError, logWarn } from './src/utils/logger.js';
 import { initializeDatabase, closeDatabase } from './src/config/database.js';
-// Note: Models are imported dynamically after env vars are loaded to avoid import-time errors
+// Note: App is created after database/models are initialized to avoid import-time errors
 
 // Get configuration from environment variables - NO FALLBACKS
 const PORT = process.env.PORT;
@@ -55,91 +55,98 @@ if (!NODE_ENV) {
   process.exit(1);
 }
 
-// Initialize database connection and models
+// Initialize database, models, and start server
 (async () => {
   try {
+    // Step 1: Initialize database connection
     await initializeDatabase();
     logInfo('✅ Database connection initialized successfully');
     
-    // Dynamically import models after env vars are loaded and database is ready
+    // Step 2: Import and initialize models (after database is ready)
     const { initializeModels } = await import('./src/models/index.js');
     initializeModels();
     logInfo('✅ Models initialized successfully');
+    
+    // Step 3: Create Express app (after models are initialized)
+    const app = await createApp();
+    logInfo('✅ Express app created with routes');
+    
+    // Step 4: Start the server
+    const server = app.listen(PORT, () => {
+      // Get the actual server address (handles different environments)
+      const serverAddress = server.address();
+      const actualHost = serverAddress.address === '::' ? HOST : serverAddress.address;
+      
+      // Use environment variables for production URLs
+      const protocol = NODE_ENV === 'production' ? 'https' : 'http';
+      const baseUrl = `${protocol}://${actualHost}:${PORT}`;
+      
+      // Log server startup information
+      logInfo('🚀 JoorApp Backend API V2 is running', {
+        port: PORT,
+        host: actualHost,
+        environment: NODE_ENV,
+        baseUrl,
+        pid: process.pid,
+        nodeVersion: process.version
+      });
+      
+      // Log startup information for console display
+      logInfo(`📡 Environment: ${NODE_ENV}`);
+      logInfo(`🌐 Server Address: ${baseUrl}`);
+      logInfo(`\n\t\t📚 API Documentation:`);
+      
+      // Dynamically list all module documentation endpoints
+      registeredModules.forEach(module => {
+        logInfo(`   🔗 ${module.name} Module: ${baseUrl}${module.path}`);
+      });
+      
+      // Only log health endpoints (system-level)
+      logInfo(`\n\t\t🔧 Health Endpoints:`);
+      logInfo(`   📊 Health Status: ${baseUrl}/api/v2/health/status`);
+      logInfo(`   🏓 Health Ping:   ${baseUrl}/api/v2/health/ping`);
+      logInfo(`   📈 Health Metrics: ${baseUrl}/api/v2/health/metrics`);
+      logInfo(`   🗄️  Health Database: ${baseUrl}/api/v2/health/database`);
+      
+      logInfo(`\n\t\t🚀 JoorApp Backend API V2 is running on port ${PORT}`);
+    });
+    
+    // Graceful shutdown handling
+    const gracefulShutdown = async (signal) => {
+      logWarn(`${signal} received. Shutting down gracefully...`);
+      
+      // Close server
+      server.close(async () => {
+        logInfo('HTTP server closed');
+        
+        // Close database connection
+        try {
+          await closeDatabase();
+          logInfo('Database connection closed');
+        } catch (error) {
+          logError('Error closing database connection', error);
+        }
+        
+        logInfo('Process terminated');
+        process.exit(0);
+      });
+      
+      // Force shutdown after 10 seconds
+      setTimeout(() => {
+        logError('Forced shutdown after timeout', null, { timeout: '10s' });
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    
   } catch (error) {
-    logError('❌ Failed to initialize database connection', error);
-    logWarn('⚠️  Server will start but database operations may fail');
+    logError('❌ Failed to initialize application', error);
+    logError('Server startup failed. Exiting...');
+    process.exit(1);
   }
 })();
-
-// Start the server
-const server = app.listen(PORT, () => {
-  // Get the actual server address (handles different environments)
-  const serverAddress = server.address();
-  const actualHost = serverAddress.address === '::' ? HOST : serverAddress.address;
-  
-  // Use environment variables for production URLs
-  const protocol = NODE_ENV === 'production' ? 'https' : 'http';
-  const baseUrl = `${protocol}://${actualHost}:${PORT}`;
-  
-  // Log server startup information
-  logInfo('🚀 JoorApp Backend API V2 is running', {
-    port: PORT,
-    host: actualHost,
-    environment: NODE_ENV,
-    baseUrl,
-    pid: process.pid,
-    nodeVersion: process.version
-  });
-  
-  // Log startup information for console display
-  logInfo(`📡 Environment: ${NODE_ENV}`);
-  logInfo(`🌐 Server Address: ${baseUrl}`);
-  logInfo(`\n\t\t📚 API Documentation:`);
-  
-  // Dynamically list all module documentation endpoints
-  registeredModules.forEach(module => {
-    logInfo(`   🔗 ${module.name} Module: ${baseUrl}${module.path}`);
-  });
-  
-  // Only log health endpoints (system-level)
-  logInfo(`\n\t\t🔧 Health Endpoints:`);
-  logInfo(`   📊 Health Status: ${baseUrl}/api/v2/health/status`);
-  logInfo(`   🏓 Health Ping:   ${baseUrl}/api/v2/health/ping`);
-  logInfo(`   📈 Health Metrics: ${baseUrl}/api/v2/health/metrics`);
-  logInfo(`   🗄️  Health Database: ${baseUrl}/api/v2/health/database`);
-  
-  logInfo(`\n\t\t🚀 JoorApp Backend API V2 is running on port ${PORT}`);
-});
-
-// Graceful shutdown handling
-const gracefulShutdown = async (signal) => {
-  logWarn(`${signal} received. Shutting down gracefully...`);
-  
-  // Close server
-  server.close(async () => {
-    logInfo('HTTP server closed');
-    
-    // Close database connection
-    try {
-      await closeDatabase();
-      logInfo('Database connection closed');
-    } catch (error) {
-      logError('Error closing database connection', error);
-    }
-    
-    logInfo('Process terminated');
-    process.exit(0);
-  });
-  
-  // Force shutdown after 10 seconds
-  setTimeout(() => {
-    logError('Forced shutdown after timeout', null, { timeout: '10s' });
-    process.exit(1);
-  }, 10000);
-};
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {

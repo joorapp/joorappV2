@@ -148,7 +148,7 @@ User.associate = (models) => {
   // CompanyUser associations
   User.hasMany(models.CompanyUser, { 
     foreignKey: 'userId', 
-    as: 'companyMemberships' 
+    as: 'companyUsers' 
   });
   // CompanyUser audit associations
   User.hasMany(models.CompanyUser, { 

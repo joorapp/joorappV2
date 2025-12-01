@@ -25,9 +25,8 @@ import {
   buildFilterQuery, 
   buildSortQuery
 } from '../../utils/businessHelpers.js';
-import { getAdminClient } from '../../services/keycloakService.js';
 import { KEYCLOAK_GLOBAL_ROLE_VALUES } from '../../constants/keycloakRoles.js';
-import { Op } from 'sequelize';
+import * as userService from '../../services/userService.js';
 
 // Create module-specific logger
 const logger = createModuleLogger('users');
@@ -57,51 +56,16 @@ export const getUsers = async (req, res) => {
       filters: { page, limit, search, sortBy, sortOrder }
     });
 
-    // Dynamically import models to avoid import-time database access
-    const { User } = await import('../../models/index.js');
-
-    // Build where clause
-    const where = {};
-    
-    // Add search filter if provided
-    if (search) {
-      const searchFields = ['email', 'firstName', 'lastName'];
-      const searchConditions = searchFields.map(field => ({
-        [field]: { [Op.like]: `%${search}%` }
-      }));
-      where[Op.or] = searchConditions;
-    }
-
     // Build sort query
-    // Note: User model doesn't have createdDate, so we use email as default
     const allowedSortFields = ['email', 'firstName', 'lastName', 'keycloakGlobalRole', 'isActive', 'lastLoginAt'];
     const order = buildSortQuery(sortBy, sortOrder, allowedSortFields, { defaultSort: 'email', defaultOrder: 'ASC' });
 
-    // Get total count
-    const total = await User.count({ where });
-
-    // Get users with pagination
-    const users = await User.findAll({
-      where,
-      order,
-      limit,
-      offset,
-      attributes: {
-        exclude: [] // Include all fields
-      }
-    });
-
-    // Format users for response
-    const formattedUsers = users.map(user => ({
-      id: user.id,
-      keycloakId: user.keycloakId,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      keycloakGlobalRole: user.keycloakGlobalRole,
-      isActive: user.isActive,
-      lastLoginAt: user.lastLoginAt
-    }));
+    // Call service layer
+    const result = await userService.listUsers(
+      { search },
+      { page, limit, offset },
+      order
+    );
 
     const duration = Date.now() - startTime;
     
@@ -109,17 +73,17 @@ export const getUsers = async (req, res) => {
       requestId: req.id,
       userId: req.user?.id,
       duration: `${duration}ms`,
-      totalUsers: total,
-      returnedUsers: formattedUsers.length,
+      totalUsers: result.total,
+      returnedUsers: result.users.length,
       page,
-      pages: Math.ceil(total / limit)
+      pages: Math.ceil(result.total / limit)
     });
     
     // Log business event
     logBusiness('Users list accessed', {
       requestId: req.id,
       userId: req.user?.id,
-      totalUsers: total,
+      totalUsers: result.total,
       filters: { page, limit, search }
     });
     
@@ -128,15 +92,15 @@ export const getUsers = async (req, res) => {
       logPerformance('Get users', duration, {
         requestId: req.id,
         module: 'users',
-        totalUsers: total
+        totalUsers: result.total
       });
     }
 
     res.status(200).json(
       paginatedResponse(
         'Users retrieved successfully',
-        formattedUsers,
-        { page, limit, total },
+        result.users,
+        { page, limit, total: result.total },
         {},
         req,
         startTime
@@ -181,32 +145,8 @@ export const getUserById = async (req, res) => {
       ip: req.ip || req.socket?.remoteAddress
     });
 
-    // Dynamically import models
-    const { User } = await import('../../models/index.js');
-
-    // Find user
-    const user = await User.findByPk(id);
-
-    if (!user) {
-      logger.warn('User not found', {
-        requestId: req.id,
-        userId: req.user?.id,
-        targetUserId: id
-      });
-      throw new NotFoundError('User', id, { requestId: req.id });
-    }
-
-    // Format user for response
-    const userData = {
-      id: user.id,
-      keycloakId: user.keycloakId,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      keycloakGlobalRole: user.keycloakGlobalRole,
-      isActive: user.isActive,
-      lastLoginAt: user.lastLoginAt
-    };
+    // Call service layer
+    const userData = await userService.getUserById(id);
 
     const duration = Date.now() - startTime;
     
@@ -273,117 +213,38 @@ export const createUser = async (req, res) => {
       ip: req.ip || req.socket?.remoteAddress
     });
 
-    // Dynamically import models
-    const { User } = await import('../../models/index.js');
-
-    // Check if user already exists in database
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      logger.warn('User creation failed - email already exists', {
-        requestId: req.id,
-        userId: req.user?.id,
-        email
-      });
-      throw new ConflictError('User with this email already exists', { field: 'email', value: email }, { requestId: req.id });
-    }
-
-    // Get Keycloak admin client
-    const kcAdminClient = await getAdminClient();
-
     // Check if user exists in Keycloak
-    const keycloakUsers = await kcAdminClient.users.find({
-      email: email,
-      exact: true
-    });
+    const kcUser = await userService.checkUserExistsInKeycloak(email);
 
     let keycloakUser;
-    if (keycloakUsers && keycloakUsers.length > 0) {
-      // User exists in Keycloak but not in database - sync it
-      keycloakUser = keycloakUsers[0];
+    if (kcUser) {
+      // User exists in Keycloak - sync to database
       logger.info('User exists in Keycloak, syncing to database', {
         requestId: req.id,
-        keycloakId: keycloakUser.id,
+        keycloakId: kcUser.id,
         email
       });
+      keycloakUser = kcUser;
     } else {
       // Create user in Keycloak
       logger.info('Creating user in Keycloak', { requestId: req.id, email });
-      
-      const newKeycloakUser = await kcAdminClient.users.create({
-        email: email,
-        firstName: firstName || '',
-        lastName: lastName || '',
-        enabled: true,
-        emailVerified: false,
-        username: email
-      });
-
-      // Set password
-      await kcAdminClient.users.resetPassword({
-        id: newKeycloakUser.id,
-        credential: {
-          temporary: false,
-          type: 'password',
-          value: password
-        }
-      });
-
-      // Assign global role if specified
-      if (keycloakGlobalRole) {
-        try {
-          const role = await kcAdminClient.roles.findOneByName({
-            name: keycloakGlobalRole
-          });
-          
-          if (role) {
-            await kcAdminClient.users.addRealmRoleMappings({
-              id: newKeycloakUser.id,
-              roles: [role]
-            });
-            logger.info('Global role assigned in Keycloak', {
-              requestId: req.id,
-              keycloakId: newKeycloakUser.id,
-              role: keycloakGlobalRole
-            });
-          }
-        } catch (roleError) {
-          logger.warn('Failed to assign role in Keycloak (continuing)', {
-            requestId: req.id,
-            keycloakId: newKeycloakUser.id,
-            role: keycloakGlobalRole,
-            error: roleError.message
-          });
-        }
-      }
-
-      keycloakUser = newKeycloakUser;
-      logger.info('User created in Keycloak', {
-        requestId: req.id,
-        keycloakId: keycloakUser.id,
-        email
+      keycloakUser = await userService.createUserInKeycloak({
+        email,
+        password,
+        firstName,
+        lastName,
+        keycloakGlobalRole
       });
     }
 
     // Create user in database
-    const newUser = await User.create({
+    const newUser = await userService.createUserInDB({
       keycloakId: keycloakUser.id,
-      email: email,
-      firstName: firstName || null,
-      lastName: lastName || null,
-      keycloakGlobalRole: keycloakGlobalRole || 'COMPANY_USER',
-      isActive: true
-    });
-
-    // Format user for response
-    const userData = {
-      id: newUser.id,
-      keycloakId: newUser.keycloakId,
-      email: newUser.email,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
-      keycloakGlobalRole: newUser.keycloakGlobalRole,
-      isActive: newUser.isActive
-    };
+      email,
+      firstName,
+      lastName,
+      keycloakGlobalRole
+    }, { userId: req.user?.id });
 
     const duration = Date.now() - startTime;
     
@@ -412,7 +273,7 @@ export const createUser = async (req, res) => {
     });
 
     res.status(201).json(
-      successResponse('User created successfully', userData, {}, req, startTime)
+      successResponse('User created successfully', newUser, {}, req, startTime)
     );
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -473,69 +334,22 @@ export const updateUser = async (req, res) => {
       ip: req.ip || req.socket?.remoteAddress
     });
 
-    // Dynamically import models
-    const { User } = await import('../../models/index.js');
-
-    // Find user
-    const user = await User.findByPk(id);
-    if (!user) {
-      logger.warn('User not found for update', {
-        requestId: req.id,
-        userId: req.user?.id,
-        targetUserId: id
-      });
-      throw new NotFoundError('User', id, { requestId: req.id });
-    }
-
-    // Check email uniqueness if email is being changed
-    if (email && email !== user.email) {
-      const existingUser = await User.findOne({ where: { email } });
-      if (existingUser) {
-        logger.warn('User update failed - email already exists', {
-          requestId: req.id,
-          userId: req.user?.id,
-          targetUserId: id,
-          email
-        });
-        throw new ConflictError('User with this email already exists', { field: 'email', value: email }, { requestId: req.id });
-      }
-    }
-
-    // Get Keycloak admin client
-    const kcAdminClient = await getAdminClient();
+    // Get current user to check keycloak ID and role
+    const currentUser = await userService.getUserById(id);
 
     // Update user in Keycloak
-    const keycloakUpdate = {};
-    if (email !== undefined) keycloakUpdate.email = email;
-    if (firstName !== undefined) keycloakUpdate.firstName = firstName;
-    if (lastName !== undefined) keycloakUpdate.lastName = lastName;
-    if (isActive !== undefined) keycloakUpdate.enabled = isActive;
+    await userService.updateUserInKeycloak(currentUser.keycloakId, {
+      email,
+      firstName,
+      lastName,
+      isActive,
+      password,
+      keycloakGlobalRole,
+      currentRole: currentUser.keycloakGlobalRole
+    });
 
-    if (Object.keys(keycloakUpdate).length > 0) {
-      await kcAdminClient.users.update({
-        id: user.keycloakId
-      }, keycloakUpdate);
-      logger.info('User updated in Keycloak', {
-        requestId: req.id,
-        keycloakId: user.keycloakId,
-        updates: keycloakUpdate
-      });
-    }
-
-    // Update password in Keycloak if provided
+    // Log password change if applicable
     if (password) {
-      await kcAdminClient.users.resetPassword({
-        id: user.keycloakId,
-        credential: {
-          temporary: false,
-          type: 'password',
-          value: password
-        }
-      });
-      logger.info('User password updated in Keycloak', {
-        requestId: req.id,
-        keycloakId: user.keycloakId
-      });
       logSecurity('User password changed', {
         requestId: req.id,
         userId: req.user?.id,
@@ -543,72 +357,14 @@ export const updateUser = async (req, res) => {
       });
     }
 
-    // Update global role in Keycloak if provided
-    if (keycloakGlobalRole && keycloakGlobalRole !== user.keycloakGlobalRole) {
-      try {
-        // Get current roles
-        const currentRoles = await kcAdminClient.users.listRealmRoleMappings({
-          id: user.keycloakId
-        });
-
-        // Remove old role if exists
-        const oldRole = currentRoles.find(r => KEYCLOAK_GLOBAL_ROLE_VALUES.includes(r.name));
-        if (oldRole) {
-          await kcAdminClient.users.delRealmRoleMappings({
-            id: user.keycloakId,
-            roles: [oldRole]
-          });
-        }
-
-        // Add new role
-        const newRole = await kcAdminClient.roles.findOneByName({
-          name: keycloakGlobalRole
-        });
-        
-        if (newRole) {
-          await kcAdminClient.users.addRealmRoleMappings({
-            id: user.keycloakId,
-            roles: [newRole]
-          });
-          logger.info('User global role updated in Keycloak', {
-            requestId: req.id,
-            keycloakId: user.keycloakId,
-            oldRole: user.keycloakGlobalRole,
-            newRole: keycloakGlobalRole
-          });
-        }
-      } catch (roleError) {
-        logger.warn('Failed to update role in Keycloak (continuing)', {
-          requestId: req.id,
-          keycloakId: user.keycloakId,
-          role: keycloakGlobalRole,
-          error: roleError.message
-        });
-      }
-    }
-
     // Update user in database
-    const updateData = {};
-    if (email !== undefined) updateData.email = email;
-    if (firstName !== undefined) updateData.firstName = firstName;
-    if (lastName !== undefined) updateData.lastName = lastName;
-    if (keycloakGlobalRole !== undefined) updateData.keycloakGlobalRole = keycloakGlobalRole;
-    if (isActive !== undefined) updateData.isActive = isActive;
-
-    // Note: User model doesn't have audit fields, so we just update directly
-    await user.update(updateData);
-
-    // Format user for response
-    const userData = {
-      id: user.id,
-      keycloakId: user.keycloakId,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      keycloakGlobalRole: user.keycloakGlobalRole,
-      isActive: user.isActive,
-      lastLoginAt: user.lastLoginAt
-    };
+    const userData = await userService.updateUserInDB(id, {
+      email,
+      firstName,
+      lastName,
+      keycloakGlobalRole,
+      isActive
+    }, { userId: req.user?.id });
 
     const duration = Date.now() - startTime;
     
@@ -624,7 +380,7 @@ export const updateUser = async (req, res) => {
       requestId: req.id,
       userId: req.user?.id,
       targetUserId: id,
-      updates: Object.keys(updateData)
+      updates: Object.keys({ email, firstName, lastName, keycloakGlobalRole, isActive }).filter(k => req.body[k] !== undefined)
     });
 
     res.status(200).json(
@@ -679,36 +435,14 @@ export const deleteUser = async (req, res) => {
       throw new BadRequestError('Cannot delete your own account', { requestId: req.id });
     }
 
-    // Dynamically import models
-    const { User } = await import('../../models/index.js');
+    // Get user for logging purposes
+    const user = await userService.getUserById(id);
 
-    // Find user
-    const user = await User.findByPk(id);
-    if (!user) {
-      logger.warn('User not found for deletion', {
-        requestId: req.id,
-        userId: req.user?.id,
-        targetUserId: id
-      });
-      throw new NotFoundError('User', id, { requestId: req.id });
-    }
+    // Delete user from Keycloak (disable)
+    await userService.deleteUserFromKeycloak(user.keycloakId);
 
-    // Get Keycloak admin client
-    const kcAdminClient = await getAdminClient();
-
-    // Disable user in Keycloak (soft delete)
-    await kcAdminClient.users.update({
-      id: user.keycloakId
-    }, {
-      enabled: false
-    });
-    logger.info('User disabled in Keycloak', {
-      requestId: req.id,
-      keycloakId: user.keycloakId
-    });
-
-    // Mark user as inactive in database
-    await user.update({ isActive: false });
+    // Delete user from database (mark as inactive)
+    await userService.deleteUserFromDB(id, { userId: req.user?.id });
 
     const duration = Date.now() - startTime;
     

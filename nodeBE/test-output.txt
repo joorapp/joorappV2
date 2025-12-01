@@ -1,0 +1,663 @@
+﻿
+> joorapp-backend@2.0.0 test
+> node scripts/run-tests.js --coverage src/models/__tests__/User.test.js
+
+Ô£à Test environment loaded
+­ƒôè Database: joorapp_testDB
+  console.log
+    ­ƒÜÇ Connecting to test database...
+
+      at Object.<anonymous> (__tests__/setup.js:13:11)
+
+node.exe : (node:15588) ExperimentalWarning: VM Modules is an experimental 
+feature and might change at any time
+At C:\Program Files\nodejs\npm.ps1:29 char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:15588) Ex...nge at any time 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    Executed (default): SELECT 1+1 AS result Elapsed time: 3ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Ô£à Connected to: joorapp_testDB
+
+      at Object.<anonymous> (__tests__/setup.js:17:13)
+
+  console.log
+    Ô£à Model associations initialized
+
+      at Object.<anonymous> (__tests__/setup.js:21:13)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "user_company_context" CASCADE; Elapsed time: 61ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "company_users" CASCADE; Elapsed time: 173ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "company_roles" CASCADE; Elapsed time: 98ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "demo_auditable_models" CASCADE; Elapsed time: 39ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "companies" CASCADE; Elapsed time: 28ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "users" CASCADE; Elapsed time: 29ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TYPE IF EXISTS "public"."enum_users_keycloakGlobalRole"; Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+          at async Promise.all (index 0)
+
+  console.log
+    Executed (default): SELECT DISTINCT tc.constraint_name as constraint_name, tc.constraint_schema as constraint_schema, tc.constraint_catalog as constraint_catalog, tc.table_name as table_name,tc.table_schema as table_schema,tc.table_catalog as table_catalog,tc.initially_deferred as initially_deferred,tc.is_deferrable as is_deferrable,kcu.column_name as column_name,ccu.table_schema  AS referenced_table_schema,ccu.table_catalog  AS referenced_table_catalog,ccu.table_name  AS referenced_table_name,ccu.column_name AS referenced_column_name FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name = 'users' AND tc.table_catalog = 'joorapp_testDB' Elapsed time: 111ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): SELECT DISTINCT tc.constraint_name as constraint_name, tc.constraint_schema as constraint_schema, tc.constraint_catalog as constraint_catalog, tc.table_name as table_name,tc.table_schema as table_schema,tc.table_catalog as table_catalog,tc.initially_deferred as initially_deferred,tc.is_deferrable as is_deferrable,kcu.column_name as column_name,ccu.table_schema  AS referenced_table_schema,ccu.table_catalog  AS referenced_table_catalog,ccu.table_name  AS referenced_table_name,ccu.column_name AS referenced_column_name FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name = 'demo_auditable_models' AND tc.table_catalog = 'joorapp_testDB' Elapsed time: 19ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): SELECT DISTINCT tc.constraint_name as constraint_name, tc.constraint_schema as constraint_schema, tc.constraint_catalog as constraint_catalog, tc.table_name as table_name,tc.table_schema as table_schema,tc.table_catalog as table_catalog,tc.initially_deferred as initially_deferred,tc.is_deferrable as is_deferrable,kcu.column_name as column_name,ccu.table_schema  AS referenced_table_schema,ccu.table_catalog  AS referenced_table_catalog,ccu.table_name  AS referenced_table_name,ccu.column_name AS referenced_column_name FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name = 'companies' AND tc.table_catalog = 'joorapp_testDB' Elapsed time: 13ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): SELECT DISTINCT tc.constraint_name as constraint_name, tc.constraint_schema as constraint_schema, tc.constraint_catalog as constraint_catalog, tc.table_name as table_name,tc.table_schema as table_schema,tc.table_catalog as table_catalog,tc.initially_deferred as initially_deferred,tc.is_deferrable as is_deferrable,kcu.column_name as column_name,ccu.table_schema  AS referenced_table_schema,ccu.table_catalog  AS referenced_table_catalog,ccu.table_name  AS referenced_table_name,ccu.column_name AS referenced_column_name FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name = 'company_roles' AND tc.table_catalog = 'joorapp_testDB' Elapsed time: 12ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): SELECT DISTINCT tc.constraint_name as constraint_name, tc.constraint_schema as constraint_schema, tc.constraint_catalog as constraint_catalog, tc.table_name as table_name,tc.table_schema as table_schema,tc.table_catalog as table_catalog,tc.initially_deferred as initially_deferred,tc.is_deferrable as is_deferrable,kcu.column_name as column_name,ccu.table_schema  AS referenced_table_schema,ccu.table_catalog  AS referenced_table_catalog,ccu.table_name  AS referenced_table_name,ccu.column_name AS referenced_column_name FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name = 'company_users' AND tc.table_catalog = 'joorapp_testDB' Elapsed time: 11ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): SELECT DISTINCT tc.constraint_name as constraint_name, tc.constraint_schema as constraint_schema, tc.constraint_catalog as constraint_catalog, tc.table_name as table_name,tc.table_schema as table_schema,tc.table_catalog as table_catalog,tc.initially_deferred as initially_deferred,tc.is_deferrable as is_deferrable,kcu.column_name as column_name,ccu.table_schema  AS referenced_table_schema,ccu.table_catalog  AS referenced_table_catalog,ccu.table_name  AS referenced_table_name,ccu.column_name AS referenced_column_name FROM information_schema.table_constraints AS tc JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name = 'user_company_context' AND tc.table_catalog = 'joorapp_testDB' Elapsed time: 12ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "users" CASCADE; Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TYPE IF EXISTS "public"."enum_users_keycloakGlobalRole"; Elapsed time: 1ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+          at async Promise.all (index 0)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "demo_auditable_models" CASCADE; Elapsed time: 1ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "companies" CASCADE; Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "company_roles" CASCADE; Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "company_users" CASCADE; Elapsed time: 1ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "user_company_context" CASCADE; Elapsed time: 1ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "users" CASCADE; Elapsed time: 1ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TYPE IF EXISTS "public"."enum_users_keycloakGlobalRole"; Elapsed time: 1ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+          at async Promise.all (index 0)
+
+  console.log
+    Executed (default): SELECT t.typname enum_name, array_agg(e.enumlabel ORDER BY enumsortorder) enum_value FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typname='enum_users_keycloak_global_role' GROUP BY 1 Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+          at async Promise.all (index 0)
+
+  console.log
+    Executed (default): CREATE TABLE IF NOT EXISTS "users" ("id" UUID NOT NULL , "keycloak_id" UUID NOT NULL UNIQUE , "email" VARCHAR(255) NOT NULL UNIQUE , "first_name" VARCHAR(255) , "last_name" VARCHAR(255) , "keycloak_global_role" "public"."enum_users_keycloak_global_role" NOT NULL DEFAULT 'COMPANY_USER' , "is_active" BOOLEAN NOT NULL DEFAULT true , "last_login_at" TIMESTAMP WITH TIME ZONE , PRIMARY KEY ("id")); COMMENT ON COLUMN "users"."keycloak_id" IS 'Keycloak user ID for synchronization'; COMMENT ON COLUMN "users"."email" IS 'User email address (synced from Keycloak)'; COMMENT ON COLUMN "users"."first_name" IS 'User first name'; COMMENT ON COLUMN "users"."last_name" IS 'User last name'; COMMENT ON COLUMN "users"."keycloak_global_role" IS 'Global role from Keycloak (SUPER_ADMIN, COMPANY_ADMIN, COMPANY_USER)'; COMMENT ON COLUMN "users"."is_active" IS 'Whether the user account is active'; COMMENT ON COLUMN "users"."last_login_at" IS 'Timestamp of last login'; Elapsed time: 23ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): SELECT i.relname AS name, ix.indisprimary AS primary, ix.indisunique AS unique, ix.indkey AS indkey, array_agg(a.attnum) as column_indexes, array_agg(a.attname) AS column_names, pg_get_indexdef(ix.indexrelid) AS definition FROM pg_class t, pg_class i, pg_index ix, pg_attribute a WHERE t.oid = ix.indrelid AND i.oid = ix.indexrelid AND a.attrelid = t.oid AND t.relkind = 'r' and t.relname = 'users' GROUP BY i.relname, ix.indexrelid, ix.indisprimary, ix.indisunique, ix.indkey ORDER BY i.relname; Elapsed time: 8ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE UNIQUE INDEX "users_keycloak_id_unique" ON "users" ("keycloak_id") Elapsed time: 6ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE UNIQUE INDEX "users_email_unique" ON "users" ("email") Elapsed time: 6ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "users_is_active_idx" ON "users" ("is_active") Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "companies" CASCADE; Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE TABLE IF NOT EXISTS "companies" ("name" VARCHAR(255) NOT NULL , "is_active" BOOLEAN NOT NULL DEFAULT true , "id" UUID NOT NULL , "created_date" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_date" TIMESTAMP WITH TIME ZONE NOT NULL, "created_user_id" UUID NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, "created_company_id" UUID REFERENCES "companies" ("id") ON DELETE SET NULL ON UPDATE CASCADE , "updated_user_id" UUID NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, "is_deleted" BOOLEAN NOT NULL DEFAULT false, "deleted_user_id" UUID REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE, "version" INTEGER NOT NULL DEFAULT 1, PRIMARY KEY ("id")); COMMENT ON COLUMN "companies"."name" IS 'Company name'; COMMENT ON COLUMN "companies"."is_active" IS 'Whether the company is active'; COMMENT ON COLUMN "companies"."created_company_id" IS 'Company that created this record (non-updatable, set only on create)'; Elapsed time: 16ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): SELECT i.relname AS name, ix.indisprimary AS primary, ix.indisunique AS unique, ix.indkey AS indkey, array_agg(a.attnum) as column_indexes, array_agg(a.attname) AS column_names, pg_get_indexdef(ix.indexrelid) AS definition FROM pg_class t, pg_class i, pg_index ix, pg_attribute a WHERE t.oid = ix.indrelid AND i.oid = ix.indexrelid AND a.attrelid = t.oid AND t.relkind = 'r' and t.relname = 'companies' GROUP BY i.relname, ix.indexrelid, ix.indisprimary, ix.indisunique, ix.indkey ORDER BY i.relname; Elapsed time: 5ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "companies_is_active_idx" ON "companies" ("is_active") Elapsed time: 6ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "companies_is_deleted_idx" ON "companies" ("is_deleted") Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "demo_auditable_models" CASCADE; Elapsed time: 1ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE TABLE IF NOT EXISTS "demo_auditable_models" ("name" VARCHAR(255) NOT NULL , "description" TEXT , "status" VARCHAR(50) NOT NULL DEFAULT 'active' , "id" UUID NOT NULL , "created_date" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_date" TIMESTAMP WITH TIME ZONE NOT NULL, "created_user_id" UUID NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, "created_company_id" UUID REFERENCES "companies" ("id") ON DELETE SET NULL ON UPDATE CASCADE , "updated_user_id" UUID NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, "is_deleted" BOOLEAN NOT NULL DEFAULT false, "deleted_user_id" UUID REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE, "version" INTEGER NOT NULL DEFAULT 1, PRIMARY KEY ("id")); COMMENT ON COLUMN "demo_auditable_models"."name" IS 'Name of the demo record'; COMMENT ON COLUMN "demo_auditable_models"."description" IS 'Description of the demo record'; COMMENT ON COLUMN "demo_auditable_models"."status" IS 'Status of the demo record'; COMMENT ON COLUMN "demo_auditable_models"."created_company_id" IS 'Company that created this record (non-updatable, set only on create)'; Elapsed time: 20ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): SELECT i.relname AS name, ix.indisprimary AS primary, ix.indisunique AS unique, ix.indkey AS indkey, array_agg(a.attnum) as column_indexes, array_agg(a.attname) AS column_names, pg_get_indexdef(ix.indexrelid) AS definition FROM pg_class t, pg_class i, pg_index ix, pg_attribute a WHERE t.oid = ix.indrelid AND i.oid = ix.indexrelid AND a.attrelid = t.oid AND t.relkind = 'r' and t.relname = 'demo_auditable_models' GROUP BY i.relname, ix.indexrelid, ix.indisprimary, ix.indisunique, ix.indkey ORDER BY i.relname; Elapsed time: 5ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "demo_auditable_models_name_idx" ON "demo_auditable_models" ("name") Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "demo_auditable_models_status_idx" ON "demo_auditable_models" ("status") Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "demo_auditable_models_is_deleted_idx" ON "demo_auditable_models" ("is_deleted") Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "company_roles" CASCADE; Elapsed time: 1ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE TABLE IF NOT EXISTS "company_roles" ("name" VARCHAR(100) NOT NULL UNIQUE , "code" VARCHAR(50) NOT NULL UNIQUE , "description" TEXT , "is_active" BOOLEAN NOT NULL DEFAULT true , "id" UUID NOT NULL , "created_date" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_date" TIMESTAMP WITH TIME ZONE NOT NULL, "created_user_id" UUID NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, "created_company_id" UUID REFERENCES "companies" ("id") ON DELETE SET NULL ON UPDATE CASCADE , "updated_user_id" UUID NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, "is_deleted" BOOLEAN NOT NULL DEFAULT false, "deleted_user_id" UUID REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE, "version" INTEGER NOT NULL DEFAULT 1, PRIMARY KEY ("id")); COMMENT ON COLUMN "company_roles"."name" IS 'Role name (e.g., CompanyAdmin, Admin, User, Auditor)'; COMMENT ON COLUMN "company_roles"."code" IS 'Unique role code/identifier'; COMMENT ON COLUMN "company_roles"."description" IS 'Description of the role and its permissions'; COMMENT ON COLUMN "company_roles"."is_active" IS 'Whether the role is active'; COMMENT ON COLUMN "company_roles"."created_company_id" IS 'Company that created this record (non-updatable, set only on create)'; Elapsed time: 29ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): SELECT i.relname AS name, ix.indisprimary AS primary, ix.indisunique AS unique, ix.indkey AS indkey, array_agg(a.attnum) as column_indexes, array_agg(a.attname) AS column_names, pg_get_indexdef(ix.indexrelid) AS definition FROM pg_class t, pg_class i, pg_index ix, pg_attribute a WHERE t.oid = ix.indrelid AND i.oid = ix.indexrelid AND a.attrelid = t.oid AND t.relkind = 'r' and t.relname = 'company_roles' GROUP BY i.relname, ix.indexrelid, ix.indisprimary, ix.indisunique, ix.indkey ORDER BY i.relname; Elapsed time: 5ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE UNIQUE INDEX "company_roles_name_unique" ON "company_roles" ("name") Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE UNIQUE INDEX "company_roles_code_unique" ON "company_roles" ("code") Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "company_roles_is_active_idx" ON "company_roles" ("is_active") Elapsed time: 8ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "company_roles_is_deleted_idx" ON "company_roles" ("is_deleted") Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "company_users" CASCADE; Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE TABLE IF NOT EXISTS "company_users" ("user_id" UUID NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE , "company_id" UUID NOT NULL REFERENCES "companies" ("id") ON DELETE CASCADE ON UPDATE CASCADE , "company_role_id" UUID NOT NULL REFERENCES "company_roles" ("id") ON DELETE CASCADE ON UPDATE CASCADE , "is_active" BOOLEAN NOT NULL DEFAULT true , "id" UUID NOT NULL , "created_date" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_date" TIMESTAMP WITH TIME ZONE NOT NULL, "created_user_id" UUID NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, "created_company_id" UUID REFERENCES "companies" ("id") ON DELETE SET NULL ON UPDATE CASCADE , "updated_user_id" UUID NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, "is_deleted" BOOLEAN NOT NULL DEFAULT false, "deleted_user_id" UUID REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE, "version" INTEGER NOT NULL DEFAULT 1, PRIMARY KEY ("id")); COMMENT ON COLUMN "company_users"."user_id" IS 'Reference to user'; COMMENT ON COLUMN "company_users"."company_id" IS 'Reference to company'; COMMENT ON COLUMN "company_users"."company_role_id" IS 'Reference to company role'; COMMENT ON COLUMN "company_users"."is_active" IS 'Whether this company-user relationship is active'; COMMENT ON COLUMN "company_users"."created_company_id" IS 'Company that created this record (non-updatable, set only on create)'; Elapsed time: 21ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): SELECT i.relname AS name, ix.indisprimary AS primary, ix.indisunique AS unique, ix.indkey AS indkey, array_agg(a.attnum) as column_indexes, array_agg(a.attname) AS column_names, pg_get_indexdef(ix.indexrelid) AS definition FROM pg_class t, pg_class i, pg_index ix, pg_attribute a WHERE t.oid = ix.indrelid AND i.oid = ix.indexrelid AND a.attrelid = t.oid AND t.relkind = 'r' and t.relname = 'company_users' GROUP BY i.relname, ix.indexrelid, ix.indisprimary, ix.indisunique, ix.indkey ORDER BY i.relname; Elapsed time: 5ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE UNIQUE INDEX "company_users_user_company_unique" ON "company_users" ("user_id", "company_id") Elapsed time: 6ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "company_users_user_id_idx" ON "company_users" ("user_id") Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "company_users_company_id_idx" ON "company_users" ("company_id") Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "company_users_company_role_id_idx" ON "company_users" ("company_role_id") Elapsed time: 6ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "company_users_is_deleted_idx" ON "company_users" ("is_deleted") Elapsed time: 7ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DROP TABLE IF EXISTS "user_company_context" CASCADE; Elapsed time: 1ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE TABLE IF NOT EXISTS "user_company_context" ("id" UUID NOT NULL , "keycloak_session_id" UUID NOT NULL UNIQUE , "company_id" UUID REFERENCES "companies" ("id") ON DELETE SET NULL ON UPDATE CASCADE , PRIMARY KEY ("id")); COMMENT ON COLUMN "user_company_context"."keycloak_session_id" IS 'Keycloak session ID from JWT token (unique per session)'; COMMENT ON COLUMN "user_company_context"."company_id" IS 'Active company for this session (nullable for SUPER_ADMIN)'; Elapsed time: 12ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): SELECT i.relname AS name, ix.indisprimary AS primary, ix.indisunique AS unique, ix.indkey AS indkey, array_agg(a.attnum) as column_indexes, array_agg(a.attname) AS column_names, pg_get_indexdef(ix.indexrelid) AS definition FROM pg_class t, pg_class i, pg_index ix, pg_attribute a WHERE t.oid = ix.indrelid AND i.oid = ix.indexrelid AND a.attrelid = t.oid AND t.relkind = 'r' and t.relname = 'user_company_context' GROUP BY i.relname, ix.indexrelid, ix.indisprimary, ix.indisunique, ix.indkey ORDER BY i.relname; Elapsed time: 4ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE UNIQUE INDEX "user_company_context_keycloak_session_id_unique" ON "user_company_context" ("keycloak_session_id") Elapsed time: 9ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): CREATE INDEX "user_company_context_company_id_idx" ON "user_company_context" ("company_id") Elapsed time: 8ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Ô£à Test database synced
+
+      at Object.<anonymous> (__tests__/setup.js:25:13)
+
+  console.log
+    Executed (default): DELETE FROM "users" Elapsed time: 3ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DELETE FROM "users" Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DELETE FROM "users" Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DELETE FROM "users" Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DELETE FROM "users" Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DELETE FROM "users" Elapsed time: 1ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DELETE FROM "users" Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DELETE FROM "users" Elapsed time: 1ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    Executed (default): DELETE FROM "users" Elapsed time: 2ms
+
+      at Sequelize.log (node_modules/sequelize/src/sequelize.js:1281:15)
+
+  console.log
+    ­ƒöî Closing test database connection...
+
+      at Object.<anonymous> (__tests__/setup.js:35:11)
+
+  console.log
+    Ô£à Connection closed
+
+      at Object.<anonymous> (__tests__/setup.js:37:11)
+
+FAIL src/models/__tests__/User.test.js (6.583 s)
+  User Model - Setup Verification
+    Environment Check
+      ÔêÜ should use test database (15 ms)
+    CRUD Operations
+      ├ù should create a user (109 ms)
+      ├ù should find created user (10 ms)
+      ├ù should update user (8 ms)
+      ├ù should soft delete user (7 ms)
+    Audit Fields
+      ├ù should populate audit fields on create (10 ms)
+      ├ù should update audit fields on update (9 ms)
+    Validation
+      ÔêÜ should require email (10 ms)
+      ÔêÜ should require keycloakId (6 ms)
+
+  ÔùÅ User Model - Setup Verification ÔÇ║ CRUD Operations ÔÇ║ should create a 
+user
+
+
+
+    [0m [90m 34 |[39m
+     [90m 35 |[39m       [90m// Act[39m
+    [31m[1m>[22m[39m[90m 36 |[39m       [36mconst[39m user [33m=[39m 
+[36mawait[39m [33mUser[39m[33m.[39mcreate(userData[33m,[39m { 
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 37 |[39m         context[33m:[39m { userId[33m:[39m 
+[32m'system'[39m } 
+     [90m 38 |[39m       })[33m;[39m
+     [90m 39 |[39m[0m
+
+      at Query.run 
+(node_modules/sequelize/src/dialects/postgres/query.js:76:25)
+      at node_modules/sequelize/src/sequelize.js:650:28
+      at PostgresQueryInterface.insert 
+(node_modules/sequelize/src/dialects/abstract/query-interface.js:795:21)
+      at model.save (node_modules/sequelize/src/model.js:4154:35)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Object.<anonymous> (src/models/__tests__/User.test.js:36:20)
+
+  ÔùÅ User Model - Setup Verification ÔÇ║ CRUD Operations ÔÇ║ should find 
+created user
+
+
+
+    [0m [90m 48 |[39m     it([32m'should find created 
+user'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 49 |[39m       [90m// Arrange - create user first[39m
+    [31m[1m>[22m[39m[90m 50 |[39m       [36mconst[39m created 
+[33m=[39m [36mawait[39m [33mUser[39m[33m.[39mcreate({
+     [90m    |[39m                       [31m[1m^[22m[39m
+     [90m 51 |[39m         email[33m:[39m 
+[32m'find@example.com'[39m[33m,[39m
+     [90m 52 |[39m         keycloakId[33m:[39m 
+[32m'kc-find-123'[39m[33m,[39m
+     [90m 53 |[39m         keycloakGlobalRole[33m:[39m 
+[32m'COMPANY_USER'[39m[0m
+
+      at Query.run 
+(node_modules/sequelize/src/dialects/postgres/query.js:76:25)
+      at node_modules/sequelize/src/sequelize.js:650:28
+      at PostgresQueryInterface.insert 
+(node_modules/sequelize/src/dialects/abstract/query-interface.js:795:21)
+      at model.save (node_modules/sequelize/src/model.js:4154:35)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Object.<anonymous> (src/models/__tests__/User.test.js:50:23)
+
+  ÔùÅ User Model - Setup Verification ÔÇ║ CRUD Operations ÔÇ║ should update 
+user
+
+
+
+    [0m [90m 65 |[39m     it([32m'should update user'[39m[33m,[39m 
+[36masync[39m () [33m=>[39m {
+     [90m 66 |[39m       [90m// Arrange[39m
+    [31m[1m>[22m[39m[90m 67 |[39m       [36mconst[39m user [33m=[39m 
+[36mawait[39m [33mUser[39m[33m.[39mcreate({
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 68 |[39m         email[33m:[39m 
+[32m'update@example.com'[39m[33m,[39m
+     [90m 69 |[39m         keycloakId[33m:[39m 
+[32m'kc-update-123'[39m[33m,[39m
+     [90m 70 |[39m         firstName[33m:[39m 
+[32m'John'[39m[33m,[39m[0m
+
+      at Query.run 
+(node_modules/sequelize/src/dialects/postgres/query.js:76:25)
+      at node_modules/sequelize/src/sequelize.js:650:28
+      at PostgresQueryInterface.insert 
+(node_modules/sequelize/src/dialects/abstract/query-interface.js:795:21)
+      at model.save (node_modules/sequelize/src/model.js:4154:35)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Object.<anonymous> (src/models/__tests__/User.test.js:67:20)
+
+  ÔùÅ User Model - Setup Verification ÔÇ║ CRUD Operations ÔÇ║ should soft 
+delete user
+
+
+
+    [0m [90m 90 |[39m     it([32m'should soft delete user'[39m[33m,[39m 
+[36masync[39m () [33m=>[39m {
+     [90m 91 |[39m       [90m// Arrange[39m
+    [31m[1m>[22m[39m[90m 92 |[39m       [36mconst[39m user [33m=[39m 
+[36mawait[39m [33mUser[39m[33m.[39mcreate({
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 93 |[39m         email[33m:[39m 
+[32m'delete@example.com'[39m[33m,[39m
+     [90m 94 |[39m         keycloakId[33m:[39m [32m'kc-delete-123'[39m
+     [90m 95 |[39m       }[33m,[39m { context[33m:[39m { 
+userId[33m:[39m [32m'system'[39m } })[33m;[39m[0m
+
+      at Query.run 
+(node_modules/sequelize/src/dialects/postgres/query.js:76:25)
+      at node_modules/sequelize/src/sequelize.js:650:28
+      at PostgresQueryInterface.insert 
+(node_modules/sequelize/src/dialects/abstract/query-interface.js:795:21)
+      at model.save (node_modules/sequelize/src/model.js:4154:35)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Object.<anonymous> (src/models/__tests__/User.test.js:92:20)
+
+  ÔùÅ User Model - Setup Verification ÔÇ║ Audit Fields ÔÇ║ should populate 
+audit fields on create
+
+
+
+    [0m [90m 119 |[39m
+     [90m 120 |[39m       [90m// Act[39m
+    [31m[1m>[22m[39m[90m 121 |[39m       [36mconst[39m user 
+[33m=[39m [36mawait[39m 
+[33mUser[39m[33m.[39mcreate(userData[33m,[39m { 
+     [90m     |[39m                    [31m[1m^[22m[39m
+     [90m 122 |[39m         context[33m:[39m { userId[33m:[39m 
+[32m'creator-123'[39m } 
+     [90m 123 |[39m       })[33m;[39m
+     [90m 124 |[39m[0m
+
+      at Query.run 
+(node_modules/sequelize/src/dialects/postgres/query.js:76:25)
+      at node_modules/sequelize/src/sequelize.js:650:28
+      at PostgresQueryInterface.insert 
+(node_modules/sequelize/src/dialects/abstract/query-interface.js:795:21)
+      at model.save (node_modules/sequelize/src/model.js:4154:35)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Object.<anonymous> (src/models/__tests__/User.test.js:121:20)
+
+  ÔùÅ User Model - Setup Verification ÔÇ║ Audit Fields ÔÇ║ should update audit 
+fields on update
+
+
+
+    [0m [90m 132 |[39m     it([32m'should update audit fields on 
+update'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 133 |[39m       [90m// Arrange[39m
+    [31m[1m>[22m[39m[90m 134 |[39m       [36mconst[39m user 
+[33m=[39m [36mawait[39m [33mUser[39m[33m.[39mcreate({
+     [90m     |[39m                    [31m[1m^[22m[39m
+     [90m 135 |[39m         email[33m:[39m 
+[32m'audit-update@example.com'[39m[33m,[39m
+     [90m 136 |[39m         keycloakId[33m:[39m 
+[32m'kc-audit-update-123'[39m
+     [90m 137 |[39m       }[33m,[39m { context[33m:[39m { 
+userId[33m:[39m [32m'creator-123'[39m } })[33m;[39m[0m
+
+      at Query.run 
+(node_modules/sequelize/src/dialects/postgres/query.js:76:25)
+      at node_modules/sequelize/src/sequelize.js:650:28
+      at PostgresQueryInterface.insert 
+(node_modules/sequelize/src/dialects/abstract/query-interface.js:795:21)
+      at model.save (node_modules/sequelize/src/model.js:4154:35)
+      at Function.create (node_modules/sequelize/src/model.js:2305:12)
+      at Object.<anonymous> (src/models/__tests__/User.test.js:134:20)
+
+-------------------------------------------------|---------|----------|---------|---------|----------------------------------------
+File                                             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                      
+-------------------------------------------------|---------|----------|---------|---------|----------------------------------------
+All files                                        |    5.61 |     1.25 |    6.29 |    5.51 |                                        
+ src                                             |       0 |        0 |       0 |       0 |                                        
+  app.js                                         |       0 |        0 |       0 |       0 | 27-124                                 
+ src/config                                      |   34.26 |    14.58 |   29.41 |    33.8 |                                        
+  database.js                                    |   28.26 |       18 |   41.66 |   27.47 | 40-124,142-146,204-245,262-291,301-309 
+  logger.js                                      |   45.09 |    10.86 |       0 |   45.09 | 62-69,139-173,180-184,214-220          
+ src/constants                                   |   46.66 |      100 |       0 |   46.66 |                                        
+  errorCodes.js                                  |       0 |      100 |     100 |       0 | 8                                      
+  index.js                                       |       0 |        0 |       0 |       0 |                                        
+  keycloakRoles.js                               |   63.63 |      100 |       0 |   63.63 | 43,52,61,70                            
+  superAdmin.js                                  |       0 |      100 |     100 |       0 | 13-27                                  
+ src/middleware                                  |       0 |        0 |       0 |       0 |                                        
+  authMiddleware.js                              |       0 |        0 |       0 |       0 | 18-333                                 
+  companyContextMiddleware.js                    |       0 |        0 |       0 |       0 | 19-100                                 
+  docsMiddleware.js                              |       0 |        0 |       0 |       0 | 13-202                                 
+  errorHandler.js                                |       0 |        0 |       0 |       0 | 29-382                                 
+  errorLogger.js                                 |       0 |        0 |       0 |       0 | 13-170                                 
+  requestLogger.js                               |       0 |        0 |       0 |       0 | 13-108                                 
+  validationMiddleware.js                        |       0 |        0 |       0 |       0 | 20-70                                  
+ src/migrations                                  |       0 |        0 |       0 |       0 |                                        
+  20241122150000-create-users.js                 |       0 |      100 |       0 |       0 | 11-105                                 
+  20241122160000-create-demo-auditable-models.js |       0 |      100 |       0 |       0 | 10-161                                 
+  20241122170000-update-users-role-enum.js       |       0 |      100 |       0 |       0 | 11-86                                  
+  20241122180000-create-companies.js             |       0 |        0 |       0 |       0 | 10-160                                 
+  20241122190000-create-company-roles.js         |       0 |        0 |       0 |       0 | 10-174                                 
+  20241122200000-create-company-users.js         |       0 |      100 |       0 |       0 | 10-155                                 
+  20241122210000-create-user-company-context.js  |       0 |      100 |       0 |       0 | 10-76                                  
+ src/models                                      |   68.14 |       25 |   66.66 |   68.14 |                                        
+  Company.js                                     |      55 |        0 |      50 |      55 | 69-80                                  
+  CompanyRole.js                                 |   52.63 |        0 |      50 |   52.63 | 100-111                                
+  CompanyUser.js                                 |   57.14 |        0 |      50 |   57.14 | 107-118                                
+  DemoAuditableModel.js                          |   52.63 |        0 |      50 |   52.63 | 84-103                                 
+  User.js                                        |     100 |      100 |     100 |     100 |                                        
+  UserCompanyContext.js                          |     100 |      100 |     100 |     100 |                                        
+  index.js                                       |     100 |       50 |     100 |     100 | 32-47                                  
+ src/models/base                                 |   15.27 |        0 |      50 |   10.29 |                                        
+  AuditableEntity.js                             |   15.27 |        0 |      50 |   10.29 | 98-226,269-299                         
+ src/modules/admin                               |       0 |        0 |       0 |       0 |                                        
+  adminController.js                             |       0 |        0 |       0 |       0 | 18-893                                 
+  adminDocs.js                                   |       0 |      100 |     100 |       0 | 7                                      
+  adminRoutes.js                                 |       0 |      100 |       0 |       0 | 25-106                                 
+  index.js                                       |       0 |        0 |       0 |       0 |                                        
+ src/modules/auth                                |       0 |        0 |       0 |       0 |                                        
+  authController.js                              |       0 |        0 |       0 |       0 | 15-618                                 
+  authDocs.js                                    |       0 |      100 |     100 |       0 | 7                                      
+  authRoutes.js                                  |       0 |      100 |       0 |       0 | 13-69                                  
+  index.js                                       |       0 |        0 |       0 |       0 |                                        
+ src/modules/health                              |       0 |        0 |       0 |       0 |                                        
+  healthController.js                            |       0 |        0 |       0 |       0 | 11-288                                 
+  healthDocs.js                                  |       0 |      100 |     100 |       0 | 7                                      
+  healthRoutes.js                                |       0 |      100 |       0 |       0 | 11-53                                  
+  index.js                                       |       0 |        0 |       0 |       0 |                                        
+ src/modules/superAdmin                          |       0 |        0 |       0 |       0 |                                        
+  index.js                                       |       0 |        0 |       0 |       0 |                                        
+  superAdminController.js                        |       0 |        0 |       0 |       0 | 20-1570                                
+  superAdminDocs.js                              |       0 |      100 |     100 |       0 | 7                                      
+  superAdminRoutes.js                            |       0 |      100 |       0 |       0 | 36-195                                 
+ src/modules/users                               |       0 |        0 |       0 |       0 |                                        
+  index.js                                       |       0 |        0 |       0 |       0 |                                        
+  userController.js                              |       0 |        0 |       0 |       0 | 32-487                                 
+  userDocs.js                                    |       0 |      100 |     100 |       0 | 7                                      
+  userRoutes.js                                  |       0 |      100 |       0 |       0 | 13-62                                  
+ src/repositories                                |       0 |        0 |       0 |       0 |                                        
+  companyRepository.js                           |       0 |        0 |       0 |       0 | 23-143                                 
+  companyUserRepository.js                       |       0 |        0 |       0 |       0 | 23-210                                 
+  roleRepository.js                              |       0 |        0 |       0 |       0 | 23-124                                 
+  userRepository.js                              |       0 |        0 |       0 |       0 | 23-137                                 
+ src/repositories/base                           |       0 |        0 |       0 |       0 |                                        
+  BaseRepository.js                              |       0 |        0 |       0 |       0 | 25-456                                 
+ src/services                                    |       0 |        0 |       0 |       0 |                                        
+  companyService.js                              |       0 |        0 |       0 |       0 | 14-316                                 
+  companyUserService.js                          |       0 |        0 |       0 |       0 | 16-296                                 
+  keycloakService.js                             |       0 |        0 |       0 |       0 | 13-613                                 
+  roleService.js                                 |       0 |        0 |       0 |       0 | 13-253                                 
+  userService.js                                 |       0 |        0 |       0 |       0 | 17-464                                 
+ src/utils                                       |    4.44 |        0 |    2.22 |    4.46 |                                        
+  businessHelpers.js                             |       0 |        0 |       0 |       0 | 25-297                                 
+  contextHelpers.js                              |       0 |        0 |       0 |       0 | 23-38                                  
+  errors.js                                      |       0 |        0 |       0 |       0 | 14-130                                 
+  logger.js                                      |   52.17 |        0 |      10 |   52.17 | 14,18-25,29,33,37,47,57,66,75          
+  responseHelpers.js                             |       0 |        0 |       0 |       0 | 21-149                                 
+  runMigration.js                                |       0 |        0 |       0 |       0 | 9-32                                   
+  validators.js                                  |       0 |        0 |       0 |       0 | 15-376                                 
+-------------------------------------------------|---------|----------|---------|---------|----------------------------------------
+Jest: "global" coverage threshold for statements (70%) not met: 5.61%
+Jest: "global" coverage threshold for branches (70%) not met: 1.25%
+Jest: "global" coverage threshold for lines (70%) not met: 5.51%
+Jest: "global" coverage threshold for functions (70%) not met: 6.29%
+Test Suites: 1 failed, 1 total
+Tests:       6 failed, 3 passed, 9 total
+Snapshots:   0 total
+Time:        16.931 s
+Ran all test suites matching /src\\models\\__tests__\\User.test.js/i.

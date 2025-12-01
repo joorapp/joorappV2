@@ -266,7 +266,7 @@ export const applyOptimisticLocking = (Model) => {
   
   Model.prototype.save = async function(options = {}) {
     // Only apply optimistic locking for updates (not creates)
-    if (!this.isNewRecord && this.changed() && this.changed().length > 0) {
+    if (!this.isNewRecord) {
       // Get the expected version from previous values (before any changes)
       const expectedVersion = this._previousDataValues?.version ?? 
                             (this.dataValues?.version !== undefined ? this.dataValues.version : 
@@ -274,15 +274,16 @@ export const applyOptimisticLocking = (Model) => {
       
       // Check version before save to prevent optimistic lock conflicts
       // NOTE: This is a pre-check, not in WHERE clause (see LIMITATIONS above)
-      const currentRecord = await Model.findByPk(this.id, {
+      // CRITICAL: Use withDeleted scope to find soft-deleted records
+      const currentRecord = await Model.scope('withDeleted').findByPk(this.id, {
         attributes: ['version'],
         raw: true
       });
       
       if (!currentRecord || currentRecord.version !== expectedVersion) {
         // Version mismatch - optimistic lock conflict
-        await this.reload();
-        const currentVersion = this.version;
+        // Reload current version to provide accurate error message
+        const currentVersion = currentRecord ? currentRecord.version : 'DELETED';
         
         throw new Error(
           `OptimisticLockError: Record was modified by another process. ` +
@@ -295,7 +296,7 @@ export const applyOptimisticLocking = (Model) => {
       // The original save() will include all changed fields including audit fields set by beforeUpdate hook
       return originalSave.call(this, options);
     } else {
-      // For new records or when nothing changed, use original save
+      // For new records, use original save
       return originalSave.call(this, options);
     }
   };

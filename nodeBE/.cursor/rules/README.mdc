@@ -15,11 +15,12 @@ Before writing any backend code, follow these rules:
 5. **authentication.mdc** - **Authentication middleware application rules** (CRITICAL - when to apply authMiddleware)
 6. **api-responses.mdc** - **API response standardization rules** (CRITICAL - standardized response format with meta field)
 7. **validation.mdc** - **Request validation patterns and utilities** (CRITICAL - when to use simple validators vs express-validator)
-8. **security.mdc** - Security best practices
-9. **coding-standards.mdc** - General coding standards
-10. **database.mdc** - Database connection and Sequelize patterns
-11. **model-creation.mdc** - Model creation guidelines and AuditableEntity integration
-12. **keycloak.mdc** - Keycloak integration patterns
+8. **repository-service-pattern.mdc** - **Repository and Service layer patterns** (CRITICAL - how to create repositories and services)
+9. **security.mdc** - Security best practices
+10. **coding-standards.mdc** - General coding standards
+11. **database.mdc** - Database connection and Sequelize patterns
+12. **model-creation.mdc** - Model creation guidelines and AuditableEntity integration
+13. **keycloak.mdc** - Keycloak integration patterns
 
 **⚠️ IMPORTANT**: Before creating middleware or services, read the "Import Order and Database Access" section in `architecture.mdc` to prevent server startup crashes.
 
