@@ -13,43 +13,77 @@ When teammates run `docker-compose up` for the first time, they will automatical
 
 You need to create a SQL dump of your dev database. **Do NOT include the test database** - it should remain empty for tests.
 
+⚠️ **Important**: Use the `--if-exists` flag to prevent errors when dropping constraints on non-existent tables, and ensure UTF-8 encoding (especially on Windows).
+
 ### Option A: Schema Only (Recommended for first time)
 
 This gives teammates the table structure without any data:
 
+**Windows PowerShell:**
+```powershell
+# Make sure your containers are running
+docker-compose -f docker-compose.dev.yml up -d
+
+# Export schema only (no data) with UTF-8 encoding
+docker exec -t joorapp-postgres-dev pg_dump -U v2_devDB -d joorapp_devDB --schema-only -c --if-exists | Out-File -Encoding utf8 postgres_init/init-dev-db.sql
+```
+
+**Linux/Mac/Git Bash:**
 ```bash
 # Make sure your containers are running
 docker-compose -f docker-compose.dev.yml up -d
 
 # Export schema only (no data)
-docker exec -t joorapp-postgres-dev pg_dump -U v2_devDB -d joorapp_devDB --schema-only -c > postgres_init/init-dev-db.sql
+docker exec -t joorapp-postgres-dev pg_dump -U v2_devDB -d joorapp_devDB --schema-only -c --if-exists > postgres_init/init-dev-db.sql
 ```
 
 ### Option B: Schema + Data (If you want to share seed data)
 
 This includes both structure and data:
 
+**Windows PowerShell:**
+```powershell
+# Export schema + data with UTF-8 encoding
+docker exec -t joorapp-postgres-dev pg_dump -U v2_devDB -d joorapp_devDB -c --if-exists | Out-File -Encoding utf8 postgres_init/init-dev-db.sql
+```
+
+**Linux/Mac/Git Bash:**
 ```bash
 # Export schema + data
-docker exec -t joorapp-postgres-dev pg_dump -U v2_devDB -d joorapp_devDB -c > postgres_init/init-dev-db.sql
+docker exec -t joorapp-postgres-dev pg_dump -U v2_devDB -d joorapp_devDB -c --if-exists > postgres_init/init-dev-db.sql
 ```
 
 **Important Notes:**
 - Replace `v2_devDB` with your actual `DB_USER` value if different
 - Replace `joorapp_devDB` with your actual `DB_NAME` value if different
 - The `-c` flag ensures "clean" statements (DROP/CREATE) for idempotency
+- The `--if-exists` flag adds `IF EXISTS` checks to DROP statements, preventing errors when tables don't exist yet
+- On Windows, use `Out-File -Encoding utf8` instead of `>` to ensure UTF-8 encoding (not UTF-16 with BOM)
 - Only dump the **dev database**, NOT the test database
 
 ### Verify the Export
 
 Check that the file was created and has content:
 
+**Windows PowerShell:**
+```powershell
+Get-Item postgres_init/init-dev-db.sql | Select-Object Length
+Get-Content postgres_init/init-dev-db.sql -TotalCount 20
+```
+
+**Linux/Mac/Git Bash:**
 ```bash
 ls -lh postgres_init/init-dev-db.sql
 head -20 postgres_init/init-dev-db.sql
 ```
 
-You should see SQL statements like `DROP TABLE IF EXISTS`, `CREATE TABLE`, etc.
+You should see SQL statements like `DROP TABLE IF EXISTS`, `DROP CONSTRAINT IF EXISTS`, `CREATE TABLE`, etc.
+
+**Verify UTF-8 encoding (Windows):**
+```powershell
+# Check file encoding (should NOT start with UTF-16 BOM: 0xFF 0xFE)
+# The file should be readable by PostgreSQL without encoding errors
+```
 
 ## Step 2: Export Keycloak Realm Configuration
 
@@ -339,6 +373,22 @@ docker-compose -f docker-compose.dev.yml up -d
 - Ensure the SQL file is properly formatted
 - Make sure you removed volumes (`-v` flag) before starting
 
+### UTF-8 encoding errors (Windows)
+
+If you see errors like `ERROR: invalid byte sequence for encoding "UTF8": 0xff`:
+
+- The dump file was created with wrong encoding (UTF-16 with BOM instead of UTF-8)
+- Regenerate the dump using `Out-File -Encoding utf8` on Windows (see Step 1)
+- Or use Git Bash/WSL instead of PowerShell for the dump command
+
+### DROP CONSTRAINT errors
+
+If you see errors like `ERROR: relation "public.user_company_context" does not exist`:
+
+- The dump was created without the `--if-exists` flag
+- Regenerate the dump with `--if-exists` flag (see Step 1)
+- This adds `IF EXISTS` checks to all DROP statements
+
 ### Application can't connect to Keycloak
 
 - Verify Keycloak is running: `curl http://localhost:8080/health/ready`
@@ -377,8 +427,25 @@ sudo usermod -aG docker $USER
 If you make changes to your database schema or Keycloak configuration:
 
 1. **Update database dump**:
+
+   **Windows PowerShell:**
+   ```powershell
+   docker exec -t joorapp-postgres-dev pg_dump -U v2_devDB -d joorapp_devDB --schema-only -c --if-exists | Out-File -Encoding utf8 postgres_init/init-dev-db.sql
+   ```
+
+   **Linux/Mac/Git Bash:**
    ```bash
-   docker exec -t joorapp-postgres-dev pg_dump -U v2_devDB -d joorapp_devDB --schema-only -c > postgres_init/init-dev-db.sql
+   docker exec -t joorapp-postgres-dev pg_dump -U v2_devDB -d joorapp_devDB --schema-only -c --if-exists > postgres_init/init-dev-db.sql
+   ```
+
+   **For Schema + Data (Windows PowerShell):**
+   ```powershell
+   docker exec -t joorapp-postgres-dev pg_dump -U v2_devDB -d joorapp_devDB -c --if-exists | Out-File -Encoding utf8 postgres_init/init-dev-db.sql
+   ```
+
+   **For Schema + Data (Linux/Mac/Git Bash):**
+   ```bash
+   docker exec -t joorapp-postgres-dev pg_dump -U v2_devDB -d joorapp_devDB -c --if-exists > postgres_init/init-dev-db.sql
    ```
 
 2. **Update Keycloak export**:
