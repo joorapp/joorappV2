@@ -13,6 +13,10 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Dev database: restore your schema/data (created via pg_dump)
+      - ./postgres_init/init-dev-db.sql:/docker-entrypoint-initdb.d/01-init-dev-db.sql:ro
+      # Test database: create empty database
+      - ./docker/init-test-db.sh:/docker-entrypoint-initdb.d/02-init-test-db.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
@@ -26,7 +30,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:25.0.6
     container_name: joorapp-keycloak-dev
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
@@ -39,6 +43,9 @@ services:
       KC_HOSTNAME_STRICT: "false"
     ports:
       - "${KEYCLOAK_PORT}:8080"
+    volumes:
+      # Keycloak realm configuration (exported from your setup)
+      - ./keycloak_data/realm-export.json:/opt/keycloak/data/import/realm.json:ro
     depends_on:
       postgres:
         condition: service_healthy
