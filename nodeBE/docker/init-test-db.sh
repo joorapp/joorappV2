@@ -6,11 +6,10 @@ until pg_isready -U "$POSTGRES_USER" -d postgres; do
   sleep 1
 done
 
-# Create test database if it doesn't exist
+# Create test database if it doesn't exist (with quotes to preserve case)
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres" <<-EOSQL
-    SELECT 'CREATE DATABASE joorapp_testDB'
+    SELECT 'CREATE DATABASE "joorapp_testDB"'
     WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'joorapp_testDB')\gexec
 EOSQL
 
 echo "✅ Test database 'joorapp_testDB' created (or already exists)"
-
