@@ -41,11 +41,11 @@ router.get('/list', authMiddleware, asyncHandler(getUsers));
 router.get('/:id', authMiddleware, asyncHandler(getUserById));
 
 /**
- * @route   POST /api/v2/users
+ * @route   POST /api/v2/users/create
  * @desc    Create new user
  * @access  Protected (requires Bearer token)
  */
-router.post('/', authMiddleware, asyncHandler(createUser));
+router.post('/create', authMiddleware, asyncHandler(createUser));
 
 /**
  * @route   PUT /api/v2/users/:id

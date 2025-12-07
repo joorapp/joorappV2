@@ -9,6 +9,7 @@ import { CompanyRole, Company, User } from '../index.js';
 import { v4 as uuidv4 } from 'uuid';
 import { createRoleData, createCompanyData, createUserData, createAuditContext } from '../../../__tests__/helpers/factories.js';
 import { cleanDatabase } from '../../../__tests__/helpers/database.js';
+import { sequelize } from '../../config/database.js';
 
 describe('CompanyRole Model', () => {
   let testContext;
@@ -99,6 +100,19 @@ describe('CompanyRole Model', () => {
     let activeRole, deletedRole;
     
     beforeEach(async () => {
+      // Clean ALL roles and companies to ensure isolation
+      await sequelize.query('TRUNCATE TABLE company_roles CASCADE');
+      await sequelize.query('TRUNCATE TABLE companies CASCADE');
+      
+      // Recreate test user, company, and context after cleanup
+      testUser = await User.create(createUserData());
+      testContext = createAuditContext(testUser.id);
+      
+      testCompany = await Company.create(
+        createCompanyData({ name: 'Test Corp' }),
+        { context: testContext }
+      );
+      
       // Create active role
       activeRole = await CompanyRole.create(
         createRoleData({ name: 'Active Role', code: 'ACTIVE' }),

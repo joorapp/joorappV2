@@ -7,6 +7,10 @@
  */
 
 import { ValidationError } from './errors.js';
+import { createModuleLogger } from './logger.js';
+
+// Create module logger
+const logger = createModuleLogger('validators');
 
 /**
  * UUID validation regex pattern

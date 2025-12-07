@@ -280,9 +280,11 @@ export const getUserFromToken = (decodedToken) => {
     };
 
     // Map Keycloak realm roles to global role enum
-    // Only SUPER_ADMIN and COMPANY_USER are valid global roles
+    // Valid global roles: SUPER_ADMIN, COMPANY_ADMIN, COMPANY_USER
     if (userInfo.roles.includes('SUPER_ADMIN')) {
       userInfo.keycloakGlobalRole = 'SUPER_ADMIN';
+    } else if (userInfo.roles.includes('COMPANY_ADMIN')) {
+      userInfo.keycloakGlobalRole = 'COMPANY_ADMIN';
     } else if (userInfo.roles.includes('COMPANY_USER')) {
       userInfo.keycloakGlobalRole = 'COMPANY_USER';
     } else {

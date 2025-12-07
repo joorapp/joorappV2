@@ -13,6 +13,8 @@ alwaysApply: true
 5. Create `index.js` - Module exports (exports routes and docs)
 6. Register in `app.js`: `app.use('/api/v2/{module}', {module}Routes)`
 7. **Add to `registeredModules` array in `app.js`** - Required for startup logging
+8. **Create controller test** in `src/modules/{module}/__tests__/{module}Controller.test.js` (see test-file-locations.mdc)
+9. **Create integration test** in `src/modules/__tests__/{module}.integration.test.js` (see test-file-locations.mdc)
 
 ## Route Handler Pattern
 ```javascript
@@ -336,6 +338,57 @@ export default {
 - Documentation route: `router.get('/', (req, res) => { /* return docs */ })`
 - Action routes: `router.get('/action', controller.handler)`
 - All routes are relative to `/api/v2/{module}`
+
+## Endpoint Conflict Prevention
+
+**CRITICAL**: No endpoint should conflict with documentation or health endpoints.
+
+### Documentation Endpoint Pattern
+- Documentation endpoint: `GET /api/v2/{module}` (base module path)
+- Pattern matched by error handler: `/^\/api\/v2\/[^\/]+$/` (exactly `/api/v2/{module}` with no additional path)
+
+### Health Endpoint Pattern
+- Health endpoints: `/api/v2/health/*` (any path under health)
+
+### Conflict Rules
+
+**DO NOT** create endpoints that match these patterns:
+- ❌ `POST /api/v2/{module}` - Conflicts with docs endpoint `GET /api/v2/{module}`
+- ❌ `PUT /api/v2/{module}` - Conflicts with docs endpoint
+- ❌ `DELETE /api/v2/{module}` - Conflicts with docs endpoint
+- ❌ `PATCH /api/v2/{module}` - Conflicts with docs endpoint
+- ❌ Any method on `/api/v2/health` - Reserved for health checks
+
+**DO** use sub-paths for actions:
+- ✅ `POST /api/v2/{module}/create` - Create resource
+- ✅ `POST /api/v2/{module}/action` - Any action
+- ✅ `GET /api/v2/{module}/list` - List resources
+- ✅ `GET /api/v2/{module}/:id` - Get by ID (with path param is OK)
+- ✅ `PUT /api/v2/{module}/:id` - Update by ID (with path param is OK)
+
+### Examples
+
+**BAD** (conflicts with docs):
+```javascript
+// ❌ POST /api/v2/users conflicts with GET /api/v2/users (docs)
+router.post('/', authMiddleware, asyncHandler(createUser));
+```
+
+**GOOD** (no conflict):
+```javascript
+// ✅ POST /api/v2/users/create - No conflict
+router.post('/create', authMiddleware, asyncHandler(createUser));
+
+// ✅ POST /api/v2/users - OK if it's a sub-path like /api/v2/users/list
+router.post('/list', authMiddleware, asyncHandler(listUsers));
+```
+
+### Verification
+Before creating a new endpoint, verify:
+1. Does it match `/^\/api\/v2\/[^\/]+$/` pattern? → **MUST use sub-path**
+2. Is it under `/api/v2/health`? → **NOT ALLOWED**
+3. Is it `GET /api/v2/{module}`? → **OK (docs endpoint)**
+4. Does it have additional path segments? → **OK (no conflict)**
 
 ## Module Registration
 

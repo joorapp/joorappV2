@@ -593,8 +593,8 @@ describe('Super Admin Controller', () => {
     });
   });
 
-  describe('deleteUser', () => {
-    it('should delete user successfully', async () => {
+  describe('disableUser', () => {
+    it('should disable user successfully', async () => {
       // Arrange
       const userId = uuidv4();
       req.params = { id: userId };
@@ -607,7 +607,7 @@ describe('Super Admin Controller', () => {
       mockDeleteUserFromDB.mockResolvedValue(undefined);
 
       // Act
-      await superAdminController.deleteUser(req, res);
+      await superAdminController.disableUser(req, res);
 
       // Assert
       expect(mockGetUserById).toHaveBeenCalledWith(userId);

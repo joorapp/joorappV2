@@ -1,0 +1,248 @@
+---
+description: Database cleanup script maintenance rules - adding new models to cleanup script
+globs: ["nodeBE/scripts/clean-test-database.js", "nodeBE/src/models/**/*.js"]
+alwaysApply: true
+---
+# Database Cleanup Script Maintenance Rules
+
+## Overview
+
+This document defines **MANDATORY** rules for maintaining the database cleanup script (`scripts/clean-test-database.js`). When creating a new model, you MUST add its table to the cleanup script.
+
+## Critical Rule
+
+**⚠️ MANDATORY**: When creating a new model, you MUST:
+
+1. **Add the table name to `scripts/clean-test-database.js`**
+2. **Place it in the correct dependency order**
+3. **Use CASCADE for foreign key dependencies**
+
+**Failure to do this will cause test failures due to leftover data.**
+
+## Table Order Rules
+
+### Dependency Order
+
+Tables MUST be listed in **reverse dependency order** (child tables before parent tables):
+
+1. **Tables with no dependencies** (standalone or only reference `users`)
+2. **Tables that depend on other tables** (but not `users`)
+3. **Base/reference tables** (like `users` - referenced by others)
+
+### Current Order
+
+```javascript
+const tables = [
+  'user_company_context',      // No dependencies (or minimal)
+  'company_users',             // Depends on users, companies, company_roles
+  'company_roles',             // Depends on users
+  'companies',                 // Depends on users
+  'demo_auditable_models',     // Depends on users
+  'users'                      // Base table, referenced by others
+];
+```
+
+### Adding New Tables
+
+**Rule**: Add new tables in the correct position based on dependencies:
+
+1. **Identify dependencies**: What tables does your new table reference?
+2. **Find position**: Place it BEFORE tables it depends on
+3. **Use CASCADE**: Always use `TRUNCATE TABLE ... CASCADE`
+
+**Example**: If creating `Order` model that depends on `users` and `companies`:
+
+```javascript
+const tables = [
+  'user_company_context',
+  'company_users',
+  'orders',                    // NEW: Depends on users, companies (add before companies)
+  'company_roles',
+  'companies',                 // Order depends on this
+  'demo_auditable_models',
+  'users'                      // Order depends on this
+];
+```
+
+## Implementation Steps
+
+### Step 1: Identify Table Dependencies
+
+Check your model's associations:
+- Does it have `belongsTo(User)`? → Depends on `users`
+- Does it have `belongsTo(Company)`? → Depends on `companies`
+- Does it have other foreign keys? → Depends on those tables
+
+### Step 2: Find Correct Position
+
+Place your table BEFORE all tables it depends on:
+
+```javascript
+// If Order depends on users and companies:
+const tables = [
+  'user_company_context',
+  'company_users',
+  'orders',           // ✅ Correct: Before companies and users
+  'company_roles',
+  'companies',        // Order depends on this
+  'demo_auditable_models',
+  'users'             // Order depends on this
+];
+```
+
+### Step 3: Add to Cleanup Script
+
+Update `scripts/clean-test-database.js`:
+
+```javascript
+const tables = [
+  'user_company_context',
+  'company_users',
+  'orders',                    // NEW: Add here in correct order
+  'company_roles',
+  'companies',
+  'demo_auditable_models',
+  'users'
+];
+
+// Truncate each table with CASCADE
+for (const table of tables) {
+  try {
+    await sequelize.query(`TRUNCATE TABLE ${table} CASCADE`);
+    logInfo(`  ✅ Truncated: ${table}`);
+  } catch (error) {
+    if (error.message.includes('does not exist')) {
+      logInfo(`  ⚠️  Table ${table} does not exist (skipping)`);
+    } else {
+      throw error;
+    }
+  }
+}
+```
+
+## CASCADE Usage
+
+**ALWAYS use CASCADE** when truncating tables:
+
+```javascript
+await sequelize.query(`TRUNCATE TABLE ${table} CASCADE`);
+```
+
+**Why?** CASCADE automatically handles foreign key dependencies, so you don't need to worry about constraint violations.
+
+## Model Creation Checklist Integration
+
+**When creating a new model**, add this to your checklist:
+
+- [ ] Model file created
+- [ ] Model registered in `models/index.js`
+- [ ] Associations defined
+- [ ] **Table added to `scripts/clean-test-database.js`** ← **REQUIRED**
+- [ ] Model test file created
+- [ ] Tests passing
+
+## Verification
+
+After adding a new table to the cleanup script:
+
+1. **Run cleanup script manually**:
+   ```bash
+   node scripts/clean-test-database.js
+   ```
+   Should complete without errors
+
+2. **Run tests**:
+   ```bash
+   npm run test:quick
+   ```
+   Should not have leftover data issues
+
+3. **Check test isolation**:
+   - Tests should not find data from previous test runs
+   - Each test should start with a clean database
+
+## Common Patterns
+
+### Pattern 1: Model Depends Only on Users
+
+```javascript
+// If new model only references users:
+const tables = [
+  'user_company_context',
+  'company_users',
+  'company_roles',
+  'companies',
+  'new_model_table',      // Add here (before users)
+  'demo_auditable_models',
+  'users'
+];
+```
+
+### Pattern 2: Model Depends on Multiple Tables
+
+```javascript
+// If new model references users, companies, and company_roles:
+const tables = [
+  'user_company_context',
+  'company_users',
+  'new_model_table',      // Add here (before all dependencies)
+  'company_roles',        // New model depends on this
+  'companies',            // New model depends on this
+  'demo_auditable_models',
+  'users'                 // New model depends on this
+];
+```
+
+### Pattern 3: Model Has No Dependencies
+
+```javascript
+// If new model is standalone:
+const tables = [
+  'new_model_table',      // Add at the beginning
+  'user_company_context',
+  'company_users',
+  // ... rest
+];
+```
+
+## Error Prevention
+
+### Common Mistakes
+
+❌ **Adding table at the end**:
+```javascript
+const tables = [
+  'user_company_context',
+  'company_users',
+  // ...
+  'users',
+  'new_table'  // ❌ WRONG: If it depends on users, this will fail
+];
+```
+
+✅ **Adding table in correct position**:
+```javascript
+const tables = [
+  'user_company_context',
+  'company_users',
+  'new_table',  // ✅ CORRECT: Before users (its dependency)
+  // ...
+  'users'
+];
+```
+
+❌ **Not using CASCADE**:
+```javascript
+await sequelize.query(`TRUNCATE TABLE ${table}`);  // ❌ May fail with foreign key errors
+```
+
+✅ **Using CASCADE**:
+```javascript
+await sequelize.query(`TRUNCATE TABLE ${table} CASCADE`);  // ✅ Handles dependencies
+```
+
+## Related Rules
+
+- **model-creation.mdc** - Model creation checklist (includes cleanup script step)
+- **testing.mdc** - Main testing rules
+- **test-creation-requirements.mdc** - Test requirements

@@ -221,7 +221,7 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   // Handle specific error types (backward compatibility)
-  if (err.name === 'ValidationError') {
+  if (err.name === 'ValidationError' && !(err instanceof CustomValidationError)) {
     errorCode = 'VALIDATION_ERROR';
     statusCode = 400;
     errorDetails = err.details || err.message;
@@ -230,7 +230,7 @@ export const errorHandler = (err, req, res, next) => {
       validationErrors: err.details || err.message
     });
     return res.status(statusCode).json(
-      errorResponse('Validation Error', errorCode, statusCode, errorDetails, req)
+      errorResponse(err.message, errorCode, statusCode, errorDetails, req)
     );
   }
 

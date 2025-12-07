@@ -21,8 +21,11 @@ Before writing any backend code, follow these rules:
 11. **database.mdc** - Database connection and Sequelize patterns
 12. **model-creation.mdc** - Model creation guidelines and AuditableEntity integration
 13. **keycloak.mdc** - Keycloak integration patterns
+14. **testing.mdc** - Testing rules and guidelines (test creation, file locations, standards)
 
 **⚠️ IMPORTANT**: Before creating middleware or services, read the "Import Order and Database Access" section in `architecture.mdc` to prevent server startup crashes.
+
+**⚠️ TESTING**: When creating new code, ALWAYS create corresponding tests. See **testing.mdc** and related testing rule files (test-file-locations.mdc, test-creation-requirements.mdc, testing-standards.mdc, etc.) for test file locations, requirements, and standards.
 
 ## Quick Reference
 - Use ES6 modules: `import/export`

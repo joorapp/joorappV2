@@ -8,6 +8,7 @@ import { companyUserRepository } from '../companyUserRepository.js';
 import { CompanyUser, Company, User, CompanyRole } from '../../models/index.js';
 import { createCompanyUserData, createCompanyData, createUserData, createRoleData, createAuditContext } from '../../../__tests__/helpers/factories.js';
 import { cleanDatabase } from '../../../__tests__/helpers/database.js';
+import { sequelize } from '../../config/database.js';
 
 describe('CompanyUserRepository', () => {
   let testUser, regularUser;
@@ -246,6 +247,9 @@ describe('CompanyUserRepository', () => {
 
   describe('Complex Query: findActiveAssignments', () => {
     beforeEach(async () => {
+      // Clean company_users table to ensure test isolation
+      await sequelize.query('TRUNCATE TABLE company_users CASCADE');
+      
       const user2 = await User.create(createUserData({ email: 'user2@example.com' }));
 
       await companyUserRepository.create(

@@ -18,6 +18,7 @@ export const createMockCompany = (overrides = {}) => {
   return {
     id: companyId,
     name: overrides.name || `Company ${Date.now()}`,
+    code: overrides.code !== undefined ? overrides.code : null,
     description: overrides.description !== undefined ? overrides.description : 'Test company description',
     isActive: overrides.isActive !== undefined ? overrides.isActive : true,
     createdDate: overrides.createdDate || new Date(),

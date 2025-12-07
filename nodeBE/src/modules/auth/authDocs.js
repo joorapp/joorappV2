@@ -469,13 +469,13 @@ export const authDocs = {
         }
       },
       requestBody: {
-        required: false,
+        required: true,
         contentType: 'application/json',
         schema: {
           refresh_token: {
             type: 'string',
-            required: false,
-            description: 'Refresh token to invalidate (optional, but recommended)'
+            required: true,
+            description: 'Refresh token to invalidate the specific session in Keycloak. Required for proper session invalidation (e.g., logout from Browser B while Browser A session continues).'
           }
         },
         example: {
@@ -495,6 +495,20 @@ export const authDocs = {
               endpoint: '/api/v2/auth/logout',
               method: 'POST',
               duration: 167
+            }
+          }
+        },
+        400: {
+          description: 'Validation error - refresh_token is required',
+          example: {
+            success: false,
+            error: 'VALIDATION_ERROR',
+            message: 'refresh_token is required',
+            timestamp: '2024-11-23T12:00:00.000Z',
+            meta: {
+              requestId: 'req-1234567890',
+              endpoint: '/api/v2/auth/logout',
+              method: 'POST'
             }
           }
         },

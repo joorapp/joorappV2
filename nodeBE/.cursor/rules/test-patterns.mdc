@@ -1,0 +1,320 @@
+---
+description: Common test patterns and templates
+globs: ["nodeBE/**/*.test.js"]
+alwaysApply: true
+---
+# Test Patterns
+
+## Overview
+
+This document provides common test patterns and templates for the JoorApp V2 Backend. Use these patterns to ensure consistency across all tests.
+
+## ES Module Mocking Pattern
+
+### Service Test Pattern
+
+```javascript
+import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
+
+// Mock dependencies
+jest.unstable_mockModule('../repositories/userRepository.js', () => ({
+  userRepository: {
+    findByIdOrFail: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn()
+  }
+}));
+
+describe('UserService', () => {
+  let userService;
+  let userRepository;
+  
+  beforeAll(async () => {
+    const module = await import('../userService.js');
+    userService = module;
+    const repoModule = await import('../repositories/userRepository.js');
+    userRepository = repoModule.userRepository;
+  });
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  describe('getUserById', () => {
+    it('should return user DTO', async () => {
+      // Arrange
+      const mockUser = { id: '123', email: 'test@example.com' };
+      userRepository.findByIdOrFail.mockResolvedValue(mockUser);
+      
+      // Act
+      const result = await userService.getUserById('123');
+      
+      // Assert
+      expect(result).toEqual({ id: '123', email: 'test@example.com' });
+      expect(userRepository.findByIdOrFail).toHaveBeenCalledWith('123');
+    });
+  });
+});
+```
+
+## Controller Test Pattern
+
+```javascript
+import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
+
+// Mock services and validators
+jest.unstable_mockModule('../../services/userService.js', () => ({
+  getUserById: jest.fn()
+}));
+
+jest.unstable_mockModule('../../utils/validators.js', () => ({
+  validateUUID: jest.fn()
+}));
+
+describe('UserController', () => {
+  let getUser;
+  let userService;
+  let validateUUID;
+  let req, res;
+  
+  beforeAll(async () => {
+    const module = await import('../userController.js');
+    getUser = module.getUser;
+    const serviceModule = await import('../../services/userService.js');
+    userService = serviceModule;
+    const validatorsModule = await import('../../utils/validators.js');
+    validateUUID = validatorsModule.validateUUID;
+  });
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+    req = {
+      params: { id: 'user-id' },
+      id: 'req-123'
+    };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+  });
+  
+  describe('getUser', () => {
+    it('should return user with 200 status', async () => {
+      // Arrange
+      const mockUser = { id: 'user-id', email: 'test@example.com' };
+      userService.getUserById.mockResolvedValue(mockUser);
+      
+      // Act
+      await getUser(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalled();
+    });
+  });
+});
+```
+
+## Model Test Pattern
+
+```javascript
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { User, Company } from '../../models/index.js';
+import { createUserData, createCompanyData, createAuditContext } from '../../../__tests__/helpers/factories.js';
+import { cleanDatabase } from '../../../__tests__/helpers/database.js';
+import { sequelize } from '../../config/database.js';
+
+describe('ModelName', () => {
+  let testUser;
+  let auditContext;
+  
+  beforeEach(async () => {
+    await cleanDatabase();
+    testUser = await User.create(createUserData());
+    auditContext = createAuditContext(testUser.id);
+  });
+  
+  describe('CRUD Operations', () => {
+    it('should create model with context', async () => {
+      // Arrange
+      const modelData = createModelData({ name: 'Test' });
+      
+      // Act
+      const model = await ModelName.create(modelData, { context: auditContext });
+      
+      // Assert
+      expect(model).toBeDefined();
+      expect(model.createdUserId).toBe(testUser.id);
+    });
+  });
+  
+  describe('Scopes', () => {
+    beforeEach(async () => {
+      await sequelize.query('TRUNCATE TABLE model_names CASCADE');
+    });
+    
+    it('should exclude deleted records by default', async () => {
+      // Test scope behavior
+    });
+  });
+});
+```
+
+## Repository Test Pattern
+
+```javascript
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { repository } from '../repository.js';
+import { Model, User } from '../../models/index.js';
+import { createModelData, createUserData, createAuditContext } from '../../../__tests__/helpers/factories.js';
+import { cleanDatabase } from '../../../__tests__/helpers/database.js';
+import { sequelize } from '../../config/database.js';
+
+describe('RepositoryName', () => {
+  let testUser;
+  let auditContext;
+  
+  beforeEach(async () => {
+    await cleanDatabase();
+    testUser = await User.create(createUserData());
+    auditContext = createAuditContext(testUser.id);
+  });
+  
+  describe('BaseRepository Methods', () => {
+    it('should find by ID', async () => {
+      // Test BaseRepository method
+    });
+  });
+  
+  describe('Complex Query: methodName', () => {
+    beforeEach(async () => {
+      await sequelize.query('TRUNCATE TABLE table_name CASCADE');
+    });
+    
+    it('should perform complex query', async () => {
+      // Test custom query method
+    });
+  });
+});
+```
+
+## Integration Test Pattern
+
+```javascript
+import { jest, describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import request from 'supertest';
+import { createTestApp, closeTestApp } from '../../../__tests__/helpers/integration.js';
+import { getAuthToken } from '../../../__tests__/helpers/auth.js';
+import { cleanDatabase } from '../../../__tests__/helpers/database.js';
+
+describe('Module API Integration', () => {
+  let app;
+  let authToken;
+  
+  const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'test.user@example.com';
+  const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || 'testPassword123';
+  
+  beforeAll(async () => {
+    await cleanDatabase();
+    app = await createTestApp();
+    authToken = await getAuthToken(app, TEST_USER_EMAIL, TEST_USER_PASSWORD);
+    
+    // Sync user to database
+    await request(app)
+      .get('/api/v2/auth/companies')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+  });
+  
+  afterAll(async () => {
+    await cleanDatabase();
+    await closeTestApp(app);
+  });
+  
+  describe('GET /api/v2/module/endpoint', () => {
+    it('should return data when authenticated', async () => {
+      const response = await request(app)
+        .get('/api/v2/module/endpoint')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+      
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+    });
+  });
+});
+```
+
+## Utility Test Pattern
+
+```javascript
+import { jest, describe, it, expect } from '@jest/globals';
+import { validateEmail, validateUUID } from '../validators.js';
+import { ValidationError } from '../errors.js';
+
+describe('Validators', () => {
+  describe('validateEmail', () => {
+    it('should return true for valid email', () => {
+      expect(() => validateEmail('test@example.com', 'email', 'req-123'))
+        .not.toThrow();
+    });
+    
+    it('should throw ValidationError for invalid email', () => {
+      expect(() => validateEmail('invalid-email', 'email', 'req-123'))
+        .toThrow(ValidationError);
+    });
+  });
+});
+```
+
+## Middleware Test Pattern
+
+```javascript
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+
+describe('MiddlewareName', () => {
+  let middleware;
+  let req, res, next;
+  
+  beforeEach(() => {
+    req = {
+      headers: {},
+      id: 'req-123'
+    };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+    next = jest.fn();
+  });
+  
+  it('should call next() when valid', async () => {
+    // Arrange
+    req.headers.authorization = 'Bearer valid-token';
+    
+    // Act
+    await middleware(req, res, next);
+    
+    // Assert
+    expect(next).toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalledWith(expect.any(Error));
+  });
+  
+  it('should call next(error) when invalid', async () => {
+    // Arrange
+    req.headers.authorization = 'invalid';
+    
+    // Act
+    await middleware(req, res, next);
+    
+    // Assert
+    expect(next).toHaveBeenCalledWith(expect.any(Error));
+  });
+});
+```
+
+## Related Rules
+
+- **testing.mdc** - Main testing rules
+- **testing-standards.mdc** - Testing standards
+- **test-creation-requirements.mdc** - Test requirements

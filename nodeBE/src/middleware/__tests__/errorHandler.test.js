@@ -279,7 +279,7 @@ describe('Error Handler Middleware', () => {
       // Assert
       expect(res.status).toHaveBeenCalledWith(400);
       expect(mockErrorResponse).toHaveBeenCalledWith(
-        'Validation Error',
+        'Validation failed',
         'VALIDATION_ERROR',
         400,
         { field: 'email' },

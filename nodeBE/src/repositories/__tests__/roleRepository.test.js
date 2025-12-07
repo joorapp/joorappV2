@@ -8,6 +8,7 @@ import { roleRepository } from '../roleRepository.js';
 import { CompanyRole, Company, User, CompanyUser } from '../../models/index.js';
 import { createRoleData, createCompanyData, createUserData, createCompanyUserData, createAuditContext } from '../../../__tests__/helpers/factories.js';
 import { cleanDatabase } from '../../../__tests__/helpers/database.js';
+import { sequelize } from '../../config/database.js';
 
 describe('RoleRepository', () => {
   let testUser;
@@ -118,6 +119,9 @@ describe('RoleRepository', () => {
 
   describe('Complex Query: getRoles', () => {
     beforeEach(async () => {
+      // Clean company_roles table to ensure test isolation
+      await sequelize.query('TRUNCATE TABLE company_roles CASCADE');
+      
       await roleRepository.create(
         createRoleData({ name: 'Admin', code: 'ADMIN' }),
         auditContext
@@ -162,6 +166,9 @@ describe('RoleRepository', () => {
 
   describe('Complex Query: findActiveRoles', () => {
     beforeEach(async () => {
+      // Clean company_roles table to ensure test isolation
+      await sequelize.query('TRUNCATE TABLE company_roles CASCADE');
+      
       await roleRepository.create(
         createRoleData({ name: 'Active Role 1', code: 'ACTIVE1', isActive: true }),
         auditContext

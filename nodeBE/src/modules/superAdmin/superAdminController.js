@@ -176,9 +176,13 @@ export const createCompany = async (req, res) => {
     }
 
     // Validate required fields
-    const { name, description, isActive } = req.body;
+    const { name, code, description, isActive } = req.body;
     validateRequired({ name }, req.id);
     validateString(name, 'name', { minLength: 1, maxLength: 100 }, req.id);
+    
+    if (code !== undefined) {
+      validateString(code, 'code', { required: false, maxLength: 50 }, req.id);
+    }
     
     if (description !== undefined) {
       validateString(description, 'description', { required: false }, req.id);
@@ -186,7 +190,7 @@ export const createCompany = async (req, res) => {
 
     // Create company via service
     const company = await companyService.createCompany(
-      { name, description, isActive },
+      { name, code, description, isActive },
       { userId: req.user.id }
     );
 
@@ -381,7 +385,7 @@ export const updateCompany = async (req, res) => {
   
   try {
     const { id } = req.params;
-    const { name, description, isActive } = req.body;
+    const { name, code, description, isActive } = req.body;
 
     // Validate UUID
     validateUUID(id, 'id', req.id);
@@ -402,6 +406,9 @@ export const updateCompany = async (req, res) => {
     if (name !== undefined) {
       validateString(name, 'name', { minLength: 1, maxLength: 100 }, req.id);
     }
+    if (code !== undefined) {
+      validateString(code, 'code', { required: false, maxLength: 50 }, req.id);
+    }
     if (description !== undefined) {
       validateString(description, 'description', { required: false }, req.id);
     }
@@ -409,7 +416,7 @@ export const updateCompany = async (req, res) => {
     // Update company via service
     const company = await companyService.updateCompany(
       id,
-      { name, description, isActive },
+      { name, code, description, isActive },
       { userId: req.user.id }
     );
 
@@ -1334,12 +1341,13 @@ export const updateUser = async (req, res) => {
 };
 
 /**
- * Delete (deactivate) user by ID
+ * Disable user by ID (marks as inactive)
  * Requires SUPER_ADMIN role
+ * Users are never deleted, only deactivated
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-export const deleteUser = async (req, res) => {
+export const disableUser = async (req, res) => {
   const startTime = Date.now();
   
   try {
@@ -1348,7 +1356,7 @@ export const deleteUser = async (req, res) => {
     // Validate UUID
     validateUUID(id, 'id', req.id);
 
-    logger.info('Delete user requested', {
+    logger.info('Disable user requested', {
       requestId: req.id,
       userId: req.user?.id,
       targetUserId: id,
@@ -1363,28 +1371,28 @@ export const deleteUser = async (req, res) => {
     // Get user for logging
     const user = await userService.getUserById(id);
 
-    // Delete user from Keycloak (disable)
+    // Disable user in Keycloak
     await userService.deleteUserFromKeycloak(user.keycloakId);
 
-    // Delete user from database (mark inactive)
+    // Mark user as inactive in database (never delete)
     await userService.deleteUserFromDB(id, { userId: req.user.id });
 
     const duration = Date.now() - startTime;
     
-    logger.info('User deleted successfully', {
+    logger.info('User disabled successfully', {
       requestId: req.id,
       userId: req.user.id,
       targetUserId: id,
       duration: `${duration}ms`
     });
 
-    logBusiness('User deleted by Super Admin', {
+    logBusiness('User disabled by Super Admin', {
       requestId: req.id,
       userId: req.user.id,
       targetUserId: id
     });
 
-    logSecurity('User account deleted', {
+    logSecurity('User account disabled', {
       requestId: req.id,
       userId: req.user.id,
       targetUserId: id,
@@ -1392,12 +1400,12 @@ export const deleteUser = async (req, res) => {
     });
 
     res.status(200).json(
-      successResponse('User deleted successfully', null, {}, req, startTime)
+      successResponse('User disabled successfully', null, {}, req, startTime)
     );
   } catch (error) {
     const duration = Date.now() - startTime;
     
-    logger.error('Delete user failed', {
+    logger.error('Disable user failed', {
       requestId: req.id,
       userId: req.user?.id,
       error: {
@@ -1406,7 +1414,7 @@ export const deleteUser = async (req, res) => {
       },
       duration: `${duration}ms`
     });
-    
+
     throw error;
   }
 };

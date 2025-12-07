@@ -30,6 +30,7 @@
     "test:error-handling": "node scripts/test-error-handling.js",
     "test:users": "node scripts/test-users-module.js",
     "configure:super-admin": "node scripts/configure-first-super-admin.js",
+    "setup:test-users": "node scripts/setup-test-users.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

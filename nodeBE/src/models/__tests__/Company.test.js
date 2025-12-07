@@ -9,6 +9,7 @@ import { Company, User } from '../index.js';
 import { v4 as uuidv4 } from 'uuid';
 import { createCompanyData, createUserData, createAuditContext } from '../../../__tests__/helpers/factories.js';
 import { cleanCompanies, cleanUsers, cleanDatabase } from '../../../__tests__/helpers/database.js';
+import { sequelize } from '../../config/database.js';
 
 describe('Company Model', () => {
   let testContext;
@@ -135,6 +136,13 @@ describe('Company Model', () => {
     let activeCompany, deletedCompany;
     
     beforeEach(async () => {
+      // Clean ALL companies to ensure isolation (not just non-test-user companies)
+      await sequelize.query('TRUNCATE TABLE companies CASCADE');
+      
+      // Recreate test user and context after cleanup
+      testUser = await User.create(createUserData());
+      testContext = createAuditContext(testUser.id);
+      
       // Create active company
       activeCompany = await Company.create(
         createCompanyData({ name: 'Active Company' }),

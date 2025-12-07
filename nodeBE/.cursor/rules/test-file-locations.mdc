@@ -1,0 +1,206 @@
+---
+description: Test file location rules - where to place test files
+globs: ["nodeBE/**/*.test.js", "nodeBE/**/__tests__/**/*"]
+alwaysApply: true
+---
+# Test File Location Rules
+
+## Overview
+
+This document defines **MANDATORY** test file locations. Every source file MUST have a corresponding test file in the specified location.
+
+## Location Rules
+
+### Model Tests
+
+**Rule**: Every model MUST have a test file in `src/models/__tests__/`
+
+**Pattern**: `src/models/{ModelName}.js` → `src/models/__tests__/{ModelName}.test.js`
+
+**Examples**:
+- `src/models/User.js` → `src/models/__tests__/User.test.js`
+- `src/models/Company.js` → `src/models/__tests__/Company.test.js`
+- `src/models/CompanyRole.js` → `src/models/__tests__/CompanyRole.test.js`
+
+**Required**: ✅ Yes, for ALL models
+
+---
+
+### Repository Tests
+
+**Rule**: Every repository MUST have a test file in `src/repositories/__tests__/`
+
+**Pattern**: `src/repositories/{repositoryName}Repository.js` → `src/repositories/__tests__/{repositoryName}Repository.test.js`
+
+**Examples**:
+- `src/repositories/userRepository.js` → `src/repositories/__tests__/userRepository.test.js`
+- `src/repositories/companyRepository.js` → `src/repositories/__tests__/companyRepository.test.js`
+
+**Required**: ✅ Yes, for ALL repositories
+
+**Note**: BaseRepository is tested implicitly through repository tests
+
+---
+
+### Service Tests
+
+**Rule**: Every service MUST have a test file in `src/services/__tests__/`
+
+**Pattern**: `src/services/{serviceName}Service.js` → `src/services/__tests__/{serviceName}Service.test.js`
+
+**Examples**:
+- `src/services/userService.js` → `src/services/__tests__/userService.test.js`
+- `src/services/companyService.js` → `src/services/__tests__/companyService.test.js`
+
+**Required**: ✅ Yes, for ALL services
+
+**Exception**: `keycloakService.js` may need special handling (mocking Keycloak)
+
+---
+
+### Middleware Tests
+
+**Rule**: Every middleware MUST have a test file in `src/middleware/__tests__/`
+
+**Pattern**: `src/middleware/{middlewareName}.js` → `src/middleware/__tests__/{middlewareName}.test.js`
+
+**Examples**:
+- `src/middleware/authMiddleware.js` → `src/middleware/__tests__/authMiddleware.test.js`
+- `src/middleware/errorHandler.js` → `src/middleware/__tests__/errorHandler.test.js`
+- `src/middleware/validationMiddleware.js` → `src/middleware/__tests__/validationMiddleware.test.js`
+
+**Required**: ✅ Yes, for ALL middleware
+
+---
+
+### Controller Tests
+
+**Rule**: Every controller MUST have a test file in `src/modules/{module}/__tests__/`
+
+**Pattern**: `src/modules/{module}/{module}Controller.js` → `src/modules/{module}/__tests__/{module}Controller.test.js`
+
+**Examples**:
+- `src/modules/auth/authController.js` → `src/modules/auth/__tests__/authController.test.js`
+- `src/modules/users/userController.js` → `src/modules/users/__tests__/userController.test.js`
+- `src/modules/admin/adminController.js` → `src/modules/admin/__tests__/adminController.test.js`
+
+**Required**: ✅ Yes, for ALL controllers
+
+**Note**: Tests are in the module's `__tests__` folder, NOT in a common `__tests__` folder
+
+---
+
+### Integration Tests
+
+**Rule**: Every module with API endpoints MUST have an integration test file in `src/modules/__tests__/`
+
+**Pattern**: `src/modules/{module}/` → `src/modules/__tests__/{module}.integration.test.js`
+
+**Examples**:
+- `src/modules/auth/` → `src/modules/__tests__/auth.integration.test.js`
+- `src/modules/users/` → `src/modules/__tests__/users.integration.test.js`
+- `src/modules/admin/` → `src/modules/__tests__/admin.integration.test.js`
+
+**Required**: ✅ Yes, for ALL modules with API endpoints
+
+**Note**: Integration tests are in the common `src/modules/__tests__/` folder
+
+---
+
+### Utility Tests
+
+**Rule**: Every utility file MUST have a test file in `src/utils/__tests__/`
+
+**Pattern**: `src/utils/{utilityName}.js` → `src/utils/__tests__/{utilityName}.test.js`
+
+**Examples**:
+- `src/utils/validators.js` → `src/utils/__tests__/validators.test.js`
+- `src/utils/errors.js` → `src/utils/__tests__/errors.test.js`
+- `src/utils/responseHelpers.js` → `src/utils/__tests__/responseHelpers.test.js`
+
+**Required**: ✅ Yes, for ALL utility files
+
+---
+
+## File Naming Conventions
+
+### Test File Names
+
+- **Unit Tests**: `{SourceFileName}.test.js`
+- **Integration Tests**: `{module}.integration.test.js`
+- **Use camelCase**: Match source file naming
+
+**Examples**:
+- ✅ `User.test.js`
+- ✅ `userRepository.test.js`
+- ✅ `authController.test.js`
+- ✅ `auth.integration.test.js`
+- ❌ `user.test.js` (should match `User.js`)
+- ❌ `UserRepository.test.js` (should match `userRepository.js`)
+
+---
+
+## Directory Structure Summary
+
+```
+nodeBE/
+├── src/
+│   ├── models/
+│   │   └── __tests__/
+│   │       ├── User.test.js
+│   │       ├── Company.test.js
+│   │       └── ...
+│   ├── repositories/
+│   │   └── __tests__/
+│   │       ├── userRepository.test.js
+│   │       ├── companyRepository.test.js
+│   │       └── ...
+│   ├── services/
+│   │   └── __tests__/
+│   │       ├── userService.test.js
+│   │       ├── companyService.test.js
+│   │       └── ...
+│   ├── middleware/
+│   │   └── __tests__/
+│   │       ├── authMiddleware.test.js
+│   │       ├── errorHandler.test.js
+│   │       └── ...
+│   ├── modules/
+│   │   ├── auth/
+│   │   │   └── __tests__/
+│   │   │       └── authController.test.js
+│   │   ├── users/
+│   │   │   └── __tests__/
+│   │   │       └── userController.test.js
+│   │   └── __tests__/              # Integration tests
+│   │       ├── auth.integration.test.js
+│   │       ├── users.integration.test.js
+│   │       └── ...
+│   └── utils/
+│       └── __tests__/
+│           ├── validators.test.js
+│           ├── errors.test.js
+│           └── ...
+```
+
+---
+
+## Checklist for New Code
+
+When creating new code, verify:
+
+- [ ] Model created → Test file in `src/models/__tests__/{Model}.test.js`
+- [ ] Repository created → Test file in `src/repositories/__tests__/{repository}Repository.test.js`
+- [ ] Service created → Test file in `src/services/__tests__/{service}Service.test.js`
+- [ ] Middleware created → Test file in `src/middleware/__tests__/{middleware}.test.js`
+- [ ] Controller created → Test file in `src/modules/{module}/__tests__/{module}Controller.test.js`
+- [ ] Module with API → Integration test in `src/modules/__tests__/{module}.integration.test.js`
+- [ ] Utility created → Test file in `src/utils/__tests__/{utility}.test.js`
+
+---
+
+## Related Rules
+
+- **testing.mdc** - Main testing rules
+- **test-creation-requirements.mdc** - What must be tested
+- **testing-standards.mdc** - Testing standards

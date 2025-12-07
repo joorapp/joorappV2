@@ -43,10 +43,19 @@ export const createCompany = async (companyData, context) => {
     throw new ConflictError('Company with this name already exists', { field: 'name', value: name });
   }
   
+  // Check code uniqueness if code is provided
+  if (code) {
+    const existingByCode = await companyRepository.findOne({ code });
+    if (existingByCode) {
+      throw new ConflictError('Company with this code already exists', { field: 'code', value: code });
+    }
+  }
+  
   // Create company
   const company = await companyRepository.create(
     {
       name,
+      code: code || null,
       description: description || null,
       isActive
     },
@@ -58,6 +67,7 @@ export const createCompany = async (companyData, context) => {
   return {
     id: company.id,
     name: company.name,
+    code: company.code,
     description: company.description,
     isActive: company.isActive,
     createdDate: company.createdDate,
@@ -82,6 +92,7 @@ export const getCompanyById = async (companyId) => {
   return {
     id: company.id,
     name: company.name,
+    code: company.code,
     description: company.description,
     isActive: company.isActive,
     createdDate: company.createdDate,
@@ -108,6 +119,7 @@ export const getCompanyByIdIncludingDeleted = async (companyId) => {
   return {
     id: company.id,
     name: company.name,
+    code: company.code,
     description: company.description,
     isActive: company.isActive,
     isDeleted: company.isDeleted,
@@ -152,9 +164,20 @@ export const updateCompany = async (companyId, companyData, context) => {
     }
   }
   
+  // Check code uniqueness if code is being changed
+  if (companyData.code !== undefined && companyData.code !== company.code) {
+    if (companyData.code) {
+      const existing = await companyRepository.findOne({ code: companyData.code });
+      if (existing) {
+        throw new ConflictError('Company with this code already exists', { field: 'code', value: companyData.code });
+      }
+    }
+  }
+  
   // Build update object
   const updateData = {};
   if (companyData.name !== undefined) updateData.name = companyData.name;
+  if (companyData.code !== undefined) updateData.code = companyData.code || null;
   if (companyData.description !== undefined) updateData.description = companyData.description;
   if (companyData.isActive !== undefined) updateData.isActive = companyData.isActive;
   
@@ -166,6 +189,7 @@ export const updateCompany = async (companyId, companyData, context) => {
   return {
     id: updated.id,
     name: updated.name,
+    code: updated.code,
     description: updated.description,
     isActive: updated.isActive,
     createdDate: updated.createdDate,
@@ -278,6 +302,7 @@ export const restoreCompany = async (companyId, context) => {
   return {
     id: company.id,
     name: company.name,
+    code: company.code,
     description: company.description,
     isActive: company.isActive,
     createdDate: company.createdDate,

@@ -95,6 +95,15 @@
         "attributes": {}
       },
       {
+        "id": "39f624d1-b962-4dd5-95d3-9974813b4127",
+        "name": "COMPANY_ADMIN",
+        "description": "Admin user mostly creator or owner of a company",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "6fd371d5-bc70-49e6-aa6a-55cb71b93390",
+        "attributes": {}
+      },
+      {
         "id": "51a5e95a-c835-4880-8575-e32e19ac9003",
         "name": "offline_access",
         "description": "${role_offline-access}",

@@ -290,7 +290,8 @@ describe('CompanyUser Service', () => {
     it('should return company users with DTO transformation', async () => {
       // Arrange
       const users = [mockAssignment];
-      companyUserRepository.findCompanyUsers.mockResolvedValue(users);
+      // When pagination is provided, repository returns {rows, count}
+      companyUserRepository.findCompanyUsers.mockResolvedValue({ rows: users, count: 1 });
 
       // Act
       const result = await companyUserService.getCompanyUsers(
@@ -304,8 +305,11 @@ describe('CompanyUser Service', () => {
         limit: 10,
         offset: 0
       });
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(result).toHaveProperty('users');
+      expect(result).toHaveProperty('total');
+      expect(result.users).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.users[0]).toEqual({
         id: mockAssignment.id,
         userId: mockAssignment.userId,
         companyId: mockAssignment.companyId,
@@ -331,6 +335,7 @@ describe('CompanyUser Service', () => {
       // Arrange
       const activeUser = { ...mockAssignment, isActive: true };
       const inactiveUser = { ...mockAssignment, id: uuidv4(), isActive: false };
+      // When no pagination, repository returns array
       companyUserRepository.findCompanyUsers.mockResolvedValue([activeUser, inactiveUser]);
 
       // Act
@@ -341,15 +346,17 @@ describe('CompanyUser Service', () => {
       );
 
       // Assert
-      expect(result).toHaveLength(1);
-      expect(result[0].isActive).toBe(true);
+      expect(result).toHaveProperty('users');
+      expect(result).toHaveProperty('total');
+      expect(result.users).toHaveLength(1);
+      expect(result.users[0].isActive).toBe(true);
+      expect(result.total).toBe(1);
     });
 
     it('should handle paginated results', async () => {
       // Arrange
-      // When pagination is provided, repository returns {rows, count}, but service expects array
-      // So we mock it to return the array directly (rows from the paginated result)
-      companyUserRepository.findCompanyUsers.mockResolvedValue([mockAssignment]);
+      // When pagination is provided, repository returns {rows, count}
+      companyUserRepository.findCompanyUsers.mockResolvedValue({ rows: [mockAssignment], count: 1 });
 
       // Act
       const result = await companyUserService.getCompanyUsers(
@@ -363,8 +370,11 @@ describe('CompanyUser Service', () => {
         limit: 1,
         offset: 0
       });
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(result).toHaveProperty('users');
+      expect(result).toHaveProperty('total');
+      expect(result.users).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.users[0]).toEqual({
         id: mockAssignment.id,
         userId: mockAssignment.userId,
         companyId: mockAssignment.companyId,

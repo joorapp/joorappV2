@@ -173,6 +173,12 @@ export const superAdminDocs = {
           description: 'Company name (1-100 characters)',
           example: 'Acme Corporation'
         },
+        code: {
+          type: 'string',
+          required: false,
+          description: 'Company code (unique identifier, max 50 characters)',
+          example: 'ACME001'
+        },
         description: {
           type: 'string',
           required: false,
@@ -195,10 +201,11 @@ export const superAdminDocs = {
             data: {
               id: '550e8400-e29b-41d4-a716-446655440001',
               name: 'Acme Corporation',
+              code: 'ACME001',
               description: 'Leading provider of innovative solutions',
               isActive: true,
               createdDate: '2024-11-23T12:00:00.000Z',
-              createdBy: '550e8400-e29b-41d4-a716-446655440000'
+              createdUserId: '550e8400-e29b-41d4-a716-446655440000'
             },
             timestamp: '2024-11-23T12:00:00.000Z',
             meta: {
@@ -253,7 +260,7 @@ export const superAdminDocs = {
           }
         },
         409: {
-          description: 'Conflict - Company name already exists',
+          description: 'Conflict - Company name or code already exists',
           example: {
             success: false,
             error: 'CONFLICT',
@@ -343,6 +350,7 @@ export const superAdminDocs = {
               {
                 id: '550e8400-e29b-41d4-a716-446655440001',
                 name: 'Acme Corporation',
+                code: 'ACME001',
                 description: 'Leading provider',
                 isActive: true,
                 createdDate: '2024-11-23T12:00:00.000Z'
@@ -431,10 +439,11 @@ export const superAdminDocs = {
             data: {
               id: '550e8400-e29b-41d4-a716-446655440001',
               name: 'Acme Corporation',
+              code: 'ACME001',
               description: 'Leading provider',
               isActive: true,
               createdDate: '2024-11-23T12:00:00.000Z',
-              createdBy: '550e8400-e29b-41d4-a716-446655440000'
+              createdUserId: '550e8400-e29b-41d4-a716-446655440000'
             },
             timestamp: '2024-11-23T12:00:00.000Z',
             meta: {
@@ -546,6 +555,12 @@ export const superAdminDocs = {
           description: 'Company name',
           example: 'Updated Acme Corp'
         },
+        code: {
+          type: 'string',
+          required: false,
+          description: 'Company code (unique identifier, max 50 characters)',
+          example: 'ACME002'
+        },
         description: {
           type: 'string',
           required: false,
@@ -568,10 +583,13 @@ export const superAdminDocs = {
             data: {
               id: '550e8400-e29b-41d4-a716-446655440001',
               name: 'Updated Acme Corp',
+              code: 'ACME002',
               description: 'Updated description',
               isActive: true,
-              lastModifiedDate: '2024-11-23T12:05:00.000Z',
-              lastModifiedBy: '550e8400-e29b-41d4-a716-446655440000'
+              createdDate: '2024-11-23T12:00:00.000Z',
+              createdUserId: '550e8400-e29b-41d4-a716-446655440000',
+              updatedDate: '2024-11-23T12:05:00.000Z',
+              updatedUserId: '550e8400-e29b-41d4-a716-446655440000'
             },
             timestamp: '2024-11-23T12:05:00.000Z',
             meta: {
@@ -641,7 +659,7 @@ export const superAdminDocs = {
           }
         },
         409: {
-          description: 'Conflict - Company name already exists',
+          description: 'Conflict - Company name or code already exists',
           example: {
             success: false,
             error: 'CONFLICT',
@@ -1823,9 +1841,9 @@ export const superAdminDocs = {
       }
     },
     {
-      method: 'DELETE',
-      path: '/api/v2/superAdmin/users/:id',
-      description: 'Delete (deactivate) user by ID. Disables user in Keycloak and marks inactive in database.',
+      method: 'PUT',
+      path: '/api/v2/superAdmin/users/:id/disable',
+      description: 'Disable user by ID. Disables user in Keycloak and marks as inactive in database. Users are never deleted, only deactivated.',
       access: 'Protected (requires Bearer token and SUPER_ADMIN role)',
       headers: {
         Authorization: {
@@ -1840,16 +1858,16 @@ export const superAdminDocs = {
       },
       responses: {
         200: {
-          description: 'User deleted successfully',
+          description: 'User disabled successfully',
           example: {
             success: true,
-            message: 'User deleted successfully',
+            message: 'User disabled successfully',
             data: null,
             timestamp: '2024-11-23T12:10:00.000Z',
             meta: {
               requestId: 'req-1234567902',
-              endpoint: '/api/v2/superAdmin/users/550e8400-e29b-41d4-a716-446655440003',
-              method: 'DELETE',
+              endpoint: '/api/v2/superAdmin/users/550e8400-e29b-41d4-a716-446655440003/disable',
+              method: 'PUT',
               duration: 280
             }
           }
@@ -1864,8 +1882,8 @@ export const superAdminDocs = {
             timestamp: '2024-11-23T12:10:00.000Z',
             meta: {
               requestId: 'req-1234567902',
-              endpoint: '/api/v2/superAdmin/users/:id',
-              method: 'DELETE'
+              endpoint: '/api/v2/superAdmin/users/:id/disable',
+              method: 'PUT'
             }
           }
         },
@@ -1878,8 +1896,8 @@ export const superAdminDocs = {
             timestamp: '2024-11-23T12:10:00.000Z',
             meta: {
               requestId: 'req-1234567902',
-              endpoint: '/api/v2/superAdmin/users/:id',
-              method: 'DELETE'
+              endpoint: '/api/v2/superAdmin/users/:id/disable',
+              method: 'PUT'
             }
           }
         },
@@ -1892,8 +1910,8 @@ export const superAdminDocs = {
             timestamp: '2024-11-23T12:10:00.000Z',
             meta: {
               requestId: 'req-1234567902',
-              endpoint: '/api/v2/superAdmin/users/:id',
-              method: 'DELETE'
+              endpoint: '/api/v2/superAdmin/users/:id/disable',
+              method: 'PUT'
             }
           }
         },
@@ -1907,8 +1925,8 @@ export const superAdminDocs = {
             timestamp: '2024-11-23T12:10:00.000Z',
             meta: {
               requestId: 'req-1234567902',
-              endpoint: '/api/v2/superAdmin/users/:id',
-              method: 'DELETE'
+              endpoint: '/api/v2/superAdmin/users/:id/disable',
+              method: 'PUT'
             }
           }
         },

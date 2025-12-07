@@ -521,6 +521,28 @@ describe('Auth Controller', () => {
       await expect(authController.logout(req, res)).rejects.toThrow(UnauthorizedError);
     });
 
+    it('should throw ValidationError when refresh_token is missing', async () => {
+      // Arrange
+      req.user = {
+        id: uuidv4(),
+        email: 'user@example.com',
+        sessionState: 'session-123'
+      };
+      req.body = {}; // No refresh_token
+
+      // Mock validateRequired to throw ValidationError when refresh_token is missing
+      mockValidateRequired.mockImplementation((fields) => {
+        if (!fields || !fields.refresh_token) {
+          throw new ValidationError('refresh_token is required', { field: 'refresh_token' }, { requestId: req.id });
+        }
+      });
+
+      // Act & Assert
+      await expect(authController.logout(req, res)).rejects.toThrow(ValidationError);
+      expect(mockValidateRequired).toHaveBeenCalledWith({ refresh_token: undefined }, req.id);
+      expect(mockLogoutUser).not.toHaveBeenCalled();
+    });
+
     it('should cleanup UserCompanyContext even if Keycloak logout fails', async () => {
       // Arrange
       req.user = {

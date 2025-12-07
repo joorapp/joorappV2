@@ -533,15 +533,9 @@ export const logout = async (req, res) => {
     const { refresh_token } = req.body;
     const sessionState = req.user.sessionState;
 
-    // Refresh token is optional if we have session state
-    // But we need it to call Keycloak logout
-    if (!refresh_token) {
-      logger.warn('Logout attempt without refresh token', {
-        requestId: req.id,
-        userId: req.user.id
-      });
-      // Still proceed with cleanup, but warn
-    }
+    // Refresh token is required for proper session invalidation in Keycloak
+    // Without it, we cannot invalidate the specific session (e.g., Browser B while Browser A continues)
+    validateRequired({ refresh_token }, req.id);
 
     logger.info('Logout attempt', {
       requestId: req.id,
@@ -551,17 +545,15 @@ export const logout = async (req, res) => {
       ip: req.ip || req.socket?.remoteAddress
     });
 
-    // Call Keycloak logout if refresh token provided
-    if (refresh_token) {
-      const logoutResponse = await logoutUser(refresh_token);
-      if (!logoutResponse.success) {
-        logger.warn('Keycloak logout failed, but continuing with cleanup', {
-          requestId: req.id,
-          userId: req.user.id,
-          error: logoutResponse.error
-        });
-        // Continue with cleanup even if Keycloak logout fails
-      }
+    // Call Keycloak logout to invalidate the specific session
+    const logoutResponse = await logoutUser(refresh_token);
+    if (!logoutResponse.success) {
+      logger.warn('Keycloak logout failed, but continuing with cleanup', {
+        requestId: req.id,
+        userId: req.user.id,
+        error: logoutResponse.error
+      });
+      // Continue with cleanup even if Keycloak logout fails
     }
 
     // Clean up UserCompanyContext if session state available
