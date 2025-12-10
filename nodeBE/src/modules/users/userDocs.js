@@ -209,7 +209,7 @@ export const userDocs = {
     },
     {
       method: 'POST',
-      path: '/api/v2/users',
+      path: '/api/v2/users/create',
       description: 'Create new user in Keycloak and database',
       access: 'Protected (requires Bearer token)',
       requestBody: {
@@ -269,7 +269,7 @@ export const userDocs = {
             timestamp: '2024-11-23T12:00:00.000Z',
             meta: {
               requestId: 'req-1234567890',
-              endpoint: '/api/v2/users',
+              endpoint: '/api/v2/users/create',
               method: 'POST',
               duration: 456
             }

@@ -10,6 +10,7 @@ import { User, Company, CompanyUser, CompanyRole } from '../../models/index.js';
 import { createUserData, createCompanyData, createRoleData, createCompanyUserData, createAuditContext } from '../../../__tests__/helpers/factories.js';
 import { cleanDatabase } from '../../../__tests__/helpers/database.js';
 import { NotFoundError } from '../../utils/errors.js';
+import { sequelize } from '../../config/database.js';
 
 describe('UserRepository', () => {
   let testUser;
@@ -18,7 +19,8 @@ describe('UserRepository', () => {
   let auditContext;
 
   beforeEach(async () => {
-    await cleanDatabase();
+    // Clean ALL users (including test users) for repository tests to ensure isolation
+    await sequelize.query('TRUNCATE TABLE users CASCADE');
     
     // Create test data
     testUser = await User.create(createUserData({ email: 'test@example.com' }));

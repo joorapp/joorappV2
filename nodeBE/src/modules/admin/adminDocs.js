@@ -511,43 +511,42 @@ export const adminDocs = {
           example: {
             success: true,
             message: 'Company users retrieved successfully',
-            data: {
-              users: [
-                {
-                  id: '123e4567-e89b-12d3-a456-426614174001',
+            data: [
+              {
+                id: '123e4567-e89b-12d3-a456-426614174001',
+                userId: '123e4567-e89b-12d3-a456-426614174002',
+                companyId: '123e4567-e89b-12d3-a456-426614174003',
+                roleId: '123e4567-e89b-12d3-a456-426614174000',
+                isActive: true,
+                user: {
+                  id: '123e4567-e89b-12d3-a456-426614174002',
                   email: 'user1@example.com',
                   firstName: 'John',
                   lastName: 'Doe',
-                  keycloakId: 'kc-123456',
-                  keycloakGlobalRole: 'company_user',
-                  isActive: true,
-                  createdAt: '2024-01-01T00:00:00.000Z',
-                  updatedAt: '2024-01-01T00:00:00.000Z',
-                  CompanyUser: {
-                    id: '123e4567-e89b-12d3-a456-426614174002',
-                    roleId: '123e4567-e89b-12d3-a456-426614174000',
-                    isActive: true,
-                    CompanyRole: {
-                      id: '123e4567-e89b-12d3-a456-426614174000',
-                      name: 'Manager',
-                      code: 'MANAGER'
-                    }
-                  }
+                  isActive: true
+                },
+                role: {
+                  id: '123e4567-e89b-12d3-a456-426614174000',
+                  name: 'Manager',
+                  code: 'MANAGER',
+                  isActive: true
                 }
-              ]
+              }
+            ],
+            pagination: {
+              page: 1,
+              limit: 10,
+              total: 25,
+              pages: 3,
+              hasNext: true,
+              hasPrev: false
             },
             timestamp: '2024-01-01T00:00:00.000Z',
             meta: {
               requestId: 'req-1234567890',
               endpoint: '/api/v2/admin/users',
               method: 'GET',
-              duration: 234,
-              pagination: {
-                page: 1,
-                limit: 10,
-                totalItems: 25,
-                totalPages: 3
-              }
+              duration: 234
             }
           }
         },

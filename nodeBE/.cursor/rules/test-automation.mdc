@@ -1,0 +1,179 @@
+---
+description: Test automation guidelines - when and how to automate test creation
+globs: ["nodeBE/**/*"]
+alwaysApply: true
+---
+# Test Automation Guidelines
+
+## Overview
+
+This document defines guidelines for automating test creation alongside code generation.
+
+## When to Automate Test Creation
+
+### ✅ Automate When:
+
+1. **Creating new models** - Generate model test file with CRUD, scopes, validations
+2. **Creating new repositories** - Generate repository test file with BaseRepository methods
+3. **Creating new services** - Generate service test file with business logic tests
+4. **Creating new middleware** - Generate middleware test file with request/response tests
+5. **Creating new controllers** - Generate controller test file with HTTP tests
+6. **Creating new modules** - Generate integration test file with API tests
+7. **Creating new utilities** - Generate utility test file with function tests
+
+### ❌ Don't Automate When:
+
+1. **Complex business logic** - Requires manual test case design
+2. **Integration with external services** - May need special mocking
+3. **Edge cases** - Require manual analysis
+4. **Error scenarios** - Need careful consideration
+
+## Test Template Patterns
+
+### Model Test Template
+
+```javascript
+/**
+ * @author {Author}
+ * {ModelName} Tests
+ * Tests for {ModelName} model
+ */
+
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { {ModelName}, User } from '../../models/index.js';
+import { create{ModelName}Data, createUserData, createAuditContext } from '../../../__tests__/helpers/factories.js';
+import { cleanDatabase } from '../../../__tests__/helpers/database.js';
+import { sequelize } from '../../config/database.js';
+
+describe('{ModelName}', () => {
+  let testUser;
+  let auditContext;
+  
+  beforeEach(async () => {
+    await cleanDatabase();
+    testUser = await User.create(createUserData());
+    auditContext = createAuditContext(testUser.id);
+  });
+  
+  describe('CRUD Operations', () => {
+    it('should create {modelName} with context', async () => {
+      // Arrange
+      const {modelName}Data = create{ModelName}Data();
+      
+      // Act
+      const {modelName} = await {ModelName}.create({modelName}Data, { context: auditContext });
+      
+      // Assert
+      expect({modelName}).toBeDefined();
+      expect({modelName}.id).toBeValidUUID();
+      expect({modelName}.createdUserId).toBe(testUser.id);
+    });
+    
+    // Add more CRUD tests
+  });
+  
+  describe('Scopes', () => {
+    beforeEach(async () => {
+      await sequelize.query('TRUNCATE TABLE {table_name} CASCADE');
+    });
+    
+    it('should exclude deleted records by default', async () => {
+      // Test default scope
+    });
+  });
+});
+```
+
+### Repository Test Template
+
+```javascript
+/**
+ * @author {Author}
+ * {RepositoryName} Tests
+ */
+
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { {repositoryName}Repository } from '../{repositoryName}Repository.js';
+import { {ModelName}, User } from '../../models/index.js';
+import { create{ModelName}Data, createUserData, createAuditContext } from '../../../__tests__/helpers/factories.js';
+import { cleanDatabase } from '../../../__tests__/helpers/database.js';
+import { sequelize } from '../../config/database.js';
+
+describe('{RepositoryName}', () => {
+  let testUser;
+  let auditContext;
+  
+  beforeEach(async () => {
+    await cleanDatabase();
+    testUser = await User.create(createUserData());
+    auditContext = createAuditContext(testUser.id);
+  });
+  
+  describe('BaseRepository Methods', () => {
+    it('should find by ID', async () => {
+      // Test BaseRepository method
+    });
+  });
+  
+  describe('Complex Query: methodName', () => {
+    beforeEach(async () => {
+      await sequelize.query('TRUNCATE TABLE {table_name} CASCADE');
+    });
+    
+    it('should perform complex query', async () => {
+      // Test custom query method
+    });
+  });
+});
+```
+
+## Automation Integration
+
+### Code Generation Workflow
+
+When generating code, automatically:
+
+1. **Generate test file** in correct location
+2. **Use template** based on component type
+3. **Include required test cases** from test-creation-requirements.mdc
+4. **Add imports** for factories, helpers, mocks
+5. **Include setup/teardown** hooks
+
+### Template Variables
+
+Use these variables in templates:
+
+- `{Author}` - Code author
+- `{ModelName}` - Model name (PascalCase)
+- `{modelName}` - Model name (camelCase)
+- `{table_name}` - Database table name (snake_case)
+- `{RepositoryName}` - Repository name
+- `{ServiceName}` - Service name
+- `{ModuleName}` - Module name
+
+## Test Maintenance
+
+### When Code Changes
+
+**MANDATORY**: Update tests when:
+
+1. **Adding new methods** → Add test cases
+2. **Changing method signatures** → Update test mocks
+3. **Adding new validations** → Add validation tests
+4. **Changing error handling** → Update error tests
+5. **Adding new endpoints** → Add integration tests
+
+### Test Maintenance Checklist
+
+- [ ] All new methods have tests
+- [ ] All error scenarios are tested
+- [ ] Mocks are updated for changed dependencies
+- [ ] Test data factories are updated
+- [ ] Integration tests cover new endpoints
+
+## Related Rules
+
+- **testing.mdc** - Main testing rules
+- **test-file-locations.mdc** - File location rules
+- **test-creation-requirements.mdc** - Test requirements
+- **testing-standards.mdc** - Testing standards

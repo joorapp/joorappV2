@@ -1,0 +1,219 @@
+---
+description: Testing rules and guidelines - test creation, file locations, and standards
+globs: ["nodeBE/**/*.test.js", "nodeBE/**/__tests__/**/*"]
+alwaysApply: true
+priority: 2
+---
+# Testing Rules
+
+## Overview
+
+This document defines the testing standards, file locations, and requirements for the JoorApp V2 Backend. All tests MUST follow these rules to ensure consistency and maintainability.
+
+**⚠️ IMPORTANT**: Before creating any test file, read the relevant testing rule:
+- **test-file-locations.mdc** - Where to place test files
+- **test-creation-requirements.mdc** - What must be tested
+- **testing-standards.mdc** - Testing standards and patterns
+- **database-cleanup-maintenance.mdc** - Database cleanup script maintenance
+
+## Test Execution Flow
+
+**CRITICAL**: Tests run in this order (automated by `scripts/run-tests.js`):
+1. **Database Cleanup** - Truncates all tables in test database
+2. **Test Users Setup** - Creates test users in Keycloak and database
+3. **All Tests Run** - Unit tests + Integration tests in one continuous run
+4. **Final Summary** - One report with all results and coverage
+
+**No manual intervention needed** - Just run `npm test` or `npm run test:quick`
+
+## Test File Location Rules
+
+**MANDATORY**: Every source file MUST have a corresponding test file in the correct location:
+
+### Model Tests
+- **Location**: `src/models/__tests__/{ModelName}.test.js`
+- **Example**: `User.js` → `src/models/__tests__/User.test.js`
+- **Required**: Yes, for ALL models
+
+### Repository Tests
+- **Location**: `src/repositories/__tests__/{repositoryName}Repository.test.js`
+- **Example**: `userRepository.js` → `src/repositories/__tests__/userRepository.test.js`
+- **Required**: Yes, for ALL repositories
+
+### Service Tests
+- **Location**: `src/services/__tests__/{serviceName}Service.test.js`
+- **Example**: `userService.js` → `src/services/__tests__/userService.test.js`
+- **Required**: Yes, for ALL services (except keycloakService - may need special handling)
+
+### Middleware Tests
+- **Location**: `src/middleware/__tests__/{middlewareName}.test.js`
+- **Example**: `authMiddleware.js` → `src/middleware/__tests__/authMiddleware.test.js`
+- **Required**: Yes, for ALL middleware
+
+### Controller Tests
+- **Location**: `src/modules/{module}/__tests__/{module}Controller.test.js`
+- **Example**: `authController.js` → `src/modules/auth/__tests__/authController.test.js`
+- **Required**: Yes, for ALL controllers
+
+### Integration Tests
+- **Location**: `src/modules/__tests__/{module}.integration.test.js`
+- **Example**: Auth integration → `src/modules/__tests__/auth.integration.test.js`
+- **Required**: Yes, for ALL modules with API endpoints
+
+### Utility Tests
+- **Location**: `src/utils/__tests__/{utilityName}.test.js`
+- **Example**: `validators.js` → `src/utils/__tests__/validators.test.js`
+- **Required**: Yes, for ALL utility functions
+
+## Test Creation Requirements
+
+### Model Tests Must Include:
+- ✅ CRUD operations (create, read, update, delete/soft delete)
+- ✅ Scopes (default, withDeleted, onlyDeleted)
+- ✅ Validations (field validations, constraints)
+- ✅ Associations (belongsTo, hasMany relationships)
+- ✅ Hooks (beforeCreate, beforeUpdate, etc.)
+- ✅ Optimistic locking (if using AuditableEntity)
+- ✅ Context requirements (audit context for create/update/delete)
+
+### Repository Tests Must Include:
+- ✅ BaseRepository methods (findById, findAll, create, update, delete, etc.)
+- ✅ Complex queries (custom repository methods)
+- ✅ Error handling (NotFoundError, etc.)
+- ✅ Pagination support (if applicable)
+- ✅ Filtering and sorting (if applicable)
+
+### Service Tests Must Include:
+- ✅ Business logic validation
+- ✅ DTO transformations
+- ✅ Error handling (domain-specific errors)
+- ✅ Transaction management (if applicable)
+- ✅ Service-to-service interactions
+
+### Middleware Tests Must Include:
+- ✅ Request/response handling
+- ✅ Error propagation (next(error))
+- ✅ Context passing (req.user, req.company, etc.)
+- ✅ Edge cases (missing tokens, invalid data, etc.)
+
+### Controller Tests Must Include:
+- ✅ HTTP request/response handling
+- ✅ Service layer calls (mocked)
+- ✅ Response format validation
+- ✅ Status code validation
+- ✅ Error handling (all error scenarios)
+
+### Integration Tests Must Include:
+- ✅ End-to-end API flows
+- ✅ Authentication flows
+- ✅ Database interactions (real database)
+- ✅ Keycloak integration (real Keycloak)
+- ✅ Role-based access control
+
+### Utility Tests Must Include:
+- ✅ Pure function testing
+- ✅ Edge cases
+- ✅ Error handling
+- ✅ Input validation
+
+## Database Cleanup Script Maintenance
+
+**CRITICAL RULE**: When creating a new model, you MUST:
+
+1. **Add the table to `scripts/clean-test-database.js`**
+   - Add table name to the `tables` array
+   - Place in correct dependency order (child tables before parent tables)
+   - Use CASCADE for foreign key dependencies
+
+2. **Table Order Rules**:
+   - Tables with no dependencies first
+   - Tables with dependencies after
+   - Base/reference tables (like `users`) last
+
+3. **Example**:
+   ```javascript
+   const tables = [
+     'user_company_context',      // No dependencies
+     'company_users',             // Depends on users, companies, company_roles
+     'company_roles',             // Depends on users
+     'companies',                 // Depends on users
+     'new_model_table',           // Add new model here in correct order
+     'users'                      // Base table, referenced by others
+   ];
+   ```
+
+**See database-cleanup-maintenance.mdc for complete guidelines.**
+
+## Test Isolation Requirements
+
+**MANDATORY**: All tests MUST be isolated:
+
+1. **Database Cleanup**:
+   - Use `cleanDatabase()` in `beforeEach` for test suites that need clean state
+   - Use explicit `TRUNCATE TABLE` in nested `beforeEach` hooks for specific tables
+   - Never rely on data from previous tests
+
+2. **Mock Isolation**:
+   - Use `jest.clearAllMocks()` in `beforeEach` when needed
+   - Reset mock implementations between tests
+   - Don't share mock state across tests
+
+3. **Test Data**:
+   - Use factories (`createUserData`, `createCompanyData`, etc.)
+   - Never hardcode test data
+   - Create fresh data for each test
+
+## ES Module Testing
+
+**CRITICAL**: This project uses ES modules. Testing patterns:
+
+1. **Mocking**: Use `jest.unstable_mockModule()` for ES modules
+   ```javascript
+   jest.unstable_mockModule('../../services/userService.js', () => ({
+     getUserById: jest.fn()
+   }));
+   ```
+
+2. **Dynamic Imports**: Import modules after mocking
+   ```javascript
+   beforeAll(async () => {
+     const { userController } = await import('../userController.js');
+   });
+   ```
+
+3. **No require()**: Never use `require()` in tests
+
+## Test Execution
+
+### Commands:
+- `npm test` - Run all tests with coverage
+- `npm run test:quick` - Run all tests without coverage
+- `npm run test:watch` - Watch mode
+- `npm run test:unit` - Unit tests only (excludes integration)
+- `npm run test:integration` - Integration tests only
+
+### Test Flow:
+1. Database cleanup (automatic)
+2. Test users setup (automatic)
+3. All tests run (one continuous output)
+4. Final summary with coverage
+
+## Related Rules
+
+- **test-file-locations.mdc** - Detailed file location rules
+- **test-creation-requirements.mdc** - Detailed test requirements
+- **testing-standards.mdc** - Testing standards and patterns
+- **test-patterns.mdc** - Common test patterns
+- **database-cleanup-maintenance.mdc** - Cleanup script maintenance
+- **test-automation.mdc** - Test automation guidelines
+
+## Anti-Patterns (DO NOT DO)
+
+- ❌ Creating tests in wrong locations
+- ❌ Skipping test creation for new code
+- ❌ Not adding new model tables to cleanup script
+- ❌ Sharing test data between tests
+- ❌ Using `require()` in tests
+- ❌ Not cleaning database between tests
+- ❌ Hardcoding test data
+- ❌ Not mocking dependencies properly

@@ -23,6 +23,7 @@ Controllers (HTTP) → Services (Business Logic) → Repositories (Data Access) 
 - **error-handling.mdc** - Error throwing patterns
 - **logging.mdc** - Winston logging standards
 - **coding-standards.mdc** - JSDoc, naming conventions
+- **testing.mdc** - Testing rules (test file locations, requirements, standards)
 
 ## Repository Layer
 
@@ -146,6 +147,7 @@ async findUserWithCompanies(userId, options = {}) {
 6. **Accept Options**: Always accept `options` parameter for transactions
 7. **Pass Through Options**: Pass `options.transaction` to Sequelize
 8. **JSDoc Required**: Every method must have complete JSDoc
+9. **Testing Required**: Create test file in `src/repositories/__tests__/{repositoryName}Repository.test.js` (see test-file-locations.mdc and test-creation-requirements.mdc)
 
 ### Repository Example
 
@@ -246,6 +248,7 @@ Services provide **business logic orchestration**:
 6. **Error Throwing**: Throw domain-specific errors
 7. **Data Transformation**: Return clean DTOs, not raw Sequelize models
 8. **JSDoc Required**: Every function must have complete JSDoc
+9. **Testing Required**: Create test file in `src/services/__tests__/{serviceName}Service.test.js` (see test-file-locations.mdc and test-creation-requirements.mdc)
 
 ### Service Function Pattern
 

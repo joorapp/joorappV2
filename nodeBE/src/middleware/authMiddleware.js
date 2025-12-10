@@ -8,6 +8,7 @@ import { verifyToken, getUserFromToken } from '../services/keycloakService.js';
 import { createRequestLogger, logError, logWarn, logInfo } from '../utils/logger.js';
 import { isSuperAdmin } from '../constants/keycloakRoles.js';
 import { UnauthorizedError, AuthenticationFailedError, ForbiddenError } from '../utils/errors.js';
+import { ValidationError } from 'sequelize';
 
 /**
  * Extract JWT token from Authorization header

@@ -27,6 +27,21 @@ priority: 1
 - Routes: `/api/v2/{module}` for docs, `/api/v2/{module}/{action}` for endpoints
 - Request logger: `req.logger` is automatically available in all route handlers
 
+## Testing Requirements
+
+**MANDATORY**: When creating new code, create corresponding tests:
+- Models → `src/models/__tests__/{Model}.test.js`
+- Repositories → `src/repositories/__tests__/{repository}Repository.test.js`
+- Services → `src/services/__tests__/{service}Service.test.js`
+- Middleware → `src/middleware/__tests__/{middleware}.test.js`
+- Controllers → `src/modules/{module}/__tests__/{module}Controller.test.js`
+- Integration → `src/modules/__tests__/{module}.integration.test.js`
+- Utilities → `src/utils/__tests__/{utility}.test.js`
+
+**When creating new models**: Add table to `scripts/clean-test-database.js` (see database-cleanup-maintenance.mdc)
+
+See **testing.mdc** and related testing rule files for complete testing rules.
+
 ## Prohibited
 - ❌ console.log, console.error, console.warn
 - ❌ require() or module.exports

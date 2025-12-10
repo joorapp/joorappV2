@@ -9,19 +9,52 @@ import { sequelize } from '../../src/config/database.js';
 /**
  * Clean all test tables
  * Truncates all tables in the correct order to avoid foreign key constraint violations
+ * Preserves test users (users with emails matching test user pattern)
  * @returns {Promise<void>}
  */
 export const cleanDatabase = async () => {
   try {
+    // First, delete all non-test users and related data
+    // Test users are identified by their email pattern (test.*@example.com)
+    
+    // Delete company_users for non-test users (uses user_id column)
     await sequelize.query(`
-      TRUNCATE TABLE 
-        user_company_context,
-        company_users,
-        company_roles,
-        companies,
-        users,
-        demo_auditable_models
-      CASCADE
+      DELETE FROM company_users 
+      WHERE user_id NOT IN (
+        SELECT id FROM users WHERE email LIKE 'test.%@example.com'
+      )
+    `);
+    
+    // Delete user_company_context - no user_id column, so delete all (test users will recreate as needed)
+    await sequelize.query(`
+      TRUNCATE TABLE user_company_context CASCADE
+    `);
+    
+    // Delete company_roles created by non-test users (uses created_user_id column)
+    await sequelize.query(`
+      DELETE FROM company_roles 
+      WHERE created_user_id NOT IN (
+        SELECT id FROM users WHERE email LIKE 'test.%@example.com'
+      )
+    `);
+    
+    // Delete companies created by non-test users (uses created_user_id column)
+    await sequelize.query(`
+      DELETE FROM companies 
+      WHERE created_user_id NOT IN (
+        SELECT id FROM users WHERE email LIKE 'test.%@example.com'
+      )
+    `);
+    
+    // Delete non-test users
+    await sequelize.query(`
+      DELETE FROM users 
+      WHERE email NOT LIKE 'test.%@example.com'
+    `);
+    
+    // Truncate demo tables (no test data to preserve)
+    await sequelize.query(`
+      TRUNCATE TABLE demo_auditable_models CASCADE
     `);
   } catch (error) {
     console.error('Failed to clean database:', error.message);

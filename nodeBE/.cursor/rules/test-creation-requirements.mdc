@@ -1,0 +1,419 @@
+---
+description: Test creation requirements - what must be tested for each component type
+globs: ["nodeBE/**/*.test.js"]
+alwaysApply: true
+---
+# Test Creation Requirements
+
+## Overview
+
+This document defines **MANDATORY** test requirements for each component type. Every test file MUST cover these requirements.
+
+## Model Tests
+
+### Required Test Cases
+
+**Location**: `src/models/__tests__/{ModelName}.test.js`
+
+**MUST Test**:
+
+1. **CRUD Operations**:
+   - ✅ Create (with and without required fields)
+   - ✅ Read (findById, findAll, findOne)
+   - ✅ Update (with context for auditable models)
+   - ✅ Delete/Soft Delete (with context for auditable models)
+   - ✅ Restore (for soft-deleted records)
+
+2. **Scopes** (for AuditableEntity models):
+   - ✅ Default scope (excludes deleted records)
+   - ✅ `withDeleted` scope (includes deleted records)
+   - ✅ `onlyDeleted` scope (only deleted records)
+   - ✅ `unscoped()` method
+
+3. **Validations**:
+   - ✅ Required fields
+   - ✅ Field formats (email, UUID, etc.)
+   - ✅ Unique constraints
+   - ✅ Field length limits
+   - ✅ Enum values (if applicable)
+
+4. **Associations**:
+   - ✅ belongsTo relationships
+   - ✅ hasMany relationships
+   - ✅ Foreign key constraints
+
+5. **Hooks** (for AuditableEntity models):
+   - ✅ `beforeValidate` hook
+   - ✅ `beforeCreate` hook (audit fields populated)
+   - ✅ `beforeUpdate` hook (audit fields updated)
+
+6. **Optimistic Locking** (for AuditableEntity models):
+   - ✅ Version increment on update
+   - ✅ Version conflict detection
+   - ✅ OptimisticLockError thrown on conflict
+
+7. **Context Requirements**:
+   - ✅ Create requires context (for auditable models)
+   - ✅ Update requires context (for auditable models)
+   - ✅ Delete requires context (for auditable models)
+
+**Example Structure**:
+```javascript
+describe('ModelName', () => {
+  describe('CRUD Operations', () => {
+    it('should create model with context', ...);
+    it('should find model by ID', ...);
+    it('should update model with context', ...);
+    it('should soft delete model', ...);
+  });
+  
+  describe('Scopes', () => {
+    it('should exclude deleted records by default', ...);
+    it('should include deleted records with withDeleted scope', ...);
+  });
+  
+  describe('Validations', () => {
+    it('should validate required fields', ...);
+    it('should validate unique constraints', ...);
+  });
+});
+```
+
+---
+
+## Repository Tests
+
+### Required Test Cases
+
+**Location**: `src/repositories/__tests__/{repositoryName}Repository.test.js`
+
+**MUST Test**:
+
+1. **BaseRepository Methods**:
+   - ✅ `findById` (returns null if not found)
+   - ✅ `findByIdOrFail` (throws NotFoundError if not found)
+   - ✅ `findAll` (with filters)
+   - ✅ `findOne` (with filters)
+   - ✅ `count` (excluding deleted)
+   - ✅ `countIncludingDeleted`
+   - ✅ `create` (with context)
+   - ✅ `update` (with context)
+   - ✅ `delete` (soft delete with context)
+   - ✅ `restore` (with context)
+
+2. **Complex Queries** (custom repository methods):
+   - ✅ All custom query methods
+   - ✅ Pagination support
+   - ✅ Filtering
+   - ✅ Sorting
+   - ✅ Joins/Includes
+
+3. **Error Handling**:
+   - ✅ NotFoundError thrown when entity not found
+   - ✅ Proper error messages
+   - ✅ Error context included
+
+4. **Test Isolation**:
+   - ✅ Clean database in `beforeEach`
+   - ✅ Use explicit `TRUNCATE TABLE` in nested suites if needed
+
+**Example Structure**:
+```javascript
+describe('RepositoryName', () => {
+  beforeEach(async () => {
+    await cleanDatabase();
+    // Setup test data
+  });
+  
+  describe('BaseRepository Methods', () => {
+    it('should find by ID', ...);
+    it('should create with context', ...);
+  });
+  
+  describe('Complex Query: methodName', () => {
+    beforeEach(async () => {
+      await sequelize.query('TRUNCATE TABLE table_name CASCADE');
+    });
+    it('should perform complex query', ...);
+  });
+});
+```
+
+---
+
+## Service Tests
+
+### Required Test Cases
+
+**Location**: `src/services/__tests__/{serviceName}Service.test.js`
+
+**MUST Test**:
+
+1. **Business Logic**:
+   - ✅ All service functions
+   - ✅ Business rule validation
+   - ✅ Data transformations (DTOs)
+
+2. **Repository Integration**:
+   - ✅ Repository methods called correctly
+   - ✅ Repository errors handled properly
+
+3. **Error Handling**:
+   - ✅ Domain-specific errors thrown (NotFoundError, ConflictError, etc.)
+   - ✅ Error messages are clear
+   - ✅ Error context included
+
+4. **DTO Transformations**:
+   - ✅ Raw models transformed to DTOs
+   - ✅ Only required fields in DTOs
+   - ✅ Nested objects formatted correctly
+
+5. **Transactions** (if applicable):
+   - ✅ Transaction rollback on error
+   - ✅ Transaction commit on success
+
+6. **Mocking**:
+   - ✅ Use `jest.unstable_mockModule()` for ES modules
+   - ✅ Mock all repository dependencies
+   - ✅ Reset mocks in `beforeEach`
+
+**Example Structure**:
+```javascript
+jest.unstable_mockModule('../repositories/userRepository.js', () => ({
+  userRepository: {
+    findByIdOrFail: jest.fn(),
+    create: jest.fn()
+  }
+}));
+
+describe('ServiceName', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  describe('functionName', () => {
+    it('should perform business logic', ...);
+    it('should throw NotFoundError when entity not found', ...);
+  });
+});
+```
+
+---
+
+## Middleware Tests
+
+### Required Test Cases
+
+**Location**: `src/middleware/__tests__/{middlewareName}.test.js`
+
+**MUST Test**:
+
+1. **Request/Response Handling**:
+   - ✅ Request object modified correctly
+   - ✅ Response sent correctly
+   - ✅ `next()` called appropriately
+
+2. **Error Propagation**:
+   - ✅ Errors passed to `next(error)` (not thrown)
+   - ✅ Error handler receives errors correctly
+
+3. **Context Passing**:
+   - ✅ `req.user` set (for authMiddleware)
+   - ✅ `req.company` set (for companyContextMiddleware)
+   - ✅ `req.id` available (for requestLogger)
+
+4. **Edge Cases**:
+   - ✅ Missing tokens
+   - ✅ Invalid tokens
+   - ✅ Expired tokens
+   - ✅ Missing data
+   - ✅ Invalid data
+
+5. **Mocking**:
+   - ✅ Mock Express req/res/next
+   - ✅ Mock external services (Keycloak, etc.)
+
+**Example Structure**:
+```javascript
+describe('MiddlewareName', () => {
+  let req, res, next;
+  
+  beforeEach(() => {
+    req = { ... };
+    res = { ... };
+    next = jest.fn();
+  });
+  
+  it('should set req.user when token is valid', ...);
+  it('should call next(error) when token is invalid', ...);
+});
+```
+
+---
+
+## Controller Tests
+
+### Required Test Cases
+
+**Location**: `src/modules/{module}/__tests__/{module}Controller.test.js`
+
+**MUST Test**:
+
+1. **HTTP Request/Response**:
+   - ✅ All controller functions
+   - ✅ Correct status codes (200, 201, 400, 401, 403, 404, 500)
+   - ✅ Response format (successResponse, errorResponse, paginatedResponse)
+   - ✅ `meta` field included (except health/docs endpoints)
+
+2. **Service Layer Integration**:
+   - ✅ Service methods called correctly
+   - ✅ Service errors handled properly
+   - ✅ Service results formatted correctly
+
+3. **Input Validation**:
+   - ✅ Path parameters validated (UUID, etc.)
+   - ✅ Request body validated (required fields, formats)
+   - ✅ Query parameters validated (pagination, filters)
+
+4. **Error Scenarios**:
+   - ✅ ValidationError (400)
+   - ✅ NotFoundError (404)
+   - ✅ ForbiddenError (403)
+   - ✅ UnauthorizedError (401)
+   - ✅ InternalServerError (500)
+
+5. **Mocking**:
+   - ✅ Mock all service dependencies
+   - ✅ Mock validators
+   - ✅ Reset mocks in `beforeEach`
+
+**Example Structure**:
+```javascript
+jest.unstable_mockModule('../../services/userService.js', () => ({
+  getUserById: jest.fn()
+}));
+
+describe('ControllerName', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  describe('getUser', () => {
+    it('should return user with 200 status', ...);
+    it('should return 404 when user not found', ...);
+  });
+});
+```
+
+---
+
+## Integration Tests
+
+### Required Test Cases
+
+**Location**: `src/modules/__tests__/{module}.integration.test.js`
+
+**MUST Test**:
+
+1. **End-to-End Flows**:
+   - ✅ Complete API request/response cycles
+   - ✅ Authentication flows
+   - ✅ Authorization flows (role-based access)
+
+2. **Database Interactions**:
+   - ✅ Real database operations
+   - ✅ Data persistence
+   - ✅ Transaction handling
+
+3. **Keycloak Integration**:
+   - ✅ Real Keycloak operations
+   - ✅ Token generation and validation
+   - ✅ User synchronization
+
+4. **Error Scenarios**:
+   - ✅ All error status codes
+   - ✅ Error response formats
+   - ✅ Error messages
+
+5. **Test Setup**:
+   - ✅ Use `createTestApp()` helper
+   - ✅ Use `getAuthToken()` helper
+   - ✅ Clean database in `beforeAll`/`afterAll`
+   - ✅ Test users must exist (run `npm run setup:test-users`)
+
+**Example Structure**:
+```javascript
+describe('Module API Integration', () => {
+  let app;
+  let authToken;
+  
+  beforeAll(async () => {
+    app = await createTestApp();
+    authToken = await getAuthToken(app, TEST_USER_EMAIL, TEST_USER_PASSWORD);
+  });
+  
+  describe('GET /api/v2/module/endpoint', () => {
+    it('should return data when authenticated', ...);
+    it('should return 401 when not authenticated', ...);
+  });
+});
+```
+
+---
+
+## Utility Tests
+
+### Required Test Cases
+
+**Location**: `src/utils/__tests__/{utilityName}.test.js`
+
+**MUST Test**:
+
+1. **Pure Functions**:
+   - ✅ All utility functions
+   - ✅ Input/output validation
+   - ✅ Edge cases
+
+2. **Error Handling**:
+   - ✅ ValidationError thrown for invalid input
+   - ✅ Proper error messages
+   - ✅ Error context included
+
+3. **Edge Cases**:
+   - ✅ Null/undefined inputs
+   - ✅ Empty strings/arrays
+   - ✅ Boundary values
+   - ✅ Invalid formats
+
+**Example Structure**:
+```javascript
+describe('UtilityName', () => {
+  describe('functionName', () => {
+    it('should return correct value for valid input', ...);
+    it('should throw ValidationError for invalid input', ...);
+    it('should handle edge cases', ...);
+  });
+});
+```
+
+---
+
+## Test Coverage Requirements
+
+### Minimum Coverage
+
+- **Models**: 90%+ (all CRUD, scopes, validations)
+- **Repositories**: 85%+ (all methods, error cases)
+- **Services**: 80%+ (all business logic, error cases)
+- **Middleware**: 85%+ (all paths, error cases)
+- **Controllers**: 80%+ (all endpoints, error cases)
+- **Utilities**: 95%+ (all functions, edge cases)
+- **Integration**: 70%+ (all endpoints, main flows)
+
+---
+
+## Related Rules
+
+- **testing.mdc** - Main testing rules
+- **test-file-locations.mdc** - Where to place tests
+- **testing-standards.mdc** - Testing standards

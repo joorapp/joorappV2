@@ -16,6 +16,7 @@ Before writing any backend code, ALWAYS check and follow:
 - `nodeBE/.cursor/rules/module-structure.mdc` - Module creation
 - `nodeBE/.cursor/rules/security.mdc` - Security practices
 - `nodeBE/.cursor/rules/coding-standards.mdc` - Coding standards
+- `nodeBE/.cursor/rules/testing.mdc` - Testing rules (test creation, file locations, standards)
 
 **Key Backend Rules:**
 - Use ES6 modules (import/export) - NO require()

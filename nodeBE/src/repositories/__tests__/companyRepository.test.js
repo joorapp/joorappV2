@@ -9,6 +9,7 @@ import { Company, User, CompanyUser, CompanyRole } from '../../models/index.js';
 import { createCompanyData, createUserData, createRoleData, createCompanyUserData, createAuditContext } from '../../../__tests__/helpers/factories.js';
 import { cleanDatabase } from '../../../__tests__/helpers/database.js';
 import { NotFoundError } from '../../utils/errors.js';
+import { sequelize } from '../../config/database.js';
 
 describe('CompanyRepository', () => {
   let testUser;
@@ -26,6 +27,11 @@ describe('CompanyRepository', () => {
   });
 
   describe('BaseRepository Methods with Audit', () => {
+    beforeEach(async () => {
+      // Clean companies table to ensure test isolation
+      await sequelize.query('TRUNCATE TABLE companies CASCADE');
+    });
+
     it('should create company with context using create', async () => {
       // Arrange
       const companyData = createCompanyData({ name: 'Test Company' });
@@ -173,6 +179,9 @@ describe('CompanyRepository', () => {
 
   describe('Complex Query: searchCompanies', () => {
     beforeEach(async () => {
+      // Clean companies table to ensure test isolation
+      await sequelize.query('TRUNCATE TABLE companies CASCADE');
+      
       await companyRepository.create(
         createCompanyData({ name: 'Acme Corporation', code: 'ACME' }),
         auditContext
@@ -263,6 +272,9 @@ describe('CompanyRepository', () => {
 
   describe('Complex Query: findActiveCompanies', () => {
     beforeEach(async () => {
+      // Clean companies table to ensure test isolation
+      await sequelize.query('TRUNCATE TABLE companies CASCADE');
+      
       await companyRepository.create(
         createCompanyData({ name: 'Active Company 1', isActive: true }),
         auditContext

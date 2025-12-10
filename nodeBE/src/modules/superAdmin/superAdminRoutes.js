@@ -25,7 +25,7 @@ import {
   getUsers,
   getUserById,
   updateUser,
-  deleteUser,
+  disableUser,
   assignUserToCompany,
   updateUserCompanyRole
 } from './superAdminController.js';
@@ -174,11 +174,11 @@ router.get('/users/:id', authMiddleware, asyncHandler(getUserById));
 router.put('/users/:id', authMiddleware, asyncHandler(updateUser));
 
 /**
- * @route   DELETE /api/v2/superAdmin/users/:id
- * @desc    Delete (deactivate) user by ID
+ * @route   PUT /api/v2/superAdmin/users/:id/disable
+ * @desc    Disable user by ID (marks as inactive, never deletes)
  * @access  Protected (requires SUPER_ADMIN role)
  */
-router.delete('/users/:id', authMiddleware, asyncHandler(deleteUser));
+router.put('/users/:id/disable', authMiddleware, asyncHandler(disableUser));
 
 /**
  * @route   POST /api/v2/superAdmin/users/:id/assign

@@ -144,15 +144,22 @@ export const getCompanyUsers = async (companyId, filters = {}, pagination = {}) 
     offset: pagination.offset
   };
   
-  const users = await companyUserRepository.findCompanyUsers(companyId, options);
+  const result = await companyUserRepository.findCompanyUsers(companyId, options);
+  
+  // Handle paginated response (findAndCountAll returns {rows, count})
+  // or non-paginated response (findAll returns array)
+  const isPaginated = result && typeof result === 'object' && 'rows' in result && 'count' in result;
+  const rawUsers = isPaginated ? result.rows : result;
+  const totalCount = isPaginated ? result.count : (Array.isArray(result) ? result.length : 0);
   
   // Filter by active if specified
-  let filteredUsers = users;
+  let filteredUsers = rawUsers;
   if (isActive !== undefined) {
-    filteredUsers = users.filter(cu => cu.isActive === isActive);
+    filteredUsers = rawUsers.filter(cu => cu.isActive === isActive);
   }
   
-  return filteredUsers.map(cu => ({
+  // Map to DTO format
+  const users = filteredUsers.map(cu => ({
     id: cu.id,
     userId: cu.userId,
     companyId: cu.companyId,
@@ -172,6 +179,12 @@ export const getCompanyUsers = async (companyId, filters = {}, pagination = {}) 
       isActive: cu.role.isActive
     } : null
   }));
+  
+  // Return {users, total} format expected by controller
+  return {
+    users,
+    total: isPaginated ? totalCount : users.length
+  };
 };
 
 /**

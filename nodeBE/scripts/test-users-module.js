@@ -237,7 +237,7 @@ const runTests = async () => {
   const createUserResponse = await testEndpoint({
     testName: 'Create User - Create new user',
     method: 'POST',
-    uri: `${BASE_URL}/api/v2/users`,
+    uri: `${BASE_URL}/api/v2/users/create`,
     headers: { Authorization: `Bearer ${accessToken}` },
     body: {
       email: testUserEmail,
@@ -267,7 +267,7 @@ const runTests = async () => {
   await testEndpoint({
     testName: 'Create User - Duplicate email error',
     method: 'POST',
-    uri: `${BASE_URL}/api/v2/users`,
+    uri: `${BASE_URL}/api/v2/users/create`,
     headers: { Authorization: `Bearer ${accessToken}` },
     body: {
       email: testUserEmail,
@@ -284,7 +284,7 @@ const runTests = async () => {
   await testEndpoint({
     testName: 'Create User - Validation error (missing email)',
     method: 'POST',
-    uri: `${BASE_URL}/api/v2/users`,
+    uri: `${BASE_URL}/api/v2/users/create`,
     headers: { Authorization: `Bearer ${accessToken}` },
     body: {
       password: 'TestPassword123!'
@@ -298,7 +298,7 @@ const runTests = async () => {
   await testEndpoint({
     testName: 'Create User - Invalid email format',
     method: 'POST',
-    uri: `${BASE_URL}/api/v2/users`,
+    uri: `${BASE_URL}/api/v2/users/create`,
     headers: { Authorization: `Bearer ${accessToken}` },
     body: {
       email: 'invalid-email',
@@ -482,7 +482,7 @@ const runTests = async () => {
   await testEndpoint({
     testName: 'Create User - Unauthorized (no token)',
     method: 'POST',
-    uri: `${BASE_URL}/api/v2/users`,
+    uri: `${BASE_URL}/api/v2/users/create`,
     body: {
       email: 'unauthorized@example.com',
       password: 'TestPassword123!'

@@ -1,0 +1,269 @@
+---
+description: Testing standards and best practices
+globs: ["nodeBE/**/*.test.js"]
+alwaysApply: true
+---
+# Testing Standards
+
+## Overview
+
+This document defines testing standards, patterns, and best practices for the JoorApp V2 Backend.
+
+## Test Naming Conventions
+
+### Test File Names
+
+- **Unit Tests**: `{SourceFileName}.test.js`
+- **Integration Tests**: `{module}.integration.test.js`
+- **Match source file naming**: camelCase for files, PascalCase for models
+
+### Test Suite Names
+
+- Use descriptive `describe` blocks
+- Match component being tested
+- Group related tests
+
+**Examples**:
+```javascript
+describe('UserRepository', () => {
+  describe('BaseRepository Methods', () => {
+    // ...
+  });
+  
+  describe('Complex Query: findUserWithCompanies', () => {
+    // ...
+  });
+});
+```
+
+### Test Case Names
+
+- Use `it('should ...')` format
+- Describe expected behavior
+- Be specific and clear
+
+**Examples**:
+- ✅ `it('should create user with context', ...)`
+- ✅ `it('should return 404 when user not found', ...)`
+- ✅ `it('should throw ValidationError for invalid email', ...)`
+- ❌ `it('test create', ...)` (too vague)
+- ❌ `it('works', ...)` (not descriptive)
+
+## AAA Pattern (Arrange-Act-Assert)
+
+**MANDATORY**: All tests MUST follow the AAA pattern:
+
+```javascript
+it('should create user with context', async () => {
+  // Arrange
+  const userData = createUserData({ email: 'test@example.com' });
+  const auditContext = createAuditContext(testUser.id);
+  
+  // Act
+  const user = await userRepository.create(userData, auditContext);
+  
+  // Assert
+  expect(user).toBeDefined();
+  expect(user.email).toBe('test@example.com');
+  expect(user.createdUserId).toBe(testUser.id);
+});
+```
+
+## Test Isolation
+
+**CRITICAL**: All tests MUST be isolated:
+
+1. **Database Cleanup**:
+   ```javascript
+   beforeEach(async () => {
+     await cleanDatabase();  // Clean all tables
+   });
+   
+   // OR for specific tables:
+   beforeEach(async () => {
+     await sequelize.query('TRUNCATE TABLE companies CASCADE');
+   });
+   ```
+
+2. **Mock Reset**:
+   ```javascript
+   beforeEach(() => {
+     jest.clearAllMocks();
+   });
+   ```
+
+3. **Fresh Test Data**:
+   - Always create fresh data for each test
+   - Never rely on data from previous tests
+   - Use factories for test data
+
+## ES Module Testing Patterns
+
+### Mocking with jest.unstable_mockModule
+
+```javascript
+// Mock the module
+jest.unstable_mockModule('../../services/userService.js', () => ({
+  getUserById: jest.fn(),
+  createUser: jest.fn()
+}));
+
+// Import after mocking
+beforeAll(async () => {
+  const { userController } = await import('../userController.js');
+  const { userService } = await import('../../services/userService.js');
+});
+```
+
+### Dynamic Imports
+
+```javascript
+// ✅ CORRECT: Import after mocking
+beforeAll(async () => {
+  const module = await import('../module.js');
+});
+
+// ❌ WRONG: Import at top level (before mocks)
+import { module } from '../module.js';
+```
+
+## Test Data Management
+
+### Use Factories
+
+**ALWAYS** use factory helpers for test data:
+
+```javascript
+// ✅ CORRECT: Use factories
+const userData = createUserData({ email: 'test@example.com' });
+const companyData = createCompanyData({ name: 'Test Company' });
+
+// ❌ WRONG: Hardcode test data
+const userData = {
+  id: '123',
+  email: 'test@example.com',
+  // ...
+};
+```
+
+### Factory Helpers Available
+
+- `createUserData(overrides)` - User test data
+- `createCompanyData(overrides)` - Company test data
+- `createRoleData(companyId, overrides)` - CompanyRole test data
+- `createCompanyUserData(userId, companyId, roleId, overrides)` - CompanyUser test data
+- `createAuditContext(userId, companyId)` - Audit context
+
+## Mocking Guidelines
+
+### When to Mock
+
+- ✅ **Mock external services** (Keycloak, third-party APIs)
+- ✅ **Mock repositories** in service tests
+- ✅ **Mock services** in controller tests
+- ✅ **Mock database** in unit tests (if needed)
+- ❌ **Don't mock** the code you're testing
+- ❌ **Don't over-mock** (integration tests should use real dependencies)
+
+### Mock Patterns
+
+```javascript
+// Mock repository in service test
+jest.unstable_mockModule('../repositories/userRepository.js', () => ({
+  userRepository: {
+    findByIdOrFail: jest.fn(),
+    create: jest.fn()
+  }
+}));
+
+// Mock service in controller test
+jest.unstable_mockModule('../../services/userService.js', () => ({
+  getUserById: jest.fn(),
+  createUser: jest.fn()
+}));
+```
+
+## Error Testing
+
+### Test Error Scenarios
+
+**MUST test** all error scenarios:
+
+```javascript
+// Test NotFoundError
+it('should throw NotFoundError when user not found', async () => {
+  mockUserRepository.findByIdOrFail.mockRejectedValue(
+    new NotFoundError('User', userId)
+  );
+  
+  await expect(service.getUserById(userId))
+    .rejects.toThrow(NotFoundError);
+});
+
+// Test ValidationError
+it('should throw ValidationError for invalid email', () => {
+  expect(() => {
+    validateEmail('invalid-email', 'email', req.id);
+  }).toThrow(ValidationError);
+});
+```
+
+## Coverage Expectations
+
+### Minimum Coverage Targets
+
+- **Models**: 90%+ (all CRUD, scopes, validations)
+- **Repositories**: 85%+ (all methods, error cases)
+- **Services**: 80%+ (all business logic)
+- **Middleware**: 85%+ (all paths, error cases)
+- **Controllers**: 80%+ (all endpoints)
+- **Utilities**: 95%+ (all functions, edge cases)
+- **Integration**: 70%+ (all endpoints, main flows)
+
+## Test Organization
+
+### Structure
+
+```javascript
+describe('ComponentName', () => {
+  // Setup
+  let testData;
+  let mockDependency;
+  
+  beforeEach(async () => {
+    await cleanDatabase();
+    // Setup test data
+  });
+  
+  // Test groups
+  describe('Method Group 1', () => {
+    it('should do something', ...);
+  });
+  
+  describe('Method Group 2', () => {
+    it('should do something else', ...);
+  });
+});
+```
+
+## Performance Considerations
+
+### Test Execution
+
+- Tests run sequentially (`--runInBand`) to avoid deadlocks
+- Database cleanup runs before all tests
+- Test users are set up once before all tests
+- Integration tests use real database and Keycloak
+
+### Optimization
+
+- Use factories for fast test data generation
+- Clean only necessary tables in nested suites
+- Mock expensive operations (external APIs)
+
+## Related Rules
+
+- **testing.mdc** - Main testing rules
+- **test-file-locations.mdc** - File location rules
+- **test-creation-requirements.mdc** - Test requirements
+- **test-patterns.mdc** - Common test patterns
