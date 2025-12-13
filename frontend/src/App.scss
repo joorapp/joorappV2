@@ -1,187 +1,188 @@
-// Global App Styles
-.app {
-  min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: #f8fafc;
+.account-pages_login {
+  .avatar-title {
+    background-color: #fff;
+  }
 }
 
-// Loading Screen
-.loading-screen {
+.avatar-title {
+  align-items: center;
+  background-color: #556ee6;
+  color: #fff;
+  display: flex;
+  font-weight: 500;
+  height: 100%;
+  justify-content: center;
+  width: 100%;
+}
+
+// Avatar title different background colors for variety
+
+.avatar-title.bg-primary {
+  background-color: #564cf3 !important;
+}
+
+.avatar-title.bg-success {
+  background-color: #34c38f !important;
+}
+
+.avatar-title.bg-info {
+  background-color: #50a5f1 !important;
+}
+
+.avatar-title.bg-warning {
+  background-color: #f1b44c !important;
+}
+
+.avatar-title.bg-danger {
+  background-color: #f46a6a !important;
+}
+
+.avatar-title.bg-dark {
+  background-color: #343a40 !important;
+}
+
+.avatar-title.bg-secondary {
+  background-color: #74788d !important;
+}
+
+.avatar-title.bg-light {
+  background-color: #f8f9fa !important;
+  color: #495057 !important;
+}
+
+
+.avatar-xs {
+  height: 2rem;
+  width: 2rem;
+}
+
+.LoaderCardWrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  background: #f8fafc;
-  gap: 1rem;
-
-  p {
-    color: #6b7280;
-    font-size: 1rem;
-    margin: 0;
-  }
+  height: 100%;
+  width: 100%;
+  min-height: calc(100vh - 200px);
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e5e7eb;
-  border-top: 4px solid #3b82f6;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+.profile-user-wid {
+  margin-top: -1.5rem;
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+.mini-stats-wid .mini-stat-icon {
+  overflow: hidden;
+  position: relative;
 }
 
-// Unauthorized Page
-.unauthorized {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: #f8fafc;
-  padding: 1rem;
+.mini-stats-wid .mini-stat-icon:before,
+.mini-stats-wid .mini-stat-icon:after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 54px;
+  background-color: rgba(255, 255, 255, 0.1);
+  left: 16px;
+  transform: rotate(32deg);
+  top: -5px;
+  transition: all 0.4s;
+}
 
-  &__container {
-    text-align: center;
-    background: white;
-    padding: 3rem 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    max-width: 400px;
-    width: 100%;
+.mini-stats-wid .mini-stat-icon::after {
+  left: -12px;
+  width: 12px;
+  transition: all 0.2s;
+}
 
-    h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #dc2626;
-      margin: 0 0 1rem 0;
+.mini-stats-wid:hover .mini-stat-icon::after {
+  left: 60px;
+}
+
+// client-logo-preview 
+
+.client-logo-preview {
+  min-height: 130px;
+
+  .client-logo-preview-inner {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: #f3f3f3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
     }
 
-    p {
-      font-size: 1rem;
-      color: #6b7280;
-      margin: 0 0 2rem 0;
+    span {
+      color: #aaa;
+      font-size: 36px;
+      letter-spacing: 1px;
+      font-weight: 600;
     }
 
-    button {
-      padding: 0.75rem 1.5rem;
-      background: #3b82f6;
-      color: white;
-      border: none;
-      border-radius: 0.5rem;
-      font-size: 1rem;
-      font-weight: 500;
+    label[for="client-logo-upload"] {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      background: #fff;
+      border-radius: 50%;
+      padding: 7px;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08);
+      display: flex;
+      align-items: center;
       cursor: pointer;
-      transition: background-color 0.2s ease;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #343a40;
+      font-size: 18px;
+      font-weight: 600;
+      transition: all 0.3s ease;
 
       &:hover {
-        background: #2563eb;
+        background: #556ee6;
+        color: #fff;
+
+        i {
+          color: #fff;
+        }
+      }
+
+      i {
+        color: #343a40;
+        font-size: 18px;
+        font-weight: 600;
+        transition: all 0.3s ease;
       }
     }
   }
 }
 
-// Global Reset and Base Styles
-* {
-  box-sizing: border-box;
-}
-
-html {
-  line-height: 1.15;
-  -webkit-text-size-adjust: 100%;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  font-family: inherit;
-  line-height: 1.5;
-  color: #1f2937;
-  background: #f8fafc;
-}
-
-// Typography
-h1, h2, h3, h4, h5, h6 {
-  margin: 0;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-p {
-  margin: 0;
-  line-height: 1.6;
-}
-
-// Links
-a {
-  color: #3b82f6;
-  text-decoration: none;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: #2563eb;
-  }
-}
-
-// Buttons
-button {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  margin: 0;
-  overflow: visible;
-  text-transform: none;
-  -webkit-appearance: button;
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-// Form Elements
-input, textarea, select {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  margin: 0;
-}
-
-// Utility Classes
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+.attached-file-name {
   white-space: nowrap;
-  border: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
-// Responsive Design Helpers
-@media (max-width: 768px) {
-  .app {
-    font-size: 14px;
-  }
+.attached-file-link {
+  max-width: 180px;
 }
 
-@media (max-width: 480px) {
-  .app {
-    font-size: 13px;
+.card {
+  &.Comments-card,
+  &.AttachedFiles-card,
+  &.ProjectOverview-chart {
+    height: 400px;
+    overflow: auto;
   }
 }
