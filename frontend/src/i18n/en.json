@@ -15,13 +15,57 @@
     "logout": "Logout",
     "userManagement": "User Management",
     "companyManagement": "Company Management",
-    "reports": "Reports"
+    "reports": "Reports",
+    "admin": "Admin",
+    "clients": "Clients",
+    "newClients": "New Clients",
+    "activeClients": "Active Clients",
+    "contacts": "Contacts",
+    "userGrid": "User Grid",
+    "userList": "User List",
+    "userLists": "User Lists",
+    "report": "Report",
+    "log": "Log",
+    "myWallet": "My Wallet",
+    "lockScreen": "Lock screen"
   },
   "Dashboard": {
     "welcome": "Welcome",
     "overview": "Overview",
     "recentActivity": "Recent Activity",
     "statistics": "Statistics"
+  },
+  "Dashboards": {
+    "Dashboards": "Dashboards",
+    "Dashboard": "Dashboard"
+  },
+  "DashboardContent": {
+    "welcomeBack": "Welcome Back !",
+    "joorAppDashboard": "JoorApp Dashboard",
+    "projects": "Projects",
+    "revenue": "Revenue",
+    "monthlyEarning": "Monthly Earning",
+    "thisMonth": "This month",
+    "fromPreviousPeriod": "From previous period",
+    "viewMore": "View More",
+    "weCraftDigital": "We craft digital, graphic and dimensional thinking.",
+    "totalClients": "Total Clients",
+    "activeClients": "Active clients",
+    "clients": "Clients",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year",
+    "latestTransaction": "Latest Transaction",
+    "orderId": "Order ID",
+    "billingName": "Billing Name",
+    "date": "Date",
+    "total": "Total",
+    "paymentStatus": "Payment Status",
+    "paymentMethod": "Payment Method",
+    "viewDetails": "View Details",
+    "paid": "Paid",
+    "refund": "Refund",
+    "pending": "Pending"
   },
   "Common": {
     "loading": "Loading...",
@@ -34,10 +78,27 @@
     "confirm": "Confirm",
     "back": "Back",
     "next": "Next",
-    "previous": "Previous"
+    "previous": "Previous",
+    "search": "Search...",
+    "searchPlaceholder": "Search..."
   },
   "Roles": {
     "superadmin": "Super Admin",
     "company": "Company"
+  },
+  "Notifications": "Notifications",
+  "View all": "View all",
+  "Your order is placed": "Your order is placed",
+  "If several languages coalesce the grammar": "If several languages coalesce the grammar",
+  "3 min ago": "3 min ago",
+  "It will seem like simplified English": "It will seem like simplified English",
+  "1 hours ago": "1 hours ago",
+  "Your item is shipped": "Your item is shipped",
+  "As a skeptical Cambridge friend of mine occidental": "As a skeptical Cambridge friend of mine occidental",
+  "Footer": {
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "support": "Support",
+    "copyright": "All rights reserved"
   }
 }
