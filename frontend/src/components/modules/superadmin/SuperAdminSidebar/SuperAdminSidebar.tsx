@@ -206,24 +206,6 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, on
               </li>
 
               <li>
-                <Link to="/#" className="has-arrow " onClick={handleItemClick}>
-                  <i className="bx bxs-user-detail"></i>
-                  <span>{t('Navigation.contacts')}</span>
-                </Link>
-                <ul className="sub-menu" aria-expanded="false">
-                  <li>
-                    <Link to="/contacts-grid" onClick={handleItemClick}>{t('Navigation.userGrid')}</Link>
-                  </li>
-                  <li>
-                    <Link to="/contacts-list" onClick={handleItemClick}>{t('Navigation.userList')}</Link>
-                  </li>
-                  <li>
-                    <Link to="/contacts-profile" onClick={handleItemClick}>{t('Navigation.profile')}</Link>
-                  </li>
-                </ul>
-              </li>
-
-              <li>
                 <Link to="/AdminReports" onClick={handleItemClick}>
                   <i className="bx bx-file"></i>
                   <span>{t('Navigation.report')}</span>

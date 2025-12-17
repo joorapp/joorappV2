@@ -80,7 +80,26 @@
     "next": "التالي",
     "previous": "السابق",
     "search": "بحث...",
-    "searchPlaceholder": "بحث..."
+    "searchPlaceholder": "بحث...",
+    "add": "إضافة",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف"
+  },
+  "NewClients": {
+    "newClient": "عميل جديد",
+    "clientName": "اسم العميل",
+    "status": "الحالة",
+    "joinedDate": "تاريخ الانضمام",
+    "plan": "الخطة",
+    "action": "الإجراء",
+    "statusActive": "نشط",
+    "statusPending": "قيد الانتظار",
+    "statusInactive": "غير نشط",
+    "planBasic": "أساسي",
+    "planPremium": "مميز",
+    "planDiamond": "الماس",
+    "addPlan": "خطة",
+    "noClientsFound": "لم يتم العثور على عملاء"
   },
   "Roles": {
     "superadmin": "المسؤول الرئيسي",

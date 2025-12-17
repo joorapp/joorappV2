@@ -80,7 +80,26 @@
     "next": "Weiter",
     "previous": "Vorherige",
     "search": "Suchen...",
-    "searchPlaceholder": "Suchen..."
+    "searchPlaceholder": "Suchen...",
+    "add": "Hinzufügen",
+    "email": "E-Mail",
+    "phone": "Telefon"
+  },
+  "NewClients": {
+    "newClient": "Neuer Kunde",
+    "clientName": "Kundenname",
+    "status": "Status",
+    "joinedDate": "Beitrittsdatum",
+    "plan": "Plan",
+    "action": "Aktion",
+    "statusActive": "Aktiv",
+    "statusPending": "Ausstehend",
+    "statusInactive": "Inaktiv",
+    "planBasic": "Basis",
+    "planPremium": "Premium",
+    "planDiamond": "Diamant",
+    "addPlan": "Plan",
+    "noClientsFound": "Keine Kunden gefunden"
   },
   "Roles": {
     "superadmin": "Super Administrator",
