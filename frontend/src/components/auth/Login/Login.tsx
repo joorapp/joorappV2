@@ -1,197 +1,242 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../context/AuthContext';
-import './Login.scss';
+import { Container, Row, Col, Card, CardBody, Alert, Input, Label, Form, FormFeedback } from 'reactstrap';
+
+// Formik validation
+import * as Yup from "yup";
+import { useFormik } from "formik";
+
+import profile from '../../../assets/images/profile-img.png';
+import logo from '../../../assets/images/Icon.png';
+import lightlogo from '../../../assets/images/logo-light.svg';
+
+
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
-  const { login, isLoading } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
-  
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    rememberMe: false,
-  });
+
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
+  // Yup validation schema
+  const validationSchema = Yup.object({
+    email: Yup.string()
+      .required('Please enter your email')
+      .email('Please enter a valid email address'),
+    password: Yup.string()
+      .required('Please enter your password')
+      .min(6, 'Password must be at least 6 characters'),
+    rememberMe: Yup.boolean()
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
+  // Formik setup
+  const formik = useFormik({
+    initialValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      setError(null);
+      setIsSubmitting(true);
 
-    try {
-      const result = await login(formData.email, formData.password);
-      
-      if (result.success && result.user) {
-        // Store remember me preference
-        if (formData.rememberMe) {
-          localStorage.setItem('rememberMe', 'true');
+      try {
+        const result = await login(values.email, values.password);
+
+        if (result.success && result.user) {
+          // Store remember me preference
+          if (values.rememberMe) {
+            localStorage.setItem('rememberMe', 'true');
+          } else {
+            localStorage.removeItem('rememberMe');
+          }
+
+          // Redirect based on user role
+          if (result.user.role === 'superadmin') {
+            navigate('/superadmin/dashboard');
+          } else if (result.user.role === 'company') {
+            navigate('/company/dashboard');
+          } else {
+            navigate('/dashboard');
+          }
         } else {
-          localStorage.removeItem('rememberMe');
+          setError(result.error || 'Login failed. Please try again.');
         }
-
-        // Redirect based on user role
-        if (result.user.role === 'superadmin') {
-          navigate('/superadmin/dashboard');
-        } else if (result.user.role === 'company') {
-          navigate('/company/dashboard');
-        } else {
-          navigate('/dashboard');
-        }
-      } else {
-        setError(result.error || 'Login failed. Please try again.');
+      } catch (err) {
+        setError('An unexpected error occurred. Please try again.');
+        console.error('Login error:', err);
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
-      console.error('Login error:', err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+  });
 
-  const handleDemoLogin = (role: 'superadmin' | 'company') => {
-    if (role === 'superadmin') {
-      setFormData({
-        email: 'superadmin@example.com',
-        password: 'admin123',
-        rememberMe: false,
-      });
-    } else {
-      setFormData({
-        email: 'company@example.com',
-        password: 'company123',
-        rememberMe: false,
-      });
-    }
-  };
+  // const handleDemoLogin = (role: 'superadmin' | 'company') => {
+  //   if (role === 'superadmin') {
+  //     setFormData({
+  //       email: 'superadmin@example.com',
+  //       password: 'admin123',
+  //       rememberMe: false,
+  //     });
+  //   } else {
+  //     setFormData({
+  //       email: 'company@example.com',
+  //       password: 'company123',
+  //       rememberMe: false,
+  //     });
+  //   }
+  // };
+
 
   return (
-    <div className="login">
-      <div className="login__container">
-        <div className="login__card">
-          <div className="login__header">
-            <div className="login__logo">
-              <span className="login__logo-icon">🚀</span>
-              <h1 className="login__title">JoorApp</h1>
-            </div>
-            <p className="login__subtitle">{t('Login.title')}</p>
-          </div>
+    <>
+   <div className="account-pages_login my-5 pt-sm-5">
+        <Container>
+          <Row className="justify-content-center">
+            <Col md={8} lg={6} xl={5}>
+              <Card className="overflow-hidden">
+                <div className="bg-primary-subtle">
+                  <Row>
+                    <Col xs={7}>
+                      <div className="text-primary p-4">
+                        <h5 className="text-primary">Welcome Back !</h5>
+                        <p>Sign in to continue to JoorApp.</p>
+                      </div>
+                    </Col>
+                    <Col className="col-5 align-self-end">
+                      <img src={profile} alt="" className="img-fluid" />
+                    </Col>
+                  </Row>
+                </div>
+                <CardBody className="pt-0">
+                  <div className="auth-logo">
+                    <a href="/" className="auth-logo-light">
+                      <div className="avatar-md profile-user-wid mb-4">
+                        <span className="avatar-title rounded-circle">
+                          <img
+                            src={lightlogo}
+                            alt=""
+                            className="rounded-circle"
+                            height="50"
+                          />
+                        </span>
+                      </div>
+                    </a>
+                    <a href="/" className="auth-logo-dark">
+                      <div className="avatar-md profile-user-wid mb-4">
+                        <span className="avatar-title rounded-circle bg-primary">
+                          <img
+                            src={logo}
+                            alt=""
+                            className="rounded-circle"
+                            width="50"
+                          />
+                        </span>
+                      </div>
+                    </a>
+                  </div>
+                  <div className="p-2">
+                    <Form
+                      className="form-horizontal"
+                      onSubmit={formik.handleSubmit}
+                    >
+                      {error ? <Alert color="danger">{error}</Alert> : null}
 
-          <form className="login__form" onSubmit={handleSubmit}>
-            {error && (
-              <div className="login__error">
-                <span className="login__error-icon">⚠️</span>
-                <span className="login__error-text">{error}</span>
-              </div>
-            )}
+                      <div className="mb-3">
+                        <Label className="form-label">{t('Login.email')}</Label>
+                        <Input
+                          name="email"
+                          className="form-control"
+                          placeholder="Enter email"
+                          type="email"
+                          onChange={formik.handleChange}
+                          onBlur={formik.handleBlur}
+                          value={formik.values.email}
+                          invalid={formik.touched.email && !!formik.errors.email}
+                          required
+                          disabled={isSubmitting}
+                        />
+                        {formik.touched.email && formik.errors.email && (
+                          <FormFeedback type="invalid">
+                            {formik.errors.email}
+                          </FormFeedback>
+                        )}
+                      </div>
 
-            <div className="login__field">
-              <label htmlFor="email" className="login__label">
-                {t('Login.email')}
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="login__input"
-                placeholder="Enter your email"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
+                      <div className="mb-3">
+                        <Label className="form-label">Password</Label>
+                        <Input
+                          name="password"
+                          autoComplete="off"
+                          value={formik.values.password}
+                          type="password"
+                          placeholder="Enter Password"
+                          onChange={formik.handleChange}
+                          onBlur={formik.handleBlur}
+                          invalid={formik.touched.password && !!formik.errors.password}
+                          required
+                          disabled={isSubmitting}
+                        />
+                        {formik.touched.password && formik.errors.password && (
+                          <FormFeedback type="invalid">
+                            {formik.errors.password}
+                          </FormFeedback>
+                        )}
+                      </div>
 
-            <div className="login__field">
-              <label htmlFor="password" className="login__label">
-                {t('Login.password')}
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className="login__input"
-                placeholder="Enter your password"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
+                      <div className="form-check">
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          id="customControlInline"
+                          name="rememberMe"
+                          checked={formik.values.rememberMe}
+                          onChange={formik.handleChange}
+                          disabled={isSubmitting}
+                        />
+                        <label
+                          className="form-check-label"
+                          htmlFor="customControlInline"
+                        >
+                          Remember me
+                        </label>
+                      </div>
 
-            <div className="login__options">
-              <label className="login__checkbox">
-                <input
-                  type="checkbox"
-                  name="rememberMe"
-                  checked={formData.rememberMe}
-                  onChange={handleInputChange}
-                  disabled={isSubmitting}
-                />
-                <span className="login__checkbox-text">{t('Login.rememberMe')}</span>
-              </label>
-              <a href="#" className="login__forgot-link">
-                {t('Login.forgotPassword')}
-              </a>
-            </div>
+                      <div className="mt-3 d-grid">
+                        <button
+                          className="btn btn-primary btn-block"
+                          type="submit"
+                        >
+                          Log In
+                        </button>
+                      </div>
 
-            <button
-              type="submit"
-              className="login__submit"
-              disabled={isSubmitting || isLoading}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="login__spinner"></span>
-                  {t('Common.loading')}
-                </>
-              ) : (
-                t('Login.submit')
-              )}
-            </button>
-          </form>
 
-          <div className="login__demo">
-            <p className="login__demo-title">Demo Accounts:</p>
-            <div className="login__demo-buttons">
-              <button
-                type="button"
-                className="login__demo-btn login__demo-btn--superadmin"
-                onClick={() => handleDemoLogin('superadmin')}
-                disabled={isSubmitting}
-              >
-                👑 Super Admin
-              </button>
-              <button
-                type="button"
-                className="login__demo-btn login__demo-btn--company"
-                onClick={() => handleDemoLogin('company')}
-                disabled={isSubmitting}
-              >
-                🏢 Company
-              </button>
-            </div>
-          </div>
 
-          <div className="login__footer">
-            <p className="login__footer-text">
-              &copy; 2024 JoorApp. All rights reserved.
-            </p>
-          </div>
-        </div>
+                      <div className="mt-4 text-center">
+                        <Link to="/forgot-password" className="text-muted">
+                          <i className="mdi mdi-lock me-1" />
+                          Forgot your password?
+                        </Link>
+                      </div>
+                    </Form>
+                  </div>
+                </CardBody>
+              </Card>
+
+            </Col>
+          </Row>
+        </Container>
       </div>
-    </div>
+
+
+
+    </>
   );
 };
 
