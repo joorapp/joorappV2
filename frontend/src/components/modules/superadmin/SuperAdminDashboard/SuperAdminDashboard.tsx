@@ -338,5 +338,6 @@ const SuperAdminDashboard: React.FC = () => {
 };
 
 export { default as NewClients } from '../NewClients/NewClients';
+export { default as ActiveClients } from '../ActiveClients/ActiveClients';
 
 export default SuperAdminDashboard;

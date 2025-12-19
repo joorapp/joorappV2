@@ -1,85 +1,24 @@
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import SimpleBar from 'simplebar-react';
-import { MetisMenu } from 'metismenujs';
-import 'simplebar-react/dist/simplebar.min.css';
+import MetisMenu from 'metismenujs';
 import logo from '../../../../assets/images/Icon.png';
 import logoDark from '../../../../assets/images/Logo.png';
 import logoLightSvg from '../../../../assets/images/Icon.png';
 import logoLightPng from '../../../../assets/images/Icon.png';
 
-interface SuperAdminSidebarProps {
+  interface SuperAdminSidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-// Utility functions moved outside component to prevent recreation
-function scrollElement(item: HTMLElement) {
-  if (item) {
-    const currentPosition = item.offsetTop;
-    if (currentPosition > window.innerHeight) {
-      const sidebarMenu = document.getElementById("sidebar-menu");
-      if (sidebarMenu) {
-        sidebarMenu.scrollTop = currentPosition - 300;
-      }
-    }
-  }
-}
-
-function removeActivation(items: HTMLCollectionOf<HTMLAnchorElement>) {
-  for (var i = 0; i < items.length; ++i) {
-    var item = items[i];
-    const parent = items[i].parentElement;
-
-    if (item && item.classList.contains("active")) {
-      item.classList.remove("active");
-    }
-    if (parent) {
-      const parent2El =
-        parent.childNodes && parent.childNodes.length && parent.childNodes[1]
-          ? parent.childNodes[1]
-          : null;
-      if (parent2El && (parent2El as HTMLElement).id !== "side-menu") {
-        (parent2El as HTMLElement).classList.remove("mm-show");
-      }
-
-      parent.classList.remove("mm-active");
-      const parent2 = parent.parentElement;
-
-      if (parent2) {
-        parent2.classList.remove("mm-show");
-
-        const parent3 = parent2.parentElement;
-        if (parent3) {
-          parent3.classList.remove("mm-active"); // li
-          (parent3.childNodes[0] as HTMLElement).classList.remove("mm-active");
-
-          const parent4 = parent3.parentElement; // ul
-          if (parent4) {
-            parent4.classList.remove("mm-show"); // ul
-            const parent5 = parent4.parentElement;
-            if (parent5) {
-              parent5.classList.remove("mm-show"); // li
-              (parent5.childNodes[0] as HTMLElement).classList.remove("mm-active"); // a tag
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, onClose }) => {
+const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = () => {
   const { t } = useTranslation();
   const location = useLocation();
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const ref = useRef<any>(null);
+  const metisMenuRef = useRef<MetisMenu | null>(null);
 
-  const handleItemClick = () => {
-    if (window.innerWidth <= 768 && onClose) {
-      onClose();
-    }
-  };
 
   const activateParentDropdown = useCallback((item: HTMLElement) => {
     item.classList.add("active");
@@ -120,6 +59,49 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, on
     return false;
   }, []);
 
+  const removeActivation = (items: HTMLCollectionOf<HTMLAnchorElement>) => {
+    for (var i = 0; i < items.length; ++i) {
+      var item = items[i];
+      const parent = items[i].parentElement;
+
+      if (item && item.classList.contains("active")) {
+        item.classList.remove("active");
+      }
+      if (parent) {
+        const parent2El =
+          parent.childNodes && parent.childNodes.length && parent.childNodes[1]
+            ? parent.childNodes[1]
+            : null;
+        if (parent2El && (parent2El as HTMLElement).id !== "side-menu") {
+          (parent2El as HTMLElement).classList.remove("mm-show");
+        }
+
+        parent.classList.remove("mm-active");
+        const parent2 = parent.parentElement;
+
+        if (parent2) {
+          parent2.classList.remove("mm-show");
+
+          const parent3 = parent2.parentElement;
+          if (parent3) {
+            parent3.classList.remove("mm-active"); // li
+            (parent3.childNodes[0] as HTMLElement).classList.remove("mm-active");
+
+            const parent4 = parent3.parentElement; // ul
+            if (parent4) {
+              parent4.classList.remove("mm-show"); // ul
+              const parent5 = parent4.parentElement;
+              if (parent5) {
+                parent5.classList.remove("mm-show"); // li
+                (parent5.childNodes[0] as HTMLElement).classList.remove("mm-active"); // a tag
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+
   const activeMenu = useCallback(() => {
     const pathName = location.pathname;
     let matchingMenuItem = null;
@@ -129,9 +111,17 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, on
     removeActivation(items);
 
     for (let i = 0; i < items.length; ++i) {
-      if (pathName === items[i].pathname) {
-        matchingMenuItem = items[i];
-        break;
+      const item = items[i];
+      const itemPath = item.getAttribute('href');
+      const itemPathname = item.pathname || itemPath;
+      
+      // Skip placeholder links and parent dropdown links
+      if (itemPathname && itemPathname !== '/#' && itemPathname !== '/' && !item.classList.contains('has-arrow')) {
+        // Exact match or path starts with the item path
+        if (pathName === itemPathname || pathName.startsWith(itemPathname + '/')) {
+          matchingMenuItem = item;
+          break;
+        }
       }
     }
     if (matchingMenuItem) {
@@ -140,23 +130,49 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, on
   }, [location.pathname, activateParentDropdown]);
 
   useEffect(() => {
-    const metisMenu = new MetisMenu("#side-menu" as unknown as HTMLElement);
+    // Initialize MetisMenu only once
+    metisMenuRef.current = new MetisMenu("#side-menu" as unknown as HTMLElement);
     activeMenu();
 
     // Cleanup on component unmount
     return () => {
-      metisMenu.dispose();
+      if (metisMenuRef.current) {
+        metisMenuRef.current.dispose();
+        metisMenuRef.current = null;
+      }
     };
-  }, [activeMenu]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Update active menu when location changes
     activeMenu();
-  }, [activeMenu]);
+  }, [location.pathname, activeMenu]);
+
+  function scrollElement(item: HTMLElement) {
+    if (item) {
+      const currentPosition = item.offsetTop;
+      if (currentPosition > window.innerHeight) {
+        (document.getElementById("sidebar-menu") as HTMLElement).scrollTop = currentPosition - 300;
+      }
+    }
+  }
+
+  const handleDropdownClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Prevent navigation for dropdown parent links
+    const target = e.currentTarget;
+    if (target.classList.contains('has-arrow')) {
+      e.preventDefault();
+      // MetisMenu will handle the toggle automatically
+    }
+  };
+
+
+
 
   return (
     <>
-      <div className={`vertical-menu${isOpen ? ' show' : ''}`}>
+      <div className="vertical-menu">
         <div className="navbar-brand-box">
           <Link to="/" className="logo logo-dark">
             <span className="logo-sm">
@@ -177,50 +193,51 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, on
           </Link>
         </div>
 
-        <SimpleBar className="h-100 venu" scrollableNodeProps={{ ref: scrollRef }}>
+        <SimpleBar className="h-100 venu" ref={ref}>
           <div id="sidebar-menu">
             <ul className="metismenu list-unstyled" id="side-menu">
-              <li className="menu-title">{t('Navigation.admin')}</li>
+              <li className="menu-title">Admin</li>
               <li>
-                <Link to="/superadmin/dashboard" className=" " onClick={handleItemClick}>
+                <Link to="/superadmin/dashboard" className=" ">
                   <i className="bx bx-home-circle"></i>
                   <span>{t('Navigation.dashboard')} </span>
                 </Link>
               </li>
 
               <li>
-                <Link to="/#" className="has-arrow" onClick={handleItemClick}>
+                <Link to="/#" className="has-arrow" onClick={handleDropdownClick}>
                   <i className="bx bx-buildings"></i>
-                  <span>{t('Navigation.clients')}</span>
+                  <span>Clients</span>
                 </Link>
-                <ul className="sub-menu" aria-expanded="false">
+                <ul className="sub-menu mm-collapse" aria-expanded="false">
                   <li>
-                    <Link to="/superadmin/NewClient" onClick={handleItemClick}>{t('Navigation.newClients')}</Link>
+                    <Link to="/superadmin/NewClient">New Clients</Link>
                   </li>
                   <li>
-                    <Link to="/superadmin/ActiveClients" onClick={handleItemClick}>
-                      {t('Navigation.activeClients')}
+                    <Link to="/superadmin/ActiveClients">
+                      Active Clients
                     </Link>
                   </li>
                 </ul>
               </li>
+              
 
               <li>
-                <Link to="/AdminReports" onClick={handleItemClick}>
+                <Link to="/AdminReports">
                   <i className="bx bx-file"></i>
-                  <span>{t('Navigation.report')}</span>
+                  <span>Report</span>
                 </Link>
               </li>
               <li>
-                <Link to="/superadmin/UserList" onClick={handleItemClick}>
+                <Link to="/superadmin/UserList">
                   <i className="bx bx-user"></i>
-                  <span>{t('Navigation.userLists')}</span>
+                  <span>User Lists</span>
                 </Link>
               </li>
               <li>
-                <Link to="/superadmin/Loglist" onClick={handleItemClick}>
+                <Link to="/superadmin/Loglist">
                   <i className='bx bx-layer'    ></i>
-                  <span>{t('Navigation.log')}</span>
+                  <span>Log</span>
                 </Link>
               </li>
 
@@ -234,3 +251,4 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, on
 };
 
 export default SuperAdminSidebar;
+ 

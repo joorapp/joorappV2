@@ -186,3 +186,120 @@
     overflow: auto;
   }
 }
+.main-content{
+  min-height: calc(100vh - 100px);
+}
+
+// New Clients Component Styles
+.search-input-group {
+  width: 300px !important;
+}
+
+.profile-photo-upload {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 2px dashed #aaa;
+  overflow: hidden;
+  background: #f3f6fa;
+  cursor: pointer;
+  margin-bottom: 10px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+
+  .profile-upload-button {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    width: 32px;
+    height: 32px;
+    background: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 4px rgba(40, 40, 40, 0.09);
+  }
+}
+
+.profile-upload-helper-text {
+  font-size: 0.96rem;
+  color: #9da3af;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.delete-confirm-icon {
+  font-size: 50px;
+  color: #f46a6a;
+}
+
+.pricing-card {
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+
+  &.selected {
+    border: 2px solid #556ee6;
+  }
+
+  &:not(.selected) {
+    border: 1px solid #e9ecef;
+  }
+}
+
+.plan-icon-container {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.basic {
+    background: #f8f9fa;
+  }
+
+  &.premium {
+    background: #fff3cd;
+  }
+
+  &.diamond {
+    background: #e7f5ff;
+  }
+}
+
+.plan-icon {
+  font-size: 28px;
+
+  &.basic {
+    color: #6c757d;
+  }
+
+  &.premium {
+    color: #f1b44c;
+  }
+
+  &.diamond {
+    color: #556ee6;
+  }
+}
+
+.plan-title {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+}
+
+.plan-price {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.plan-features-list {
+  min-height: auto;
+}
