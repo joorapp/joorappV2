@@ -7,9 +7,10 @@ alwaysApply: true
 
 ## Module-Based Architecture
 - All features must be self-contained modules in `src/modules/{moduleName}/`
-- Each module must have: {module}Routes.js, {module}Controller.js, {module}Docs.js, index.js
-- Modules export routes and docs from index.js
+- Each module must have: {module}Routes.js (with Swagger annotations), {module}Controller.js, index.js
+- Modules export routes from index.js
 - Register modules in app.js: `app.use('/api/v2/{module}', {module}Routes)`
+- API documentation via Swagger UI at `/api/v2/docs`
 
 ## Directory Structure
 ```
@@ -32,7 +33,7 @@ src/
 
 ## API Versioning
 - All routes under `/api/v2/`
-- Documentation endpoint: `GET /api/v2/{module}` returns module docs
+- API documentation: Swagger UI at `/api/v2/docs`
 - Actual endpoints: `GET /api/v2/{module}/{action}`
 
 ## Environment Variables

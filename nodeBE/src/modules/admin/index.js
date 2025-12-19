@@ -5,15 +5,12 @@
  */
 
 import adminRoutes from './adminRoutes.js';
-import { adminDocs } from './adminDocs.js';
 
 export {
-  adminRoutes,
-  adminDocs
+  adminRoutes
 };
 
 export default {
   routes: adminRoutes,
-  docs: adminDocs,
   moduleName: 'admin'
 };

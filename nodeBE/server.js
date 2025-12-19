@@ -81,34 +81,32 @@ if (!NODE_ENV) {
       const protocol = NODE_ENV === 'production' ? 'https' : 'http';
       const baseUrl = `${protocol}://${actualHost}:${PORT}`;
       
-      // Log server startup information
-      logInfo('🚀 JoorApp Backend API V2 is running', {
-        port: PORT,
-        host: actualHost,
-        environment: NODE_ENV,
-        baseUrl,
-        pid: process.pid,
-        nodeVersion: process.version
-      });
+
       
       // Log startup information for console display
       logInfo(`📡 Environment: ${NODE_ENV}`);
       logInfo(`🌐 Server Address: ${baseUrl}`);
-      logInfo(`\n\t\t📚 API Documentation:`);
-      
-      // Dynamically list all module documentation endpoints
-      registeredModules.forEach(module => {
-        logInfo(`   🔗 ${module.name} Module: ${baseUrl}${module.path}`);
-      });
+      // Swagger documentation endpoints
+      logInfo(`\n\t\t\x1b[1m\x1b[38;5;208m📚 Swagger Documentation:\x1b[0m`);
+      logInfo(`   🔗 Swagger UI: ${baseUrl}/api/v2/docs`);
+      logInfo(`   📄 OpenAPI JSON: ${baseUrl}/api/v2/docs/json`);
+      logInfo(`   📄 OpenAPI YAML: ${baseUrl}/api/v2/docs/yaml`);
       
       // Only log health endpoints (system-level)
-      logInfo(`\n\t\t🔧 Health Endpoints:`);
+      logInfo(`\n\t\t\x1b[1m\x1b[38;5;208m🔧 Health Endpoints:\x1b[0m`);
       logInfo(`   📊 Health Status: ${baseUrl}/api/v2/health/status`);
       logInfo(`   🏓 Health Ping:   ${baseUrl}/api/v2/health/ping`);
       logInfo(`   📈 Health Metrics: ${baseUrl}/api/v2/health/metrics`);
       logInfo(`   🗄️  Health Database: ${baseUrl}/api/v2/health/database`);
-      
-      logInfo(`\n\t\t🚀 JoorApp Backend API V2 is running on port ${PORT}`);
+            // Log server startup information
+            logInfo(`\n\t\t\x1b[1m\x1b[38;5;208m🚀 JoorApp Backend API V2 is running\x1b[0m\n`, {
+              port: PORT,
+              host: actualHost,
+              environment: NODE_ENV,
+              baseUrl,
+              nodeVersion: process.version
+            });
+      logInfo(`\n\t\t\x1b[1m\x1b[38;5;208m🚀 JoorApp Backend API V2 is running on port ${PORT}\x1b[0m`);
     });
     
     // Graceful shutdown handling

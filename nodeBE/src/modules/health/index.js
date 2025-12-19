@@ -5,15 +5,12 @@
  */
 
 import healthRoutes from './healthRoutes.js';
-import { healthDocs } from './healthDocs.js';
 
 export {
-  healthRoutes,
-  healthDocs
+  healthRoutes
 };
 
 export default {
   routes: healthRoutes,
-  docs: healthDocs,
   moduleName: 'health'
 };
