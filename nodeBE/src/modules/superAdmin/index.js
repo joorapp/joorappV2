@@ -5,16 +5,13 @@
  */
 
 import superAdminRoutes from './superAdminRoutes.js';
-import { superAdminDocs } from './superAdminDocs.js';
 
 export {
-  superAdminRoutes,
-  superAdminDocs
+  superAdminRoutes
 };
 
 export default {
   routes: superAdminRoutes,
-  docs: superAdminDocs,
   moduleName: 'superAdmin'
 };
 

@@ -523,17 +523,17 @@ Before considering a model complete, verify:
 - [ ] Model is added to `models` object in `initializeAssociations()` 
 - [ ] `associate` method is defined in model file with all belongsTo/hasMany relationships
 - [ ] Migration file is created before model
-- [ ] **Table added to `scripts/clean-test-database.js`** (see database-cleanup-maintenance.mdc)
-- [ ] **Model test file created** in `src/models/__tests__/{ModelName}.test.js` (see test-file-locations.mdc)
-- [ ] Model is tested (create, update, soft delete, scopes, optimistic locking) (see test-creation-requirements.mdc)
+- [ ] **Table added to `scripts/clean-test-database.js`** (see testing/database-cleanup-maintenance.mdc)
+- [ ] **Model test file created** in `src/models/__tests__/{ModelName}.test.js` (see testing/test-file-locations.mdc)
+- [ ] Model is tested (create, update, soft delete, scopes, optimistic locking) (see testing/test-creation-requirements.mdc)
 
 ## Testing Requirements
 
-**MANDATORY**: Every new model MUST have tests. See **test-creation-requirements.mdc** for complete requirements.
+**MANDATORY**: Every new model MUST have tests. See **testing/test-creation-requirements.mdc** for complete requirements.
 
-**Test File Location**: `src/models/__tests__/{ModelName}.test.js` (see test-file-locations.mdc)
+**Test File Location**: `src/models/__tests__/{ModelName}.test.js` (see testing/test-file-locations.mdc)
 
-**Database Cleanup**: Add table to `scripts/clean-test-database.js` (see database-cleanup-maintenance.mdc)
+**Database Cleanup**: Add table to `scripts/clean-test-database.js` (see testing/database-cleanup-maintenance.mdc)
 
 Every new model should have tests verifying:
 

@@ -30,8 +30,9 @@ Before writing any backend code, follow these rules:
 ## Quick Reference
 - Use ES6 modules: `import/export`
 - Use Winston logger: `import { logInfo } from '../utils/logger.js'`
-- Module structure: routes, controller, docs, index.js
+- Module structure: routes (with Swagger annotations), controller, index.js
 - All routes under `/api/v2/{module}`
+- API documentation: Swagger UI at `/api/v2/docs`
 - NO console.log, NO require(), NO hardcoded fallbacks
 
 ## Critical Rules (MUST FOLLOW)

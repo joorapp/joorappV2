@@ -23,8 +23,9 @@ priority: 1
 
 ## Architecture Pattern
 - All modules in: `src/modules/{moduleName}/`
-- Each module: routes (default export), controller (named exports), docs (named export), index.js
-- Routes: `/api/v2/{module}` for docs, `/api/v2/{module}/{action}` for endpoints
+- Each module: routes (default export with Swagger annotations), controller (named exports), index.js
+- Routes: `/api/v2/{module}/{action}` for endpoints
+- API documentation: Swagger UI at `/api/v2/docs`
 - Request logger: `req.logger` is automatically available in all route handlers
 
 ## Testing Requirements
