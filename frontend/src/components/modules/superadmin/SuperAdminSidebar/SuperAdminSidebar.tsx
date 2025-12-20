@@ -9,16 +9,13 @@ import logoLightSvg from '../../../../assets/images/Icon.png';
 import logoLightPng from '../../../../assets/images/Icon.png';
 
   interface SuperAdminSidebarProps {
-  isOpen?: boolean;
-  onClose?: () => void;
 }
 
-const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = () => {
+const SuperAdminSidebar = ({  }: SuperAdminSidebarProps) => {
   const { t } = useTranslation();
   const location = useLocation();
   const ref = useRef<any>(null);
   const metisMenuRef = useRef<MetisMenu | null>(null);
-
 
   const activateParentDropdown = useCallback((item: HTMLElement) => {
     item.classList.add("active");

@@ -12,7 +12,7 @@ import SuperAdminDashboard, {
   ActiveClients,
 } from './SuperAdminDashboard/SuperAdminDashboard';
 
-const SuperAdminRoutes: React.FC = () => {
+const SuperAdminRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<SuperAdminDashboard />}>        

@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import LoginService from '../core/service/LoginService';
 
 // Define user roles
 export type UserRole = 'superadmin' | 'company';
@@ -22,6 +23,7 @@ interface AuthContextType {
   logout: () => void;
   hasRole: (role: UserRole) => boolean;
   hasAnyRole: (roles: UserRole[]) => boolean;
+  setUser: (user: User | null) => void;
 }
 
 // Create the context
@@ -32,7 +34,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -40,35 +42,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // TODO: Replace with actual API call to validate token
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('accessToken') || localStorage.getItem('authToken'); // Support both for migration
         if (token) {
-          // For demo purposes, determine user based on token
-          if (token === 'mock-token-superadmin') {
-            const mockUser: User = {
-              id: '1',
-              email: 'superadmin@example.com',
-              role: 'superadmin',
-              name: 'Super Admin'
-            };
-            setUser(mockUser);
-          } else if (token === 'mock-token-company') {
-            const mockUser: User = {
-              id: '2',
-              email: 'company@example.com',
-              role: 'company',
-              name: 'Company User',
-              companyId: 'company-1'
-            };
-            setUser(mockUser);
-          } else {
-            // Invalid token, remove it
-            localStorage.removeItem('authToken');
+          // Use LoginService to get profile and validate token
+          try {
+            const response = await LoginService.getProfile();
+            if (response.data?.success && response.data?.data?.user) {
+              setUser(response.data.data.user);
+            } else {
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
+              localStorage.removeItem('authToken'); // Clean up old key
+            }
+          } catch (error) {
+            // API call failed, clear tokens
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('authToken'); // Clean up old key
           }
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        localStorage.removeItem('authToken');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('authToken'); // Clean up old key
       } finally {
         setIsLoading(false);
       }
@@ -81,46 +78,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // TODO: Replace with actual API call
-      // This is a mock implementation
-      if (email === 'superadmin@example.com' && password === 'admin123') {
-        const mockUser: User = {
-          id: '1',
-          email: email,
-          role: 'superadmin',
-          name: 'Super Admin'
-        };
+      // Use LoginService following API architecture pattern
+      const response = await LoginService.login({ email, password });
+      
+      if (response.data?.success && response.data?.data) {
+        const { access_token, refresh_token } = response.data.data;
         
-        setUser(mockUser);
-        localStorage.setItem('authToken', 'mock-token-superadmin');
-        return { success: true, user: mockUser };
-      } else if (email === 'company@example.com' && password === 'company123') {
-        const mockUser: User = {
-          id: '2',
-          email: email,
-          role: 'company',
-          name: 'Company User',
-          companyId: 'company-1'
-        };
-        
-        setUser(mockUser);
-        localStorage.setItem('authToken', 'mock-token-company');
-        return { success: true, user: mockUser };
+        if (access_token && refresh_token) {
+          // Store tokens separately
+          localStorage.setItem('accessToken', access_token);
+          localStorage.setItem('refreshToken', refresh_token);
+          localStorage.removeItem('authToken'); // Clean up old key
+          
+          return { success: true };
+        } else {
+          // Tokens missing in response
+          return { success: false, error: response.data?.message || 'Login failed. Tokens not received.' };
+        }
       } else {
-        return { success: false, error: 'Invalid credentials' };
+        // API call failed
+        return { success: false, error: response.data?.message || 'Login failed. Unexpected error occurred.' };
       }
-    } catch (error) {
-      console.error('Login failed:', error);
-      return { success: false, error: 'Login failed. Please try again.' };
+      
+    } catch (error: any) {
+      // Interceptor already shows error toast, just extract message for return value
+      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || 'Login failed. Please try again.';
+      return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('authToken');
-    // TODO: Call logout API endpoint
+  const logout = async () => {
+    try {
+      // Use LoginService following API architecture pattern
+      await LoginService.logout();
+    } catch (error) {
+      // Interceptor already shows error toast, continue with logout anyway
+      console.error('Logout API error:', error);
+    } finally {
+      setUser(null);
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('authToken'); // Clean up old key
+    }
   };
 
   const hasRole = (role: UserRole): boolean => {
@@ -139,6 +140,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     hasRole,
     hasAnyRole,
+    setUser,
   };
 
   return (

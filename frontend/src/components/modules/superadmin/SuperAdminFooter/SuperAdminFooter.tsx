@@ -6,7 +6,13 @@ interface SuperAdminFooterProps {
   showSystemInfo?: boolean;
 }
 
+<<<<<<< Updated upstream
 const SuperAdminFooter: React.FC<SuperAdminFooterProps> = () => {
+=======
+const SuperAdminFooter = ({ 
+  showSystemInfo = true 
+}: SuperAdminFooterProps) => {
+>>>>>>> Stashed changes
   const { t } = useTranslation();
 
   return (

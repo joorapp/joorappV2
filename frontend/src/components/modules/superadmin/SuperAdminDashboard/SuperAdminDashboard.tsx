@@ -315,16 +315,11 @@ export const SuperAdminOverview: React.FC = () => {
 };
 
 const SuperAdminDashboard: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
 
   return (
     <div id="layout-wrapper">
-      <SuperAdminHeader onMenuClick={toggleSidebar} />
-      <SuperAdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <SuperAdminHeader onMenuClick={() => { console.log('menu clicked'); }} />
+      <SuperAdminSidebar />
       <main className="main-content">
         <div className="page-content">
           <div className="container-fluid">

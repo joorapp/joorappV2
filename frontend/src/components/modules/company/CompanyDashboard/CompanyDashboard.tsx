@@ -8,7 +8,7 @@ import CompanyFooter from '../CompanyFooter/CompanyFooter';
 import './CompanyDashboard.scss';
 
 // Placeholder components for company pages
-export const CompanyOverview: React.FC = () => {
+export const CompanyOverview = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -104,7 +104,7 @@ export const CompanyOverview: React.FC = () => {
   );
 };
 
-export const CompanyProfile: React.FC = () => {
+export const CompanyProfile = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -125,7 +125,7 @@ export const CompanyProfile: React.FC = () => {
   );
 };
 
-export const CompanyOrders: React.FC = () => {
+export const CompanyOrders = () => {
   return (
     <div className="company-orders">
       <h2>Orders Management</h2>
@@ -134,7 +134,7 @@ export const CompanyOrders: React.FC = () => {
   );
 };
 
-export const CompanyProducts: React.FC = () => {
+export const CompanyProducts = () => {
   return (
     <div className="company-products">
       <h2>Products Management</h2>
@@ -143,7 +143,7 @@ export const CompanyProducts: React.FC = () => {
   );
 };
 
-export const CompanyCustomers: React.FC = () => {
+export const CompanyCustomers = () => {
   return (
     <div className="company-customers">
       <h2>Customers Management</h2>
@@ -152,7 +152,7 @@ export const CompanyCustomers: React.FC = () => {
   );
 };
 
-export const CompanyAnalytics: React.FC = () => {
+export const CompanyAnalytics = () => {
   return (
     <div className="company-analytics">
       <h2>Analytics & Reports</h2>
@@ -161,7 +161,7 @@ export const CompanyAnalytics: React.FC = () => {
   );
 };
 
-export const CompanySettings: React.FC = () => {
+export const CompanySettings = () => {
   return (
     <div className="company-settings">
       <h2>Company Settings</h2>
@@ -170,7 +170,7 @@ export const CompanySettings: React.FC = () => {
   );
 };
 
-const CompanyDashboard: React.FC = () => {
+const CompanyDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {

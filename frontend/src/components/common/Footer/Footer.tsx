@@ -7,10 +7,10 @@ interface FooterProps {
   showVersion?: boolean;
 }
 
-const Footer: React.FC<FooterProps> = ({ 
+const Footer = ({ 
   showCopyright = true, 
   showVersion = true 
-}) => {
+}: FooterProps) => {
   const { t } = useTranslation();
 
   return (

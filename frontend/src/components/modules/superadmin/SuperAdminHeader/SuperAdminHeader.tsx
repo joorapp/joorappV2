@@ -5,10 +5,12 @@ import ProfileMenu from '../../../common/ProfileMenu/ProfileMenu';
 import LanguageDropdown from '../../../common/LanguageDropdown/LanguageDropdown';
 
 interface SuperAdminHeaderProps {
-  onMenuClick?: () => void;
+  onMenuClick: () => void;
 }
 
-const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({ onMenuClick }) => {
+const SuperAdminHeader = ({ 
+  onMenuClick = () => {}
+}: SuperAdminHeaderProps) => {
   const { t } = useTranslation();
 
   const toggleLeftmenu = () => {
