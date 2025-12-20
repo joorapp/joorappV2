@@ -9,7 +9,12 @@ interface SuperAdminHeaderProps {
 }
 
 const SuperAdminHeader = ({ 
+<<<<<<< Updated upstream
   onMenuClick = () => {}
+=======
+  title = 'Super Admin Dashboard',
+  onMenuClick 
+>>>>>>> Stashed changes
 }: SuperAdminHeaderProps) => {
   const { t } = useTranslation();
 

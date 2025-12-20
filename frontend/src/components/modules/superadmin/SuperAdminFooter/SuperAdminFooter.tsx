@@ -7,7 +7,13 @@ interface SuperAdminFooterProps {
 }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 const SuperAdminFooter: React.FC<SuperAdminFooterProps> = () => {
+=======
+const SuperAdminFooter = ({ 
+  showSystemInfo = true 
+}: SuperAdminFooterProps) => {
+>>>>>>> Stashed changes
 =======
 const SuperAdminFooter = ({ 
   showSystemInfo = true 

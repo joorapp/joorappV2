@@ -11,7 +11,11 @@ import logoLightPng from '../../../../assets/images/Icon.png';
   interface SuperAdminSidebarProps {
 }
 
+<<<<<<< Updated upstream
 const SuperAdminSidebar = ({  }: SuperAdminSidebarProps) => {
+=======
+const SuperAdminSidebar = ({ isOpen = true, onClose }: SuperAdminSidebarProps) => {
+>>>>>>> Stashed changes
   const { t } = useTranslation();
   const location = useLocation();
   const ref = useRef<any>(null);

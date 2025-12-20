@@ -30,7 +30,7 @@ const classNames = (...classes: (string | { [key: string]: boolean } | undefined
 };
 
 // Placeholder components for superadmin pages
-export const SuperAdminOverview: React.FC = () => {
+export const SuperAdminOverview = () => {
   const { t } = useTranslation();
   const [periodType, setPeriodType] = useState<string>('Month');
   const [periodData] = useState<any[]>([
@@ -90,6 +90,7 @@ export const SuperAdminOverview: React.FC = () => {
                       </Col>
                     </Row>
 
+<<<<<<< Updated upstream
                   </div>
                 </Col>
               </Row>
@@ -309,12 +310,100 @@ export const SuperAdminOverview: React.FC = () => {
           </Card>
         </Col>
       </Row>  
+=======
+        <div className="superadmin-overview__quick-actions">
+          <h3 className="superadmin-overview__section-title">Quick Actions</h3>
+          <div className="superadmin-overview__actions-grid">
+            <button className="superadmin-overview__action-btn">
+              <span className="superadmin-overview__action-icon">👥</span>
+              <span className="superadmin-overview__action-label">Manage Users</span>
+            </button>
+            <button className="superadmin-overview__action-btn">
+              <span className="superadmin-overview__action-icon">🏢</span>
+              <span className="superadmin-overview__action-label">Manage Companies</span>
+            </button>
+            <button className="superadmin-overview__action-btn">
+              <span className="superadmin-overview__action-icon">📊</span>
+              <span className="superadmin-overview__action-label">View Reports</span>
+            </button>
+            <button className="superadmin-overview__action-btn">
+              <span className="superadmin-overview__action-icon">⚙️</span>
+              <span className="superadmin-overview__action-label">System Settings</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const UserManagement = () => {
+  const { t } = useTranslation();
+  return (
+    <div className="user-management">
+      <h2>{t('Navigation.userManagement')}</h2>
+      <p>User management page - TODO: Implement user management functionality</p>
+    </div>
+  );
+};
+
+export const CompanyManagement = () => {
+  const { t } = useTranslation();
+  return (
+    <div className="company-management">
+      <h2>{t('Navigation.companyManagement')}</h2>
+      <p>Company management page - TODO: Implement company management functionality</p>
+    </div>
+  );
+};
+
+export const Reports = () => {
+  const { t } = useTranslation();
+  return (
+    <div className="reports">
+      <h2>{t('Navigation.reports')}</h2>
+      <p>Reports page - TODO: Implement reports functionality</p>
+    </div>
+  );
+};
+
+export const SystemSettings = () => {
+  return (
+    <div className="system-settings">
+      <h2>System Settings</h2>
+      <p>System settings page - TODO: Implement system settings functionality</p>
+    </div>
+  );
+};
+
+export const AuditLogs = () => {
+  return (
+    <div className="audit-logs">
+      <h2>Audit Logs</h2>
+      <p>Audit logs page - TODO: Implement audit logs functionality</p>
+    </div>
+  );
+};
+
+export const SuperAdminProfile = () => {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+>>>>>>> Stashed changes
 
     </>
   );
 };
 
+<<<<<<< Updated upstream
 const SuperAdminDashboard: React.FC = () => {
+=======
+const SuperAdminDashboard = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+>>>>>>> Stashed changes
 
   return (
     <div id="layout-wrapper">
