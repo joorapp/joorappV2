@@ -1,0 +1,426 @@
+---
+description: Translation and Internationalization Rules - MANDATORY for all user-facing text
+globs: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"]
+alwaysApply: true
+priority: 1
+---
+# Translation and Internationalization Rules - MANDATORY
+
+## CRITICAL: All user-facing text MUST be translated
+
+### Absolute Requirements - NO EXCEPTIONS
+
+1. **NEVER hardcode user-facing text** - Always use `t()` function from `react-i18next`
+2. **NEVER use `alert()` or `confirm()`** - Use toast notifications with translated messages
+3. **NEVER hardcode validation messages** - Use translation keys
+4. **ALWAYS add translation keys** - When creating new text, add keys to ALL language files (en.json, de.json, ar.json)
+5. **ALWAYS use translation keys** - Even for placeholder text, error messages, and button labels
+6. **ALWAYS organize keys** - Group related translations by feature/module (e.g., `Login.*`, `Common.*`, `NewClients.*`)
+
+## Translation File Structure
+
+Translation files are located in `src/i18n/`:
+- `en.json` - English (default)
+- `de.json` - German
+- `ar.json` - Arabic
+
+**CRITICAL**: When adding a new translation key, you MUST add it to ALL three files.
+
+## How to Use Translations
+
+### 1. Import useTranslation Hook
+
+```typescript
+import { useTranslation } from 'react-i18next';
+
+const MyComponent = () => {
+  const { t } = useTranslation();
+  // ... component code
+};
+```
+
+### 2. Use Translation Keys
+
+```typescript
+// ✅ CORRECT - Using translation
+<h1>{t('Dashboard.welcome')}</h1>
+<button>{t('Common.save')}</button>
+<label>{t('Login.email')}</label>
+
+// ❌ WRONG - Hardcoded text
+<h1>Welcome</h1>
+<button>Save</button>
+<label>Email</label>
+```
+
+### 3. Translation Key Naming Convention
+
+Use dot notation to organize keys by feature:
+
+```
+FeatureName.specificKey
+```
+
+Examples:
+- `Login.email` - Login feature, email field
+- `Common.save` - Common/shared, save button
+- `NewClients.createClient` - NewClients feature, create client action
+- `Dashboard.welcome` - Dashboard feature, welcome message
+
+### 4. Adding New Translation Keys
+
+**Step 1**: Add key to `en.json`:
+```json
+{
+  "MyFeature": {
+    "myKey": "My translated text"
+  }
+}
+```
+
+**Step 2**: Add same key to `de.json` with German translation:
+```json
+{
+  "MyFeature": {
+    "myKey": "Mein übersetzter Text"
+  }
+}
+```
+
+**Step 3**: Add same key to `ar.json` with Arabic translation:
+```json
+{
+  "MyFeature": {
+    "myKey": "نصي المترجم"
+  }
+}
+```
+
+**Step 4**: Use in component:
+```typescript
+const { t } = useTranslation();
+<p>{t('MyFeature.myKey')}</p>
+```
+
+## Common Translation Categories
+
+### Common/Shared Translations (`Common.*`)
+Use for text used across multiple features:
+- `Common.save`, `Common.cancel`, `Common.delete`, `Common.edit`
+- `Common.loading`, `Common.error`, `Common.success`
+- `Common.search`, `Common.searchPlaceholder`
+- `Common.email`, `Common.phone`
+
+### Feature-Specific Translations
+Group by feature/module:
+- `Login.*` - Login page translations
+- `Dashboard.*` - Dashboard translations
+- `NewClients.*` - New Clients feature translations
+- `Navigation.*` - Navigation menu translations
+- `Footer.*` - Footer translations
+
+## Error Messages and Validation
+
+### ❌ NEVER DO THIS:
+```typescript
+// Hardcoded validation message
+const validationSchema = Yup.object({
+  email: Yup.string()
+    .required('Please enter your email')
+    .email('Please enter a valid email address'),
+});
+
+// Hardcoded alert
+alert('Please fill in all fields');
+
+// Hardcoded error message
+setError('Login failed. Invalid response from server.');
+```
+
+### ✅ ALWAYS DO THIS:
+```typescript
+const { t } = useTranslation();
+
+// Translated validation message
+const validationSchema = Yup.object({
+  email: Yup.string()
+    .required(t('Login.validation.emailRequired'))
+    .email(t('Login.validation.emailInvalid')),
+});
+
+// Translated toast notification (use showErrorToast from toast.ts)
+import { showErrorToast } from '../../../core/utils/toast';
+showErrorToast(t('Common.errors.fillAllFields'));
+
+// Translated error message
+setError(t('Login.errors.invalidResponse'));
+```
+
+## Toast Notifications
+
+**CRITICAL**: Replace all `alert()`, `confirm()`, and `window.alert()` calls with toast notifications using translations.
+
+### ❌ NEVER:
+```typescript
+alert('Please fill in all fields');
+confirm('Are you sure you want to delete?');
+```
+
+### ✅ ALWAYS:
+```typescript
+import { showErrorToast, showWarningToast } from '../../../core/utils/toast';
+import { useTranslation } from 'react-i18next';
+
+const { t } = useTranslation();
+
+// Error toast
+showErrorToast(t('Common.errors.fillAllFields'));
+
+// Warning toast (for confirmations, use a modal instead)
+showWarningToast(t('Common.warnings.unsavedChanges'));
+```
+
+## Form Validation Messages
+
+All validation messages must be translated:
+
+```typescript
+import { useTranslation } from 'react-i18next';
+import * as Yup from 'yup';
+
+const MyForm = () => {
+  const { t } = useTranslation();
+  
+  const validationSchema = Yup.object({
+    name: Yup.string()
+      .required(t('Validation.nameRequired'))
+      .min(3, t('Validation.nameMinLength')),
+    email: Yup.string()
+      .required(t('Validation.emailRequired'))
+      .email(t('Validation.emailInvalid')),
+  });
+  
+  // ... rest of component
+};
+```
+
+## Placeholder Text
+
+Even placeholder text must be translated:
+
+```typescript
+// ❌ WRONG
+<Input placeholder="Enter email" />
+
+// ✅ CORRECT
+<Input placeholder={t('Login.placeholders.enterEmail')} />
+```
+
+## Button Labels and Titles
+
+All button text, tooltips, and titles must be translated:
+
+```typescript
+// ❌ WRONG
+<button title="View">View</button>
+<Button>Save</Button>
+
+// ✅ CORRECT
+<button title={t('Common.view')}>{t('Common.view')}</button>
+<Button>{t('Common.save')}</Button>
+```
+
+## Modal Titles and Content
+
+All modal content must be translated:
+
+```typescript
+// ❌ WRONG
+<ModalHeader>Client Details</ModalHeader>
+<p>Are you sure you want to delete this client?</p>
+
+// ✅ CORRECT
+<ModalHeader>{t('NewClients.modal.clientDetails')}</ModalHeader>
+<p>{t('NewClients.modal.deleteConfirmation')}</p>
+```
+
+## Status Badges and Labels
+
+Status text must be translated:
+
+```typescript
+// ❌ WRONG
+<Badge>Active</Badge>
+<span>Status: Pending</span>
+
+// ✅ CORRECT
+<Badge>{t('NewClients.statusActive')}</Badge>
+<span>{t('Common.status')}: {t('NewClients.statusPending')}</span>
+```
+
+## Date and Time Formatting
+
+For date/time display, use locale-aware formatting with translations:
+
+```typescript
+// Use toLocaleDateString with proper locale
+const locale = i18n.language === 'ar' ? 'ar-SA' : i18n.language === 'de' ? 'de-DE' : 'en-US';
+new Date(date).toLocaleDateString(locale, { 
+  year: 'numeric', 
+  month: 'long', 
+  day: 'numeric' 
+});
+```
+
+## Dynamic Content with Translations
+
+When combining translations with dynamic content:
+
+```typescript
+// ✅ CORRECT
+<p>{t('Common.welcomeUser', { name: user.name })}</p>
+// Translation: "Welcome, {{name}}!"
+
+// ✅ CORRECT - Using template literals for complex cases
+<p>{t('Common.itemsCount', { count: items.length })}</p>
+// Translation: "{{count}} items" or "{{count}} item" (handle pluralization)
+```
+
+## Translation Key Organization Best Practices
+
+1. **Group by Feature**: Keep related translations together
+2. **Use Nested Objects**: Organize with logical hierarchy
+3. **Be Consistent**: Use same naming patterns across features
+4. **Document Keys**: Add comments in JSON for complex keys (use `//` comments if supported, or maintain separate docs)
+
+Example structure:
+```json
+{
+  "Login": {
+    "title": "Login",
+    "email": "Email",
+    "password": "Password",
+    "validation": {
+      "emailRequired": "Please enter your email",
+      "emailInvalid": "Please enter a valid email address"
+    },
+    "errors": {
+      "invalidResponse": "Login failed. Invalid response from server."
+    },
+    "placeholders": {
+      "enterEmail": "Enter email",
+      "enterPassword": "Enter password"
+    }
+  }
+}
+```
+
+## Checklist for New Code
+
+Before submitting code, verify:
+
+- [ ] All user-facing text uses `t()` function
+- [ ] No hardcoded strings in JSX/TSX
+- [ ] No `alert()` or `confirm()` calls (use toast/modals)
+- [ ] All validation messages are translated
+- [ ] All error messages are translated
+- [ ] All placeholder text is translated
+- [ ] All button labels are translated
+- [ ] All modal content is translated
+- [ ] All status badges are translated
+- [ ] Translation keys added to ALL language files (en.json, de.json, ar.json)
+- [ ] Translation keys follow naming convention (FeatureName.keyName)
+- [ ] No console.log with user-facing messages
+
+## Common Mistakes to Avoid
+
+1. ❌ **Forgetting to add translations to all language files** - Must add to en.json, de.json, AND ar.json
+2. ❌ **Using hardcoded fallbacks** - `t('key') || 'Hardcoded'` is WRONG
+3. ❌ **Mixing translated and hardcoded text** - All text must be translated
+4. ❌ **Using alert() instead of toast** - Always use toast with translations
+5. ❌ **Hardcoding error messages** - Extract from API or use translation keys
+6. ❌ **Not organizing keys properly** - Use feature-based grouping
+
+## Examples of Complete Translation Implementation
+
+### Example 1: Form with Validation
+
+```typescript
+import { useTranslation } from 'react-i18next';
+import * as Yup from 'yup';
+import { showErrorToast } from '../../../core/utils/toast';
+
+const MyForm = () => {
+  const { t } = useTranslation();
+  
+  const validationSchema = Yup.object({
+    email: Yup.string()
+      .required(t('Validation.emailRequired'))
+      .email(t('Validation.emailInvalid')),
+  });
+  
+  const formik = useFormik({
+    validationSchema,
+    onSubmit: async (values) => {
+      try {
+        // ... API call
+      } catch (error) {
+        showErrorToast(t('Common.errors.submitFailed'));
+      }
+    }
+  });
+  
+  return (
+    <form>
+      <label>{t('Login.email')}</label>
+      <input 
+        placeholder={t('Login.placeholders.enterEmail')}
+        {...formik.getFieldProps('email')}
+      />
+      {formik.errors.email && (
+        <span>{formik.errors.email}</span>
+      )}
+      <button type="submit">{t('Common.save')}</button>
+    </form>
+  );
+};
+```
+
+### Example 2: Modal with Actions
+
+```typescript
+import { useTranslation } from 'react-i18next';
+import { showErrorToast } from '../../../core/utils/toast';
+
+const DeleteModal = ({ onConfirm }) => {
+  const { t } = useTranslation();
+  
+  const handleDelete = () => {
+    try {
+      onConfirm();
+      showSuccessToast(t('Common.success.deleted'));
+    } catch (error) {
+      showErrorToast(t('Common.errors.deleteFailed'));
+    }
+  };
+  
+  return (
+    <Modal>
+      <ModalHeader>{t('Common.confirmDelete')}</ModalHeader>
+      <ModalBody>
+        <p>{t('Common.deleteConfirmation')}</p>
+      </ModalBody>
+      <ModalFooter>
+        <Button onClick={handleDelete}>{t('Common.delete')}</Button>
+        <Button>{t('Common.cancel')}</Button>
+      </ModalFooter>
+    </Modal>
+  );
+};
+```
+
+## Remember
+
+**Every string that a user can see must be translatable. There are NO exceptions.**
+
+If you find hardcoded text, it's a bug that needs to be fixed immediately.

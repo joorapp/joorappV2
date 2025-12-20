@@ -8,7 +8,7 @@ interface SuperAdminSidebarProps {
   onClose?: () => void;
 }
 
-const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, onClose }) => {
+const SuperAdminSidebar = ({ isOpen = true, onClose }: SuperAdminSidebarProps) => {
   const { t } = useTranslation();
 
   const navigationItems = [
@@ -34,12 +34,12 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, on
     },
     {
       path: '/superadmin/system',
-      label: 'System Settings',
+      label: t('SuperAdmin.systemSettings'),
       icon: '⚙️',
     },
     {
       path: '/superadmin/audit',
-      label: 'Audit Logs',
+      label: t('SuperAdmin.auditLogs'),
       icon: '📋',
     },
     {
@@ -69,7 +69,7 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, on
       
       <aside className={`superadmin-sidebar ${isOpen ? 'superadmin-sidebar--open' : 'superadmin-sidebar--closed'}`}>
         <div className="superadmin-sidebar__header">
-          <h2 className="superadmin-sidebar__title">Super Admin Portal</h2>
+          <h2 className="superadmin-sidebar__title">{t('SuperAdmin.portal')}</h2>
           {onClose && (
             <button 
               className="superadmin-sidebar__close-btn"
@@ -104,16 +104,16 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, on
           <div className="superadmin-sidebar__admin-info">
             <div className="superadmin-sidebar__admin-badge">
               <span className="superadmin-sidebar__admin-icon">👑</span>
-              <span className="superadmin-sidebar__admin-text">Super Admin</span>
+              <span className="superadmin-sidebar__admin-text">{t('SuperAdmin.superAdmin')}</span>
             </div>
             <div className="superadmin-sidebar__quick-actions">
               <button className="superadmin-sidebar__quick-btn">
                 <span>🛡️</span>
-                Security
+                {t('SuperAdmin.security')}
               </button>
               <button className="superadmin-sidebar__quick-btn">
                 <span>📊</span>
-                Analytics
+                {t('SuperAdmin.analytics')}
               </button>
             </div>
           </div>

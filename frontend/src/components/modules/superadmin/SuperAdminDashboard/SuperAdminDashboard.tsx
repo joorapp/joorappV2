@@ -8,7 +8,7 @@ import SuperAdminFooter from '../SuperAdminFooter/SuperAdminFooter';
 import './SuperAdminDashboard.scss';
 
 // Placeholder components for superadmin pages
-export const SuperAdminOverview: React.FC = () => {
+export const SuperAdminOverview = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -16,7 +16,7 @@ export const SuperAdminOverview: React.FC = () => {
     <div className="superadmin-overview">
       <div className="superadmin-overview__header">
         <h2 className="superadmin-overview__title">{t('Dashboard.welcome')}, {user?.name}!</h2>
-        <p className="superadmin-overview__subtitle">Super Admin {t('Dashboard.overview')}</p>
+        <p className="superadmin-overview__subtitle">{t('Dashboard.superAdmin')} {t('Dashboard.overview')}</p>
       </div>
 
       <div className="superadmin-overview__stats">
@@ -24,7 +24,7 @@ export const SuperAdminOverview: React.FC = () => {
           <div className="superadmin-overview__stat-icon">👥</div>
           <div className="superadmin-overview__stat-content">
             <h3 className="superadmin-overview__stat-number">1,247</h3>
-            <p className="superadmin-overview__stat-label">Total Users</p>
+            <p className="superadmin-overview__stat-label">{t('Dashboard.totalUsers')}</p>
           </div>
         </div>
 
@@ -32,7 +32,7 @@ export const SuperAdminOverview: React.FC = () => {
           <div className="superadmin-overview__stat-icon">🏢</div>
           <div className="superadmin-overview__stat-content">
             <h3 className="superadmin-overview__stat-number">89</h3>
-            <p className="superadmin-overview__stat-label">Companies</p>
+            <p className="superadmin-overview__stat-label">{t('Dashboard.companies')}</p>
           </div>
         </div>
 
@@ -40,7 +40,7 @@ export const SuperAdminOverview: React.FC = () => {
           <div className="superadmin-overview__stat-icon">💰</div>
           <div className="superadmin-overview__stat-content">
             <h3 className="superadmin-overview__stat-number">€2.4M</h3>
-            <p className="superadmin-overview__stat-label">Total Revenue</p>
+            <p className="superadmin-overview__stat-label">{t('Dashboard.totalRevenue')}</p>
           </div>
         </div>
 
@@ -48,57 +48,57 @@ export const SuperAdminOverview: React.FC = () => {
           <div className="superadmin-overview__stat-icon">📈</div>
           <div className="superadmin-overview__stat-content">
             <h3 className="superadmin-overview__stat-number">+18%</h3>
-            <p className="superadmin-overview__stat-label">Growth Rate</p>
+            <p className="superadmin-overview__stat-label">{t('Dashboard.growthRate')}</p>
           </div>
         </div>
       </div>
 
       <div className="superadmin-overview__content">
         <div className="superadmin-overview__recent-activity">
-          <h3 className="superadmin-overview__section-title">Recent System Activity</h3>
+          <h3 className="superadmin-overview__section-title">{t('Dashboard.recentSystemActivity')}</h3>
           <div className="superadmin-overview__activity-list">
             <div className="superadmin-overview__activity-item">
               <span className="superadmin-overview__activity-icon">👤</span>
               <div className="superadmin-overview__activity-content">
-                <span className="superadmin-overview__activity-text">New user registered: John Doe</span>
-                <span className="superadmin-overview__activity-time">2 minutes ago</span>
+                <span className="superadmin-overview__activity-text">{t('SuperAdmin.activity.newUserRegistered', { name: 'John Doe' })}</span>
+                <span className="superadmin-overview__activity-time">{t('SuperAdmin.activity.minutesAgo', { count: 2 })}</span>
               </div>
             </div>
             <div className="superadmin-overview__activity-item">
               <span className="superadmin-overview__activity-icon">🏢</span>
               <div className="superadmin-overview__activity-content">
-                <span className="superadmin-overview__activity-text">Company "TechCorp" created</span>
-                <span className="superadmin-overview__activity-time">15 minutes ago</span>
+                <span className="superadmin-overview__activity-text">{t('SuperAdmin.activity.companyCreated', { name: 'TechCorp' })}</span>
+                <span className="superadmin-overview__activity-time">{t('SuperAdmin.activity.minutesAgo', { count: 15 })}</span>
               </div>
             </div>
             <div className="superadmin-overview__activity-item">
               <span className="superadmin-overview__activity-icon">🔒</span>
               <div className="superadmin-overview__activity-content">
-                <span className="superadmin-overview__activity-text">Security alert: Failed login attempt</span>
-                <span className="superadmin-overview__activity-time">1 hour ago</span>
+                <span className="superadmin-overview__activity-text">{t('SuperAdmin.activity.securityAlert')}</span>
+                <span className="superadmin-overview__activity-time">{t('SuperAdmin.activity.hoursAgo', { count: 1 })}</span>
               </div>
             </div>
           </div>
         </div>
 
         <div className="superadmin-overview__quick-actions">
-          <h3 className="superadmin-overview__section-title">Quick Actions</h3>
+          <h3 className="superadmin-overview__section-title">{t('Dashboard.quickActions')}</h3>
           <div className="superadmin-overview__actions-grid">
             <button className="superadmin-overview__action-btn">
               <span className="superadmin-overview__action-icon">👥</span>
-              <span className="superadmin-overview__action-label">Manage Users</span>
+              <span className="superadmin-overview__action-label">{t('Dashboard.manageUsers')}</span>
             </button>
             <button className="superadmin-overview__action-btn">
               <span className="superadmin-overview__action-icon">🏢</span>
-              <span className="superadmin-overview__action-label">Manage Companies</span>
+              <span className="superadmin-overview__action-label">{t('Dashboard.manageCompanies')}</span>
             </button>
             <button className="superadmin-overview__action-btn">
               <span className="superadmin-overview__action-icon">📊</span>
-              <span className="superadmin-overview__action-label">View Reports</span>
+              <span className="superadmin-overview__action-label">{t('Dashboard.viewReports')}</span>
             </button>
             <button className="superadmin-overview__action-btn">
               <span className="superadmin-overview__action-icon">⚙️</span>
-              <span className="superadmin-overview__action-label">System Settings</span>
+              <span className="superadmin-overview__action-label">{t('Dashboard.systemSettings')}</span>
             </button>
           </div>
         </div>
@@ -107,55 +107,57 @@ export const SuperAdminOverview: React.FC = () => {
   );
 };
 
-export const UserManagement: React.FC = () => {
+export const UserManagement = () => {
   const { t } = useTranslation();
   return (
     <div className="user-management">
       <h2>{t('Navigation.userManagement')}</h2>
-      <p>User management page - TODO: Implement user management functionality</p>
+      <p>{t('SuperAdmin.userManagementPage')}</p>
     </div>
   );
 };
 
-export const CompanyManagement: React.FC = () => {
+export const CompanyManagement = () => {
   const { t } = useTranslation();
   return (
     <div className="company-management">
       <h2>{t('Navigation.companyManagement')}</h2>
-      <p>Company management page - TODO: Implement company management functionality</p>
+      <p>{t('SuperAdmin.companyManagementPage')}</p>
     </div>
   );
 };
 
-export const Reports: React.FC = () => {
+export const Reports = () => {
   const { t } = useTranslation();
   return (
     <div className="reports">
       <h2>{t('Navigation.reports')}</h2>
-      <p>Reports page - TODO: Implement reports functionality</p>
+      <p>{t('SuperAdmin.reportsPage')}</p>
     </div>
   );
 };
 
-export const SystemSettings: React.FC = () => {
+export const SystemSettings = () => {
+  const { t } = useTranslation();
   return (
     <div className="system-settings">
-      <h2>System Settings</h2>
-      <p>System settings page - TODO: Implement system settings functionality</p>
+      <h2>{t('Dashboard.systemSettings')}</h2>
+      <p>{t('SuperAdmin.systemSettingsPage')}</p>
     </div>
   );
 };
 
-export const AuditLogs: React.FC = () => {
+export const AuditLogs = () => {
+  const { t } = useTranslation();
   return (
     <div className="audit-logs">
-      <h2>Audit Logs</h2>
-      <p>Audit logs page - TODO: Implement audit logs functionality</p>
+      <h2>{t('SuperAdmin.auditLogs')}</h2>
+      <p>{t('SuperAdmin.auditLogsPage')}</p>
     </div>
   );
 };
 
-export const SuperAdminProfile: React.FC = () => {
+export const SuperAdminProfile = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -164,11 +166,11 @@ export const SuperAdminProfile: React.FC = () => {
       <h2 className="superadmin-profile__title">{t('Navigation.profile')}</h2>
       <div className="superadmin-profile__content">
         <div className="superadmin-profile__info">
-          <h3>Super Admin Information</h3>
-          <p>User ID: {user?.id}</p>
-          <p>Name: {user?.name}</p>
-          <p>Email: {user?.email}</p>
-          <p>Role: {user?.role}</p>
+          <h3>{t('SuperAdmin.information.superAdminInformation')}</h3>
+          <p>{t('SuperAdmin.information.userID')} {user?.id}</p>
+          <p>{t('SuperAdmin.information.name')} {user?.name}</p>
+          <p>{t('SuperAdmin.information.email')} {user?.email}</p>
+          <p>{t('SuperAdmin.information.role')} {user?.role}</p>
         </div>
         {/* TODO: Add profile editing form */}
       </div>
@@ -176,7 +178,7 @@ export const SuperAdminProfile: React.FC = () => {
   );
 };
 
-const SuperAdminDashboard: React.FC = () => {
+const SuperAdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {

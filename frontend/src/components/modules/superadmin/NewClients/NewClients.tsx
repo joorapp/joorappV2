@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardBody, Row, Col, Table, Button, Badge, Input, InputGroup, Modal, ModalHeader, ModalBody, ModalFooter, Label } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
+import { showErrorToast } from '../../../../core/utils/toast';
 
 interface Client {
   id: string;
@@ -15,7 +16,7 @@ interface Client {
   plan: string;
 }
 
-const NewClients: React.FC = () => {
+const NewClients = () => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -143,7 +144,7 @@ const NewClients: React.FC = () => {
       case 'Inactive':
         return <Badge className="bg-danger">{t('NewClients.statusInactive')}</Badge>;
       case 'New':
-        return <Badge className="bg-info">{status}</Badge>;
+        return <Badge className="bg-info">{t('NewClients.statusNew')}</Badge>;
       default:
         return <Badge className="bg-secondary">{status}</Badge>;
     }
@@ -168,7 +169,7 @@ const NewClients: React.FC = () => {
 
   const handleCreateClient = () => {
     if (!newClient.name || !newClient.email || !newClient.phone || !newClient.address || !newClient.plan) {
-      alert('Please fill in all fields');
+      showErrorToast(t('Common.errors.fillAllFields'));
       return;
     }
 
@@ -224,7 +225,7 @@ const NewClients: React.FC = () => {
 
   const handleUpdateClient = () => {
     if (!editingClient || !editClient.name || !editClient.email || !editClient.phone || !editClient.address) {
-      alert('Please fill in all fields');
+      showErrorToast(t('Common.errors.fillAllFields'));
       return;
     }
 
@@ -277,7 +278,7 @@ const NewClients: React.FC = () => {
 
   const handleAssignPlan = () => {
     if (!clientForPlan || !selectedPlan) {
-      alert('Please select a plan');
+      showErrorToast(t('Common.errors.selectPlan'));
       return;
     }
 
@@ -374,7 +375,7 @@ const NewClients: React.FC = () => {
                               <Button
                                 color="outline-primary"
                                 className="p-1 border-0"
-                                title="View"
+                                title={t('Common.view')}
                                 onClick={() => {
                                   setSelectedClient(client);
                                   setModalOpen(true);
@@ -385,7 +386,7 @@ const NewClients: React.FC = () => {
                               <Button
                                 color="outline-secondary"
                                 className="p-1 border-0"
-                                title="Edit"
+                                title={t('Common.edit')}
                                 onClick={() => handleEditClient(client)}
                               >
                                 <i className="mdi mdi-pencil"></i>
@@ -393,7 +394,7 @@ const NewClients: React.FC = () => {
                               <Button
                                 color="outline-danger"
                                 className="p-1 border-0"
-                                title="Delete"
+                                title={t('Common.delete')}
                                 onClick={() => handleDeleteClick(client)}
                               >
                                 <i className="mdi mdi-delete"></i>
@@ -420,7 +421,7 @@ const NewClients: React.FC = () => {
       {/* Client Details Modal */}
       <Modal isOpen={modalOpen} toggle={() => setModalOpen(!modalOpen)} size="lg" centered>
         <ModalHeader toggle={() => setModalOpen(!modalOpen)}>
-          Client Details
+          {t('NewClients.modal.clientDetails')}
         </ModalHeader>
         <ModalBody>
           {selectedClient && (
@@ -443,28 +444,28 @@ const NewClients: React.FC = () => {
               </div>
 
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Address</label>
+                <label className="form-label fw-semibold text-muted">{t('Common.address')}</label>
                 <p className="mb-0">{selectedClient.address}</p>
               </div>
 
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Email</label>
+                <label className="form-label fw-semibold text-muted">{t('Common.email')}</label>
                 <p className="mb-0">{selectedClient.email}</p>
               </div>
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Phone</label>
+                <label className="form-label fw-semibold text-muted">{t('Common.phone')}</label>
                 <p className="mb-0">{selectedClient.phone}</p>
               </div>
 
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Status</label>
+                <label className="form-label fw-semibold text-muted">{t('Common.status')}</label>
                 <div>
                   {getStatusBadge(selectedClient.status)}
                 </div>
               </div>
 
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Joined Date</label>
+                <label className="form-label fw-semibold text-muted">{t('NewClients.joinedDate')}</label>
                 <p className="mb-0">
                   {new Date(selectedClient.createdAt).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -475,7 +476,7 @@ const NewClients: React.FC = () => {
               </div>
 
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Last Updated</label>
+                <label className="form-label fw-semibold text-muted">{t('NewClients.modal.lastUpdated')}</label>
                 <p className="mb-0">
                   {new Date(selectedClient.updatedAt).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -491,7 +492,7 @@ const NewClients: React.FC = () => {
         </ModalBody>
         <ModalFooter>
           <Button color="secondary" onClick={() => setModalOpen(false)}>
-            Close
+            {t('Common.close')}
           </Button>
         </ModalFooter>
       </Modal>
@@ -548,7 +549,7 @@ const NewClients: React.FC = () => {
               <div className="profile-upload-helper-text">{t('NewClients.uploadProfilePhoto')}</div>
             </div>
             <div className="col-md-12 mb-3">
-              <Label className="form-label fw-semibold">Client Name <span className="text-danger">*</span></Label>
+              <Label className="form-label fw-semibold">{t('NewClients.labels.clientName')} <span className="text-danger">*</span></Label>
               <Input
                 type="text"
                 value={newClient.name}
@@ -557,7 +558,7 @@ const NewClients: React.FC = () => {
               />
             </div>
             <div className="col-md-12 mb-3">
-              <Label className="form-label fw-semibold">Email <span className="text-danger">*</span></Label>
+              <Label className="form-label fw-semibold">{t('NewClients.labels.email')} <span className="text-danger">*</span></Label>
               <Input
                 type="email"
                 value={newClient.email}
@@ -566,7 +567,7 @@ const NewClients: React.FC = () => {
               />
             </div>
             <div className="col-md-12 mb-3">
-              <Label className="form-label fw-semibold">Phone <span className="text-danger">*</span></Label>
+              <Label className="form-label fw-semibold">{t('NewClients.labels.phone')} <span className="text-danger">*</span></Label>
               <Input
                 type="tel"
                 value={newClient.phone}
@@ -575,7 +576,7 @@ const NewClients: React.FC = () => {
               />
             </div>
             <div className="col-md-12 mb-3">
-              <Label className="form-label fw-semibold">Address <span className="text-danger">*</span></Label>
+              <Label className="form-label fw-semibold">{t('NewClients.labels.address')} <span className="text-danger">*</span></Label>
               <Input
                 type="text"
                 value={newClient.address}
@@ -661,7 +662,7 @@ const NewClients: React.FC = () => {
               <div className="profile-upload-helper-text">{t('NewClients.uploadProfilePhoto')}</div>
             </div>
             <div className="col-md-12 mb-3">
-              <Label className="form-label fw-semibold">Client Name <span className="text-danger">*</span></Label>
+              <Label className="form-label fw-semibold">{t('NewClients.labels.clientName')} <span className="text-danger">*</span></Label>
               <Input
                 type="text"
                 value={editClient.name}
@@ -670,7 +671,7 @@ const NewClients: React.FC = () => {
               />
             </div>
             <div className="col-md-12 mb-3">
-              <Label className="form-label fw-semibold">Email <span className="text-danger">*</span></Label>
+              <Label className="form-label fw-semibold">{t('NewClients.labels.email')} <span className="text-danger">*</span></Label>
               <Input
                 type="email"
                 value={editClient.email}
@@ -679,7 +680,7 @@ const NewClients: React.FC = () => {
               />
             </div>
             <div className="col-md-12 mb-3">
-              <Label className="form-label fw-semibold">Phone <span className="text-danger">*</span></Label>
+              <Label className="form-label fw-semibold">{t('NewClients.labels.phone')} <span className="text-danger">*</span></Label>
               <Input
                 type="tel"
                 value={editClient.phone}
@@ -688,7 +689,7 @@ const NewClients: React.FC = () => {
               />
             </div>
             <div className="col-md-12 mb-3">
-              <Label className="form-label fw-semibold">Address <span className="text-danger">*</span></Label>
+              <Label className="form-label fw-semibold">{t('NewClients.labels.address')} <span className="text-danger">*</span></Label>
               <Input
                 type="text"
                 value={editClient.address}
@@ -915,7 +916,7 @@ const NewClients: React.FC = () => {
             setClientForPlan(null);
             setSelectedPlan('');
           }} className="">
-            Cancel
+            {t('Common.cancel')}
           </Button>
           <Button color="primary" onClick={handleAssignPlan} disabled={!selectedPlan} className="">
             {t('NewClients.assignPlan')}

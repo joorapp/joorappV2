@@ -6,7 +6,23 @@
     "password": "Passwort",
     "submit": "Anmelden",
     "forgotPassword": "Passwort vergessen?",
-    "rememberMe": "Angemeldet bleiben"
+    "rememberMe": "Angemeldet bleiben",
+    "welcomeBack": "Willkommen zurück !",
+    "signInToContinue": "Melden Sie sich an, um zu JoorApp fortzufahren.",
+    "enterEmail": "E-Mail eingeben",
+    "enterPassword": "Passwort eingeben",
+    "logIn": "Anmelden",
+    "forgotYourPassword": "Haben Sie Ihr Passwort vergessen?",
+    "validation": {
+      "emailRequired": "Bitte geben Sie Ihre E-Mail ein",
+      "emailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "passwordRequired": "Bitte geben Sie Ihr Passwort ein"
+    },
+    "errors": {
+      "invalidResponse": "Anmeldung fehlgeschlagen. Ungültige Antwort vom Server.",
+      "noDataReceived": "Anmeldung fehlgeschlagen. Keine Daten vom Server erhalten.",
+      "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+    }
   },
   "Navigation": {
     "dashboard": "Dashboard",
@@ -33,7 +49,26 @@
     "welcome": "Willkommen",
     "overview": "Übersicht",
     "recentActivity": "Letzte Aktivitäten",
-    "statistics": "Statistiken"
+    "statistics": "Statistiken",
+    "superAdmin": "Super Administrator",
+    "totalUsers": "Gesamtbenutzer",
+    "companies": "Unternehmen",
+    "totalRevenue": "Gesamteinnahmen",
+    "growthRate": "Wachstumsrate",
+    "recentSystemActivity": "Letzte Systemaktivität",
+    "quickActions": "Schnellaktionen",
+    "manageUsers": "Benutzer verwalten",
+    "manageCompanies": "Unternehmen verwalten",
+    "viewReports": "Berichte anzeigen",
+    "systemSettings": "Systemeinstellungen",
+    "totalOrders": "Gesamtbestellungen",
+    "revenue": "Einnahmen",
+    "customers": "Kunden",
+    "growth": "Wachstum",
+    "recentOrders": "Letzte Bestellungen",
+    "newOrder": "Neue Bestellung",
+    "addCustomer": "Kunde hinzufügen",
+    "settings": "Einstellungen"
   },
   "Dashboards": {
     "Dashboards": "Dashboards",
@@ -83,7 +118,26 @@
     "searchPlaceholder": "Suchen...",
     "add": "Hinzufügen",
     "email": "E-Mail",
-    "phone": "Telefon"
+    "phone": "Telefon",
+    "view": "Anzeigen",
+    "close": "Schließen",
+    "apply": "Anwenden",
+    "reset": "Zurücksetzen",
+    "days": "Tage",
+    "status": "Status",
+    "action": "Aktion",
+    "address": "Adresse",
+    "allPlans": "Alle Pläne",
+    "allStatus": "Alle Status",
+    "errors": {
+      "fillAllFields": "Bitte füllen Sie alle Felder aus",
+      "selectPlan": "Bitte wählen Sie einen Plan aus"
+    },
+    "success": {
+      "deleted": "Erfolgreich gelöscht",
+      "saved": "Erfolgreich gespeichert",
+      "updated": "Erfolgreich aktualisiert"
+    }
   },
   "NewClients": {
     "newClient": "Neuer Kunde",
@@ -95,6 +149,7 @@
     "statusActive": "Aktiv",
     "statusPending": "Ausstehend",
     "statusInactive": "Inaktiv",
+    "statusNew": "Neu",
     "planBasic": "Basis",
     "planPremium": "Premium",
     "planDiamond": "Diamant",
@@ -127,6 +182,16 @@
     "upgradeToPremium": "Auf Premium upgraden",
     "upgradeToDiamond": "Auf Diamant upgraden",
     "assignPlan": "Plan zuweisen",
+    "modal": {
+      "clientDetails": "Kundendetails",
+      "lastUpdated": "Zuletzt aktualisiert"
+    },
+    "labels": {
+      "clientName": "Kundenname",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "address": "Adresse"
+    },
     "planFeatures": {
       "accessToAllBasic": "Zugriff auf alle Grundfunktionen",
       "basicReporting": "Grundlegende Berichte und Analysen",
@@ -159,6 +224,76 @@
     "termsOfService": "Nutzungsbedingungen",
     "privacyPolicy": "Datenschutzrichtlinie",
     "support": "Support",
-    "copyright": "Alle Rechte vorbehalten"
+    "copyright": "Alle Rechte vorbehalten",
+    "copyrightText": "© 2024 JoorApp. Alle Rechte vorbehalten.",
+    "version": "v1.0.0"
+  },
+  "SuperAdmin": {
+    "portal": "Super Administrator Portal",
+    "superAdmin": "Super Administrator",
+    "security": "Sicherheit",
+    "analytics": "Analysen",
+    "systemSettings": "Systemeinstellungen",
+    "auditLogs": "Prüfprotokolle",
+    "userManagementPage": "Benutzerverwaltungsseite - TODO: Benutzerverwaltungsfunktionalität implementieren",
+    "companyManagementPage": "Unternehmensverwaltungsseite - TODO: Unternehmensverwaltungsfunktionalität implementieren",
+    "reportsPage": "Berichtsseite - TODO: Berichtsfunktionalität implementieren",
+    "systemSettingsPage": "Systemeinstellungsseite - TODO: Systemeinstellungsfunktionalität implementieren",
+    "auditLogsPage": "Prüfprotokollseite - TODO: Prüfprotokollfunktionalität implementieren",
+    "information": {
+      "superAdminInformation": "Super Administrator Informationen",
+      "userID": "Benutzer-ID:",
+      "name": "Name:",
+      "email": "E-Mail:",
+      "role": "Rolle:"
+    },
+    "activity": {
+      "newUserRegistered": "Neuer Benutzer registriert: {{name}}",
+      "companyCreated": "Unternehmen \"{{name}}\" erstellt",
+      "securityAlert": "Sicherheitswarnung: Fehlgeschlagener Anmeldeversuch",
+      "minutesAgo": "vor {{count}} Minuten",
+      "hoursAgo": "vor {{count}} Stunde",
+      "hoursAgoPlural": "vor {{count}} Stunden"
+    }
+  },
+  "Company": {
+    "information": {
+      "companyInformation": "Unternehmensinformationen",
+      "companyID": "Unternehmens-ID:",
+      "user": "Benutzer:",
+      "email": "E-Mail:",
+      "role": "Rolle:"
+    },
+    "orders": {
+      "ordersManagement": "Bestellungsverwaltung",
+      "ordersManagementPage": "Bestellungsverwaltungsseite - TODO: Bestellungsfunktionalität implementieren",
+      "completed": "Abgeschlossen",
+      "processing": "In Bearbeitung",
+      "shipped": "Versandt"
+    },
+    "products": {
+      "productsManagement": "Produktverwaltung",
+      "productsManagementPage": "Produktverwaltungsseite - TODO: Produktfunktionalität implementieren"
+    },
+    "customers": {
+      "customersManagement": "Kundenverwaltung",
+      "customersManagementPage": "Kundenverwaltungsseite - TODO: Kundenfunktionalität implementieren"
+    },
+    "analytics": {
+      "analyticsReports": "Analysen & Berichte",
+      "analyticsPage": "Analyseseite - TODO: Analysefunktionalität implementieren"
+    },
+    "settings": {
+      "companySettings": "Unternehmenseinstellungen",
+      "settingsPage": "Einstellungsseite - TODO: Einstellungsfunktionalität implementieren"
+    }
+  },
+  "ActiveClients": {
+    "clientDetails": "Kundendetails",
+    "startDate": "Startdatum",
+    "endDate": "Enddatum",
+    "totalAmount": "Gesamtbetrag",
+    "activePlan": "Aktiver Plan",
+    "daysRemaining": "{{count}} Tage"
   }
 }
