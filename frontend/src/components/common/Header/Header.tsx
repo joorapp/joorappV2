@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../context/AuthContext';
+import { useCompanies } from '../../../context/CompaniesContext';
 import './Header.scss';
 
 interface HeaderProps {
@@ -9,19 +10,21 @@ interface HeaderProps {
   showLanguageSwitcher?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ 
+const Header = ({ 
   title = 'Dashboard', 
   showUserMenu = true, 
   showLanguageSwitcher = true 
-}) => {
+}: HeaderProps) => {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
+  const { clearCompanies } = useCompanies();
 
   const handleLanguageChange = (language: string) => {
     i18n.changeLanguage(language);
   };
 
   const handleLogout = () => {
+    clearCompanies();
     logout();
   };
 

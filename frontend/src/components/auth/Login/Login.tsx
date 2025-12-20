@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../../context/AuthContext';
+import LoginService from '../../../core/service/LoginService';
+import { useCompanies } from '../../../context/CompaniesContext';
 import { Container, Row, Col, Card, CardBody, Alert, Input, Label, Form, FormFeedback } from 'reactstrap';
 
 // Formik validation
@@ -14,10 +15,10 @@ import lightlogo from '../../../assets/images/logo-light.svg';
 
 
 
-const Login: React.FC = () => {
+const Login = () => {
   const { t } = useTranslation();
-  const { login } = useAuth();
   const navigate = useNavigate();
+  const { setCompanies } = useCompanies();
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,8 +29,7 @@ const Login: React.FC = () => {
       .required('Please enter your email')
       .email('Please enter a valid email address'),
     password: Yup.string()
-      .required('Please enter your password')
-      .min(6, 'Password must be at least 6 characters'),
+      .required('Please enter your password'),
     rememberMe: Yup.boolean()
   });
 
@@ -46,30 +46,57 @@ const Login: React.FC = () => {
       setIsSubmitting(true);
 
       try {
-        const result = await login(values.email, values.password);
+        // Call LoginService following API architecture pattern
+        const response = await LoginService.login({
+          email: values.email,
+          password: values.password,
+        });
 
-        if (result.success && result.user) {
-          // Store remember me preference
-          if (values.rememberMe) {
-            localStorage.setItem('rememberMe', 'true');
-          } else {
-            localStorage.removeItem('rememberMe');
-          }
+        // Handle successful login response
+        if (response.data?.success && response.data?.data) {
+          const { access_token, refresh_token } = response.data.data;
 
-          // Redirect based on user role
-          if (result.user.role === 'superadmin') {
-            navigate('/superadmin/dashboard');
-          } else if (result.user.role === 'company') {
-            navigate('/company/dashboard');
-          } else {
+          if (access_token && refresh_token) {
+            // Store tokens separately in localStorage
+            localStorage.setItem('accessToken', access_token);
+            localStorage.setItem('refreshToken', refresh_token);
+            
+            // Fetch companies after successful login (uses authenticated interceptor)
+            // Error handling is done by interceptor, so we just catch and continue
+            try {
+              const companiesResponse = await LoginService.getCompanies();
+              if (companiesResponse.data?.success && companiesResponse.data?.data) {
+                // Store companies data in context
+                setCompanies(companiesResponse.data.data);
+                console.log('Companies fetched and stored successfully:', companiesResponse.data.data);
+              }
+            } catch (companiesError) {
+              // Interceptor already shows error toast, just continue with login
+              console.error('Failed to fetch companies:', companiesError);
+            }
+
+            // Store remember me preference
+            if (values.rememberMe) {
+              localStorage.setItem('rememberMe', 'true');
+            } else {
+              localStorage.removeItem('rememberMe');
+            }
+
+            // Redirect to dashboard
             navigate('/dashboard');
+          } else {
+            setError(response.data?.message || 'Login failed. Invalid response from server.');
           }
         } else {
-          setError(result.error || 'Login failed. Please try again.');
+          setError(response.data?.message || 'Login failed. No data received from server.');
         }
-      } catch (err) {
-        setError('An unexpected error occurred. Please try again.');
-        console.error('Login error:', err);
+      } catch (err: any) {
+        // Error handling - interceptor already shows toast, just set local error state
+        const errorMessage = err?.response?.data?.message || 
+                           err?.response?.data?.error || 
+                           err?.message || 
+                           'An unexpected error occurred. Please try again.';
+        setError(errorMessage);
       } finally {
         setIsSubmitting(false);
       }

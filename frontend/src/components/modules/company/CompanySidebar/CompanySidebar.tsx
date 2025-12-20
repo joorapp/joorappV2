@@ -8,7 +8,7 @@ interface CompanySidebarProps {
   onClose?: () => void;
 }
 
-const CompanySidebar: React.FC<CompanySidebarProps> = ({ isOpen = true, onClose }) => {
+const CompanySidebar = ({ isOpen = true, onClose }: CompanySidebarProps) => {
   const { t } = useTranslation();
 
   const navigationItems = [
