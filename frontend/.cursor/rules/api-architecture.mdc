@@ -1,0 +1,272 @@
+---
+description: API Architecture Pattern - MANDATORY Structure for all API integrations
+globs: ["**/api/**", "**/service/**", "**/http-handler/**", "**/constants/**"]
+alwaysApply: true
+priority: 1
+---
+# API Architecture Pattern - MANDATORY Structure
+
+## CRITICAL: All API integrations MUST follow this exact pattern
+
+### 1. API Constants File (`src/core/constants/api.js`)
+
+**MANDATORY STRUCTURE:**
+```javascript
+// 1. Define API path constants
+const API_PATH = "/api/v1";
+const CUSTOM_SERVICE_PATH = "/custom-service/api";
+
+// 2. Export base URLs from environment
+// For Vite projects, use import.meta.env.VITE_*
+// For Create React App, use process.env.REACT_APP_*
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+export const CUSTOM_BASE_URL = import.meta.env.VITE_CUSTOM_SERVICE_URL || '';
+
+// 3. Create nested API_ROUTES object organized by feature
+const API_ROUTES = {
+  LOGIN: {
+    LOGINAPI: API_PATH + "/auth/login",
+    LOGOUTAPI: API_PATH + "/auth/logout",
+  },
+  USER: {
+    GET_USERS: API_PATH + "/users?pageSize=<pageSize>&pageNumber=<pageNumber>&key=<key>",
+    GET_USER_DETAILS: API_PATH + "/users/<userId>",
+    CREATE_USER: API_PATH + "/users",
+    UPDATE_USER: API_PATH + "/users/<userId>",
+  },
+};
+
+export default API_ROUTES;
+```
+
+**RULES:**
+- Use UPPER_SNAKE_CASE for constants
+- Use PascalCase for feature modules (LOGIN, USER, COMPANY)
+- Use `<placeholder>` syntax for dynamic values (e.g., `<userId>`, `<pageNumber>`)
+- Keep paths relative (no base URL in route definitions)
+- Organize by feature/module
+- Export as default
+
+### 2. Axios Interceptor Pattern (`src/core/http-handler/http-incep.js`)
+
+**MANDATORY STRUCTURE:**
+```javascript
+import axios from "axios";
+import { toast } from "react-toastify";
+import { BASE_URL } from "../constants/api";
+
+const mainAxios = axios.create({
+  baseURL: BASE_URL,
+  headers: { "Content-type": "application/json" },
+});
+
+const requestHandler = (request) => request;
+const responseHandler = (response) => response;
+
+const errorHandler = (error) => {
+  if (error?.response?.status === 401) {
+    localStorage.clear();
+    window.location.href = "/login";
+  } else if (error?.response?.status === 400) {
+    toast.error(error?.response?.data?.message ?? error?.response?.data?.title, {
+      position: "top-right",
+      autoClose: 5000,
+    });
+  } else if (error?.response?.status === 403) {
+    toast.error("Not Authorized", { position: "top-right" });
+  } else if (error?.response?.status >= 500) {
+    toast.error("Server error - Please retry after some time", {
+      position: "top-right",
+    });
+  }
+  return Promise.reject(error);
+};
+
+mainAxios.interceptors.request.use(
+  function (config) {
+    const accessToken = localStorage.getItem("accessToken");
+    if (accessToken) {
+      config.headers["Authorization"] = "Bearer " + accessToken;
+    }
+    return requestHandler(config);
+  },
+  function (error) {
+    return Promise.reject(error);
+  }
+);
+
+mainAxios.interceptors.response.use(
+  function (response) {
+    return responseHandler(response);
+  },
+  function (error) {
+    return errorHandler(error);
+  }
+);
+
+export default mainAxios;
+```
+
+**RULES:**
+- Create one interceptor file per base URL/service
+- Add authentication token in request interceptor from localStorage
+- Handle common HTTP status codes: 401 (logout), 400/403/500 (toast errors)
+- Export configured axios instance as default
+- Use consistent naming: `{service-name}-http-interceptor.js`
+
+### 3. HttpUtil Wrapper (`src/core/http-handler/http-util.js`)
+
+**MANDATORY STRUCTURE:**
+```javascript
+import axios from "./http-incep";
+import unincepaxios from "./http-unintercept";
+
+export default class HttpUtil {
+  static post(url, params = {}) {
+    return axios.post(url, params, {});
+  }
+  static put(url, params = {}) {
+    return axios.put(url, params, {});
+  }
+  static get(url, params = {}) {
+    return axios.get(url, params);
+  }
+  static delete(url, params = {}) {
+    return axios.delete(url, params);
+  }
+  static patch(url, params = {}) {
+    return axios.patch(url, params);
+  }
+ 
+  // Unauthenticated requests
+  static uniterceptedPost(url, params = {}) {
+    return unincepaxios.post(url, params, {});
+  }
+  static uniterceptedGet(url, params = {}) {
+    return unincepaxios.get(url, params);
+  }
+}
+```
+
+**RULES:**
+- Use static methods only (no instantiation needed)
+- Always provide default empty params `= {}`
+- One method per HTTP verb per service
+- Wrap all axios instances, don't use axios directly
+
+### 4. Service Class Pattern (`src/core/service/`)
+
+**MANDATORY STRUCTURE:**
+```javascript
+import API_ROUTES from "../constants/api";
+import HttpUtil from "../http-handler/http-util";
+
+export default class UserService {
+  static getUsers(pageNumber = 0, pageSize = 10, key = "") {
+    return HttpUtil.get(
+      API_ROUTES.USER.GET_USERS
+        .replace("<pageNumber>", pageNumber)
+        .replace("<pageSize>", pageSize)
+        .replace("<key>", key)
+    );
+  }
+
+  static getUserDetails(userId) {
+    return HttpUtil.get(
+      API_ROUTES.USER.GET_USER_DETAILS.replace("<userId>", userId)
+    );
+  }
+
+  static createUser(userData) {
+    return HttpUtil.post(API_ROUTES.USER.CREATE_USER, userData);
+  }
+
+  static updateUser(userId, userData) {
+    return HttpUtil.put(
+      API_ROUTES.USER.UPDATE_USER.replace("<userId>", userId),
+      userData
+    );
+  }
+}
+```
+
+**RULES:**
+- Use static methods only
+- Import API_ROUTES from constants
+- Import HttpUtil from http-handler
+- Use `.replace()` method for template placeholders
+- Provide default values for optional parameters
+- One service class per feature/module
+- Chain `.replace()` calls for multiple placeholders
+- Export as default
+
+### 5. File Organization
+
+```
+src/core/
+├── constants/
+│   └── api.js                    # All API routes organized by feature
+├── http-handler/
+│   ├── http-incep.js            # Main API interceptor
+│   ├── http-unintercept.js      # Unauthenticated interceptor
+│   └── http-util.js             # HTTP utility wrapper class
+└── service/
+    ├── UserService.js           # User-related API calls
+    ├── CompanyService.js        # Company-related API calls
+    └── LoginService.js          # Authentication API calls
+```
+
+### 6. Usage in Components
+
+```javascript
+import UserService from '../../core/service/UserService';
+
+const fetchUsers = async () => {
+  try {
+    const response = await UserService.getUsers(0, 10, '');
+    // Handle response.data
+  } catch (error) {
+    // Error already handled by interceptor
+  }
+};
+```
+
+## ABSOLUTE REQUIREMENTS - NO EXCEPTIONS
+
+1. **NEVER hardcode API endpoints** - Always use API_ROUTES constants
+2. **NEVER create axios instances directly** - Always use HttpUtil static methods
+3. **NEVER skip interceptors** - All API calls must go through interceptors
+4. **ALWAYS use template placeholders** - Use `<placeholder>` syntax for dynamic values
+5. **ALWAYS use static methods** - In services and HttpUtil classes
+6. **ALWAYS handle auth in interceptors** - Not in individual service calls
+7. **ALWAYS organize by feature** - Group related endpoints in API_ROUTES
+8. **ALWAYS provide defaults** - For optional parameters in service methods
+9. **ALWAYS export as default** - Consistent export pattern across all files
+10. **ALWAYS use .replace()** - For substituting template placeholders
+
+## When Creating New API Integration
+
+**Step-by-step process:**
+1. Add route constants to `api.js` in appropriate feature module
+2. Create/update service class in `src/core/service/`
+3. Use HttpUtil static methods (never axios directly)
+4. Use `.replace()` for placeholders in URLs
+5. Test in component with async/await
+
+## Template Placeholder Conventions
+
+Common placeholders:
+- `<pageNumber>` - Pagination page number
+- `<pageSize>` - Items per page
+- `<userId>` - User identifier
+- `<companyId>` - Company identifier
+- `<id>` - Generic identifier
+- `<key>` - Search key
+- `<sort>` - Sort parameter
+- `<status>` - Status filter
+- `<type>` - Type filter
+- `<period>` - Time period
+- `<date>` - Date value
+
+**Remember:** This pattern ensures consistency, maintainability, centralized error handling, and easy refactoring across the entire application.
+
