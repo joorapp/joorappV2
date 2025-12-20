@@ -15,7 +15,7 @@ interface Client {
   totalAmount: string;
 }
 
-const ActiveClients: React.FC = () => {
+const ActiveClients = () => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -254,33 +254,33 @@ const ActiveClients: React.FC = () => {
                   </DropdownToggle>
                   <DropdownMenu className="p-3" style={{ minWidth: '300px' }} end={true}>
                     <div className="mb-3">
-                      <label className="form-label fw-semibold mb-2">{t('NewClients.plan') || "Plan"}</label>
+                      <label className="form-label fw-semibold mb-2">{t('NewClients.plan')}</label>
                       <Input
                         type="select"
                         value={selectedPlan}
                         onChange={e => setSelectedPlan(e.target.value)}
                       >
-                        <option value="">All Plans</option>
-                        <option value="Basic">{t('NewClients.planBasic') || "Basic"}</option>
-                        <option value="Premium">{t('NewClients.planPremium') || "Premium"}</option>
-                        <option value="Diamond">{t('NewClients.planDiamond') || "Diamond"}</option>
+                        <option value="">{t('Common.allPlans')}</option>
+                        <option value="Basic">{t('NewClients.planBasic')}</option>
+                        <option value="Premium">{t('NewClients.planPremium')}</option>
+                        <option value="Diamond">{t('NewClients.planDiamond')}</option>
                       </Input>
                     </div>
                     <div className="mb-3">
-                      <label className="form-label fw-semibold mb-2">{t('status') || "Status"}</label>
+                      <label className="form-label fw-semibold mb-2">{t('Common.status')}</label>
                       <Input
                         type="select"
                         value={selectedStatus}
                         onChange={e => setSelectedStatus(e.target.value)}
                       >
-                        <option value="">All Status</option>
-                        <option value="Active">{t('NewClients.statusActive') || "Active"}</option>
-                        <option value="Pending">{t('NewClients.statusPending') || "Pending"}</option>
-                        <option value="Inactive">{t('NewClients.statusInactive') || "Inactive"}</option>
+                        <option value="">{t('Common.allStatus')}</option>
+                        <option value="Active">{t('NewClients.statusActive')}</option>
+                        <option value="Pending">{t('NewClients.statusPending')}</option>
+                        <option value="Inactive">{t('NewClients.statusInactive')}</option>
                       </Input>
                     </div>
                     <div className="mb-3">
-                      <label className="form-label fw-semibold mb-2">{t('startDate') || "Start Date"}</label>
+                      <label className="form-label fw-semibold mb-2">{t('startDate')}</label>
                       <Input
                         type="date"
                         value={startDateFilter}
@@ -289,10 +289,10 @@ const ActiveClients: React.FC = () => {
                     </div>
                     <div className="d-flex gap-2">
                       <Button color="primary" size="sm" onClick={() => setFilterDropdownOpen(false)} className="flex-fill">
-                        Apply
+                        {t('Common.apply')}
                       </Button>
                       <Button color="secondary" size="sm" outline onClick={resetFilters} className="flex-fill">
-                        Reset
+                        {t('Common.reset')}
                       </Button>
                     </div>
                   </DropdownMenu>
@@ -309,10 +309,10 @@ const ActiveClients: React.FC = () => {
                       <th>{t('NewClients.plan')}</th>
                       <th>{t('startDate')}</th>
                       <th>{t('endDate')}</th>
-                      <th>Days</th>
+                      <th>{t('Common.days')}</th>
                       <th>{t('revenue')}</th>
-                      <th>{t('status')}</th>
-                      <th>{t('action')}</th>
+                      <th>{t('Common.status')}</th>
+                      <th>{t('NewClients.action')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -350,7 +350,7 @@ const ActiveClients: React.FC = () => {
                           </td>
                           <td>
                             <span className="fw-semibold">
-                              {calculateDaysRemaining(client)} days
+                              {t('ActiveClients.daysRemaining', { count: calculateDaysRemaining(client) })}
                             </span>
                           </td>
                           <td>
@@ -363,7 +363,7 @@ const ActiveClients: React.FC = () => {
                               <Button 
                                 color="outline-primary" 
                                 className="p-1 border-0" 
-                                title="View"
+                                title={t('Common.view')}
                                 onClick={() => {
                                   setSelectedClient(client);
                                   setModalOpen(true);
@@ -372,7 +372,7 @@ const ActiveClients: React.FC = () => {
                                 <i className="mdi mdi-eye"></i>
                               </Button>
                               
-                              <Button color="outline-danger" className="p-1 border-0" title="Delete">
+                              <Button color="outline-danger" className="p-1 border-0" title={t('Common.delete')}>
                                 <i className="mdi mdi-delete"></i>
                               </Button>
                             </div>
@@ -397,7 +397,7 @@ const ActiveClients: React.FC = () => {
       {/* Client Details Modal */}
       <Modal isOpen={modalOpen} toggle={() => setModalOpen(!modalOpen)} size="lg" centered>
         <ModalHeader toggle={() => setModalOpen(!modalOpen)}>
-          Client Details
+          {t('ActiveClients.clientDetails')}
         </ModalHeader>
         <ModalBody>
           {selectedClient && (
@@ -420,23 +420,23 @@ const ActiveClients: React.FC = () => {
               </div>
 
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Address</label>
+                <label className="form-label fw-semibold text-muted">{t('Common.address')}</label>
                 <p className="mb-0">{selectedClient.address}</p>
               </div>
 
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Email</label>
+                <label className="form-label fw-semibold text-muted">{t('Common.email')}</label>
                 <p className="mb-0">{selectedClient.email}</p>
               </div>
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Phone</label>
+                <label className="form-label fw-semibold text-muted">{t('Common.phone')}</label>
                 <p className="mb-0">{selectedClient.phone}</p>
               </div>
 
              
 
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Start Date</label>
+                <label className="form-label fw-semibold text-muted">{t('ActiveClients.startDate')}</label>
                 <p className="mb-0">
                   {new Date(selectedClient.startDate).toLocaleDateString('en-US', { 
                     year: 'numeric', 
@@ -446,7 +446,7 @@ const ActiveClients: React.FC = () => {
                 </p>
               </div>
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">End Date</label>
+                <label className="form-label fw-semibold text-muted">{t('ActiveClients.endDate')}</label>
                 <p className="mb-0">
                   {new Date(getEndDate(selectedClient)).toLocaleDateString('en-US', { 
                     year: 'numeric', 
@@ -457,27 +457,27 @@ const ActiveClients: React.FC = () => {
               </div>
 
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Days</label>
-                <p className="mb-0 fw-semibold">{calculateDaysRemaining(selectedClient)} days</p>
+                <label className="form-label fw-semibold text-muted">{t('Common.days')}</label>
+                <p className="mb-0 fw-semibold">{t('ActiveClients.daysRemaining', { count: calculateDaysRemaining(selectedClient) })}</p>
               </div>
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Total Amount</label>
+                <label className="form-label fw-semibold text-muted">{t('ActiveClients.totalAmount')}</label>
                 <p className="mb-0 text-success fw-semibold">{selectedClient.totalAmount}</p>
               </div>
 
               <div className="col-md-4 mb-3">
-                <label className="form-label fw-semibold text-muted">Status</label>
+                <label className="form-label fw-semibold text-muted">{t('Common.status')}</label>
                 <div>
                 {getStatusBadge(calculateStatus(selectedClient))}
                 </div>
               </div>
               {calculateStatus(selectedClient) === 'Inactive' && (
                 <div className="col-md-4 mb-3">
-                  <label className="form-label fw-semibold text-muted">Active Plan</label>
+                  <label className="form-label fw-semibold text-muted">{t('ActiveClients.activePlan')}</label>
                   <div>
                     <Button color="primary" className="btn-rounded waves-effect d-inline-flex align-items-center waves-light">
                       <i className="bx bx-plus me-1"></i>
-                      Active Plan
+                      {t('ActiveClients.activePlan')}
                     </Button>
                   </div>
                 </div>
@@ -488,7 +488,7 @@ const ActiveClients: React.FC = () => {
         </ModalBody>
         <ModalFooter>
           <Button color="secondary" onClick={() => setModalOpen(false)}>
-            Close
+            {t('Common.close')}
           </Button>
         </ModalFooter>
       </Modal>

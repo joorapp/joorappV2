@@ -19,25 +19,25 @@ const Footer = ({
         <div className="footer__content">
           {showCopyright && (
             <div className="footer__copyright">
-              <p>&copy; 2024 JoorApp. All rights reserved.</p>
+              <p>{t('Footer.copyrightText')}</p>
             </div>
           )}
           
           <div className="footer__links">
             <a href="/privacy" className="footer__link">
-              Privacy Policy
+              {t('Footer.privacyPolicy')}
             </a>
             <a href="/terms" className="footer__link">
-              Terms of Service
+              {t('Footer.termsOfService')}
             </a>
             <a href="/support" className="footer__link">
-              Support
+              {t('Footer.support')}
             </a>
           </div>
           
           {showVersion && (
             <div className="footer__version">
-              <span>v1.0.0</span>
+              <span>{t('Footer.version')}</span>
             </div>
           )}
         </div>

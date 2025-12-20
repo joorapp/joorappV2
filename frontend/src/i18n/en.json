@@ -6,7 +6,23 @@
     "password": "Password",
     "submit": "Sign In",
     "forgotPassword": "Forgot Password?",
-    "rememberMe": "Remember Me"
+    "rememberMe": "Remember Me",
+    "welcomeBack": "Welcome Back !",
+    "signInToContinue": "Sign in to continue to JoorApp.",
+    "enterEmail": "Enter email",
+    "enterPassword": "Enter Password",
+    "logIn": "Log In",
+    "forgotYourPassword": "Forgot your password?",
+    "validation": {
+      "emailRequired": "Please enter your email",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Please enter your password"
+    },
+    "errors": {
+      "invalidResponse": "Login failed. Invalid response from server.",
+      "noDataReceived": "Login failed. No data received from server.",
+      "unexpectedError": "An unexpected error occurred. Please try again."
+    }
   },
   "Navigation": {
     "dashboard": "Dashboard",
@@ -33,7 +49,26 @@
     "welcome": "Welcome",
     "overview": "Overview",
     "recentActivity": "Recent Activity",
-    "statistics": "Statistics"
+    "statistics": "Statistics",
+    "superAdmin": "Super Admin",
+    "totalUsers": "Total Users",
+    "companies": "Companies",
+    "totalRevenue": "Total Revenue",
+    "growthRate": "Growth Rate",
+    "recentSystemActivity": "Recent System Activity",
+    "quickActions": "Quick Actions",
+    "manageUsers": "Manage Users",
+    "manageCompanies": "Manage Companies",
+    "viewReports": "View Reports",
+    "systemSettings": "System Settings",
+    "totalOrders": "Total Orders",
+    "revenue": "Revenue",
+    "customers": "Customers",
+    "growth": "Growth",
+    "recentOrders": "Recent Orders",
+    "newOrder": "New Order",
+    "addCustomer": "Add Customer",
+    "settings": "Settings"
   },
   "Dashboards": {
     "Dashboards": "Dashboards",
@@ -83,7 +118,26 @@
     "searchPlaceholder": "Search...",
     "add": "Add",
     "email": "Email",
-    "phone": "Phone"
+    "phone": "Phone",
+    "view": "View",
+    "close": "Close",
+    "apply": "Apply",
+    "reset": "Reset",
+    "days": "Days",
+    "status": "Status",
+    "action": "Action",
+    "address": "Address",
+    "allPlans": "All Plans",
+    "allStatus": "All Status",
+    "errors": {
+      "fillAllFields": "Please fill in all fields",
+      "selectPlan": "Please select a plan"
+    },
+    "success": {
+      "deleted": "Successfully deleted",
+      "saved": "Successfully saved",
+      "updated": "Successfully updated"
+    }
   },
   "NewClients": {
     "newClient": "New Client",
@@ -95,6 +149,7 @@
     "statusActive": "Active",
     "statusPending": "Pending",
     "statusInactive": "Inactive",
+    "statusNew": "New",
     "planBasic": "Basic",
     "planPremium": "Premium",
     "planDiamond": "Diamond",
@@ -127,6 +182,16 @@
     "upgradeToPremium": "Upgrade to Premium",
     "upgradeToDiamond": "Upgrade to Diamond",
     "assignPlan": "Assign Plan",
+    "modal": {
+      "clientDetails": "Client Details",
+      "lastUpdated": "Last Updated"
+    },
+    "labels": {
+      "clientName": "Client Name",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address"
+    },
     "planFeatures": {
       "accessToAllBasic": "Access to all basic",
       "basicReporting": "Basic reporting and analytics",
@@ -162,6 +227,76 @@
     "termsOfService": "Terms of Service",
     "privacyPolicy": "Privacy Policy",
     "support": "Support",
-    "copyright": "All rights reserved"
+    "copyright": "All rights reserved",
+    "copyrightText": "© 2024 JoorApp. All rights reserved.",
+    "version": "v1.0.0"
+  },
+  "SuperAdmin": {
+    "portal": "Super Admin Portal",
+    "superAdmin": "Super Admin",
+    "security": "Security",
+    "analytics": "Analytics",
+    "systemSettings": "System Settings",
+    "auditLogs": "Audit Logs",
+    "userManagementPage": "User management page - TODO: Implement user management functionality",
+    "companyManagementPage": "Company management page - TODO: Implement company management functionality",
+    "reportsPage": "Reports page - TODO: Implement reports functionality",
+    "systemSettingsPage": "System settings page - TODO: Implement system settings functionality",
+    "auditLogsPage": "Audit logs page - TODO: Implement audit logs functionality",
+    "information": {
+      "superAdminInformation": "Super Admin Information",
+      "userID": "User ID:",
+      "name": "Name:",
+      "email": "Email:",
+      "role": "Role:"
+    },
+    "activity": {
+      "newUserRegistered": "New user registered: {{name}}",
+      "companyCreated": "Company \"{{name}}\" created",
+      "securityAlert": "Security alert: Failed login attempt",
+      "minutesAgo": "{{count}} minutes ago",
+      "hoursAgo": "{{count}} hour ago",
+      "hoursAgoPlural": "{{count}} hours ago"
+    }
+  },
+  "Company": {
+    "information": {
+      "companyInformation": "Company Information",
+      "companyID": "Company ID:",
+      "user": "User:",
+      "email": "Email:",
+      "role": "Role:"
+    },
+    "orders": {
+      "ordersManagement": "Orders Management",
+      "ordersManagementPage": "Orders management page - TODO: Implement orders functionality",
+      "completed": "Completed",
+      "processing": "Processing",
+      "shipped": "Shipped"
+    },
+    "products": {
+      "productsManagement": "Products Management",
+      "productsManagementPage": "Products management page - TODO: Implement products functionality"
+    },
+    "customers": {
+      "customersManagement": "Customers Management",
+      "customersManagementPage": "Customers management page - TODO: Implement customers functionality"
+    },
+    "analytics": {
+      "analyticsReports": "Analytics & Reports",
+      "analyticsPage": "Analytics page - TODO: Implement analytics functionality"
+    },
+    "settings": {
+      "companySettings": "Company Settings",
+      "settingsPage": "Settings page - TODO: Implement settings functionality"
+    }
+  },
+  "ActiveClients": {
+    "clientDetails": "Client Details",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "totalAmount": "Total Amount",
+    "activePlan": "Active Plan",
+    "daysRemaining": "{{count}} days"
   }
 }

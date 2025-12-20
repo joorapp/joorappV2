@@ -26,10 +26,10 @@ const Login = () => {
   // Yup validation schema
   const validationSchema = Yup.object({
     email: Yup.string()
-      .required('Please enter your email')
-      .email('Please enter a valid email address'),
+      .required(t('Login.validation.emailRequired'))
+      .email(t('Login.validation.emailInvalid')),
     password: Yup.string()
-      .required('Please enter your password'),
+      .required(t('Login.validation.passwordRequired')),
     rememberMe: Yup.boolean()
   });
 
@@ -85,17 +85,17 @@ const Login = () => {
             // Redirect to dashboard
             navigate('/dashboard');
           } else {
-            setError(response.data?.message || 'Login failed. Invalid response from server.');
+            setError(response.data?.message || t('Login.errors.invalidResponse'));
           }
         } else {
-          setError(response.data?.message || 'Login failed. No data received from server.');
+          setError(response.data?.message || t('Login.errors.noDataReceived'));
         }
       } catch (err: any) {
         // Error handling - interceptor already shows toast, just set local error state
         const errorMessage = err?.response?.data?.message || 
                            err?.response?.data?.error || 
                            err?.message || 
-                           'An unexpected error occurred. Please try again.';
+                           t('Login.errors.unexpectedError');
         setError(errorMessage);
       } finally {
         setIsSubmitting(false);
@@ -131,8 +131,8 @@ const Login = () => {
                   <Row>
                     <Col xs={7}>
                       <div className="text-primary p-4">
-                        <h5 className="text-primary">Welcome Back !</h5>
-                        <p>Sign in to continue to JoorApp.</p>
+                        <h5 className="text-primary">{t('Login.welcomeBack')}</h5>
+                        <p>{t('Login.signInToContinue')}</p>
                       </div>
                     </Col>
                     <Col className="col-5 align-self-end">
@@ -179,7 +179,7 @@ const Login = () => {
                         <Input
                           name="email"
                           className="form-control"
-                          placeholder="Enter email"
+                          placeholder={t('Login.enterEmail')}
                           type="email"
                           onChange={formik.handleChange}
                           onBlur={formik.handleBlur}
@@ -196,13 +196,13 @@ const Login = () => {
                       </div>
 
                       <div className="mb-3">
-                        <Label className="form-label">Password</Label>
+                        <Label className="form-label">{t('Login.password')}</Label>
                         <Input
                           name="password"
                           autoComplete="off"
                           value={formik.values.password}
                           type="password"
-                          placeholder="Enter Password"
+                          placeholder={t('Login.enterPassword')}
                           onChange={formik.handleChange}
                           onBlur={formik.handleBlur}
                           invalid={formik.touched.password && !!formik.errors.password}
@@ -230,7 +230,7 @@ const Login = () => {
                           className="form-check-label"
                           htmlFor="customControlInline"
                         >
-                          Remember me
+                          {t('Login.rememberMe')}
                         </label>
                       </div>
 
@@ -239,7 +239,7 @@ const Login = () => {
                           className="btn btn-primary btn-block"
                           type="submit"
                         >
-                          Log In
+                          {t('Login.logIn')}
                         </button>
                       </div>
 
@@ -248,7 +248,7 @@ const Login = () => {
                       <div className="mt-4 text-center">
                         <Link to="/forgot-password" className="text-muted">
                           <i className="mdi mdi-lock me-1" />
-                          Forgot your password?
+                          {t('Login.forgotYourPassword')}
                         </Link>
                       </div>
                     </Form>

@@ -6,9 +6,9 @@ interface SuperAdminFooterProps {
   showSystemInfo?: boolean;
 }
 
-const SuperAdminFooter: React.FC<SuperAdminFooterProps> = ({ 
+const SuperAdminFooter = ({ 
   showSystemInfo = true 
-}) => {
+}: SuperAdminFooterProps) => {
   const { t } = useTranslation();
 
   return (

@@ -11,11 +11,12 @@ interface HeaderProps {
 }
 
 const Header = ({ 
-  title = 'Dashboard', 
+  title, 
   showUserMenu = true, 
   showLanguageSwitcher = true 
 }: HeaderProps) => {
   const { t, i18n } = useTranslation();
+  const displayTitle = title || t('Navigation.dashboard');
   const { user, logout } = useAuth();
   const { clearCompanies } = useCompanies();
 
@@ -32,7 +33,7 @@ const Header = ({
     <header className="header">
       <div className="header__container">
         <div className="header__left">
-          <h1 className="header__title">{title}</h1>
+          <h1 className="header__title">{displayTitle}</h1>
         </div>
         
         <div className="header__right">
