@@ -8,7 +8,7 @@ interface SuperAdminSidebarProps {
   onClose?: () => void;
 }
 
-const SuperAdminSidebar = ({ isOpen = true, onClose }: SuperAdminSidebarProps) => {
+const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ isOpen = true, onClose }) => {
   const { t } = useTranslation();
 
   const navigationItems = [

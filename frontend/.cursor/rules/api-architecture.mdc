@@ -47,37 +47,45 @@ export default API_ROUTES;
 - Organize by feature/module
 - Export as default
 
-### 2. Axios Interceptor Pattern (`src/core/http-handler/http-incep.js`)
+### 2. Axios Interceptor Pattern (`src/core/http-handler/http-incep.ts`)
 
 **MANDATORY STRUCTURE:**
-```javascript
+```typescript
 import axios from "axios";
-import { toast } from "react-toastify";
+import type { InternalAxiosRequestConfig } from "axios";
 import { BASE_URL } from "../constants/api";
+import { showErrorToastFromError } from "../utils/toast";
+import API_ROUTES from "../constants/api";
+import LoginService from "../service/LoginService";
 
 const mainAxios = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-type": "application/json" },
+  timeout: 10000,
 });
 
-const requestHandler = (request) => request;
-const responseHandler = (response) => response;
+const requestHandler = (request: any) => request;
+const responseHandler = (response: any) => response;
 
-const errorHandler = (error) => {
-  if (error?.response?.status === 401) {
+const errorHandler = async (error: any) => {
+  const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+
+  // Handle 401 Unauthorized - Token expired (with token refresh logic)
+  if (error?.response?.status === 401 && originalRequest) {
+    // Token refresh logic here...
+    // If refresh fails, redirect to login
     localStorage.clear();
     window.location.href = "/login";
+    return Promise.reject(error);
   } else if (error?.response?.status === 400) {
-    toast.error(error?.response?.data?.message ?? error?.response?.data?.title, {
-      position: "top-right",
-      autoClose: 5000,
-    });
+    // Extract error message from API response (NOT hardcoded)
+    showErrorToastFromError(error, "Bad Request");
   } else if (error?.response?.status === 403) {
-    toast.error("Not Authorized", { position: "top-right" });
-  } else if (error?.response?.status >= 500) {
-    toast.error("Server error - Please retry after some time", {
-      position: "top-right",
-    });
+    // Extract error message from API response (NOT hardcoded)
+    showErrorToastFromError(error, "Not Authorized");
+  } else if (error?.response?.status && error.response.status >= 500) {
+    // Extract error message from API response (NOT hardcoded)
+    showErrorToastFromError(error, "Server error - Please retry after some time");
   }
   return Promise.reject(error);
 };
@@ -110,9 +118,12 @@ export default mainAxios;
 **RULES:**
 - Create one interceptor file per base URL/service
 - Add authentication token in request interceptor from localStorage
-- Handle common HTTP status codes: 401 (logout), 400/403/500 (toast errors)
+- Handle common HTTP status codes: 401 (logout/refresh), 400/403/500 (toast errors)
+- **CRITICAL: Use `showErrorToastFromError` from `src/core/utils/toast`** - Extracts messages from API responses
+- **NEVER hardcode error messages** - Always extract from `error.response.data.message`, `error.response.data.error`, etc.
+- **NEVER duplicate error handling in components** - Interceptor handles all API error toasts
 - Export configured axios instance as default
-- Use consistent naming: `{service-name}-http-interceptor.js`
+- Use consistent naming: `http-incep.ts` for authenticated, `http-unintercept.ts` for unauthenticated
 
 ### 3. HttpUtil Wrapper (`src/core/http-handler/http-util.js`)
 
@@ -218,7 +229,7 @@ src/core/
 
 ### 6. Usage in Components
 
-```javascript
+```typescript
 import UserService from '../../core/service/UserService';
 
 const fetchUsers = async () => {
@@ -226,23 +237,39 @@ const fetchUsers = async () => {
     const response = await UserService.getUsers(0, 10, '');
     // Handle response.data
   } catch (error) {
-    // Error already handled by interceptor
+    // CRITICAL: Interceptor already shows error toast with API message
+    // Component should only handle local state/UI, NOT show duplicate toasts
+    // Extract error message only if needed for local error state
+    const errorMessage = error?.response?.data?.message || 
+                        error?.response?.data?.error || 
+                        'An unexpected error occurred.';
+    setError(errorMessage); // For local UI state only
   }
 };
 ```
+
+**CRITICAL ERROR HANDLING RULES:**
+- ✅ **DO**: Let interceptor handle all error toasts automatically
+- ✅ **DO**: Extract error messages in components only for local UI state (e.g., form errors)
+- ❌ **DON'T**: Call `showErrorToast` or `showErrorToastFromError` in components
+- ❌ **DON'T**: Hardcode error messages anywhere
+- ❌ **DON'T**: Duplicate error handling that interceptor already does
 
 ## ABSOLUTE REQUIREMENTS - NO EXCEPTIONS
 
 1. **NEVER hardcode API endpoints** - Always use API_ROUTES constants
 2. **NEVER create axios instances directly** - Always use HttpUtil static methods
 3. **NEVER skip interceptors** - All API calls must go through interceptors
-4. **ALWAYS use template placeholders** - Use `<placeholder>` syntax for dynamic values
-5. **ALWAYS use static methods** - In services and HttpUtil classes
-6. **ALWAYS handle auth in interceptors** - Not in individual service calls
-7. **ALWAYS organize by feature** - Group related endpoints in API_ROUTES
-8. **ALWAYS provide defaults** - For optional parameters in service methods
-9. **ALWAYS export as default** - Consistent export pattern across all files
-10. **ALWAYS use .replace()** - For substituting template placeholders
+4. **NEVER hardcode error messages** - Always extract from API responses using `showErrorToastFromError`
+5. **NEVER duplicate error toasts in components** - Interceptor handles all API error notifications
+6. **ALWAYS use template placeholders** - Use `<placeholder>` syntax for dynamic values
+7. **ALWAYS use static methods** - In services and HttpUtil classes
+8. **ALWAYS handle auth in interceptors** - Not in individual service calls
+9. **ALWAYS organize by feature** - Group related endpoints in API_ROUTES
+10. **ALWAYS provide defaults** - For optional parameters in service methods
+11. **ALWAYS export as default** - Consistent export pattern across all files
+12. **ALWAYS use .replace()** - For substituting template placeholders
+13. **ALWAYS use toast utility** - Import from `src/core/utils/toast` for error handling
 
 ## When Creating New API Integration
 
@@ -268,5 +295,15 @@ Common placeholders:
 - `<period>` - Time period
 - `<date>` - Date value
 
-**Remember:** This pattern ensures consistency, maintainability, centralized error handling, and easy refactoring across the entire application.
+## Error Message Extraction Priority
+
+When using `showErrorToastFromError`, messages are extracted in this order:
+1. `error.response.data.message` (primary API error message)
+2. `error.response.data.error` (alternative API error field)
+3. `error.response.data.title` (API error title)
+4. `error.response.data.error_description` (OAuth/Keycloak error description)
+5. `error.message` (standard Error object message)
+6. Default fallback message (only if none of the above exist)
+
+**Remember:** This pattern ensures consistency, maintainability, centralized error handling with API-provided messages, and easy refactoring across the entire application.
 

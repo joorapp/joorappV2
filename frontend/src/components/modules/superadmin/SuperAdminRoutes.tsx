@@ -10,7 +10,7 @@ import SuperAdminDashboard, {
   SuperAdminProfile,
 } from './SuperAdminDashboard/SuperAdminDashboard';
 
-const SuperAdminRoutes = () => {
+const SuperAdminRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<SuperAdminDashboard />}>        

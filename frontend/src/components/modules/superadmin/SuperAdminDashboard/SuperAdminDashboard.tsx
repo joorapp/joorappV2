@@ -8,7 +8,7 @@ import SuperAdminFooter from '../SuperAdminFooter/SuperAdminFooter';
 import './SuperAdminDashboard.scss';
 
 // Placeholder components for superadmin pages
-export const SuperAdminOverview = () => {
+export const SuperAdminOverview: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -107,7 +107,7 @@ export const SuperAdminOverview = () => {
   );
 };
 
-export const UserManagement = () => {
+export const UserManagement: React.FC = () => {
   const { t } = useTranslation();
   return (
     <div className="user-management">
@@ -117,7 +117,7 @@ export const UserManagement = () => {
   );
 };
 
-export const CompanyManagement = () => {
+export const CompanyManagement: React.FC = () => {
   const { t } = useTranslation();
   return (
     <div className="company-management">
@@ -127,7 +127,7 @@ export const CompanyManagement = () => {
   );
 };
 
-export const Reports = () => {
+export const Reports: React.FC = () => {
   const { t } = useTranslation();
   return (
     <div className="reports">
@@ -137,7 +137,7 @@ export const Reports = () => {
   );
 };
 
-export const SystemSettings = () => {
+export const SystemSettings: React.FC = () => {
   return (
     <div className="system-settings">
       <h2>System Settings</h2>
@@ -146,7 +146,7 @@ export const SystemSettings = () => {
   );
 };
 
-export const AuditLogs = () => {
+export const AuditLogs: React.FC = () => {
   return (
     <div className="audit-logs">
       <h2>Audit Logs</h2>
@@ -155,7 +155,7 @@ export const AuditLogs = () => {
   );
 };
 
-export const SuperAdminProfile = () => {
+export const SuperAdminProfile: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -176,7 +176,7 @@ export const SuperAdminProfile = () => {
   );
 };
 
-const SuperAdminDashboard = () => {
+const SuperAdminDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {
