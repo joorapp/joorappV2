@@ -3,7 +3,7 @@ import HttpUtil from "../http-handler/http-util";
 
 export default class LoginService {
   static login(credentials: { email: string; password: string }) {
-    return HttpUtil.post(API_ROUTES.LOGIN.LOGINAPI, credentials);
+    return HttpUtil.uniterceptedPost(API_ROUTES.LOGIN.LOGINAPI, credentials);
   }
 
   static logout() {
