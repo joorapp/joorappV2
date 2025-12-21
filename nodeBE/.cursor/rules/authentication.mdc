@@ -207,11 +207,11 @@ router.get('/ping', getPing);
 router.post('/login', asyncHandler(login)); // Public
 
 /**
- * @route   GET /api/v2/auth/companies
- * @desc    Get user's associated companies
- * @access  Protected (requires authentication)
+ * @route   POST /api/v2/auth/login
+ * @desc    Login user - returns tokens, keycloak_global_role, and companies
+ * @access  Public
+ * @note    Login endpoint now includes companies and keycloak_global_role in response
  */
-router.get('/companies', authMiddleware, asyncHandler(getCompanies)); // Protected
 ```
 
 ### Pattern 3: Fully Protected Module

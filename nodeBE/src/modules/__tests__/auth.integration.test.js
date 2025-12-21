@@ -45,7 +45,7 @@ describe('Auth API Integration', () => {
   });
 
   describe('POST /api/v2/auth/login', () => {
-    it('should login successfully with valid credentials', async () => {
+    it('should login successfully with valid credentials and return tokens, role, and companies', async () => {
       const response = await request(app)
         .post('/api/v2/auth/login')
         .send({
@@ -60,6 +60,9 @@ describe('Auth API Integration', () => {
       expect(response.body.data.access_token).toBeDefined();
       expect(response.body.data.refresh_token).toBeDefined();
       expect(response.body.data.expires_in).toBeDefined();
+      expect(response.body.data.keycloak_global_role).toBeDefined();
+      expect(['SUPER_ADMIN', 'COMPANY_ADMIN', 'COMPANY_USER']).toContain(response.body.data.keycloak_global_role);
+      expect(Array.isArray(response.body.data.companies)).toBe(true);
       expect(response.body.meta).toBeDefined();
       expect(response.body.meta.requestId).toBeDefined();
       expect(response.body.meta.endpoint).toBe('/api/v2/auth/login');
@@ -67,8 +70,10 @@ describe('Auth API Integration', () => {
       
       // Verify user was synced to database
       if (response.body.data.access_token) {
-        // User should exist in database after login (synced by authMiddleware)
-        // We can't easily decode JWT here, so we'll verify in getUserCompanies test
+        // User should exist in database after login (synced during login)
+        const user = await User.findOne({ where: { email: TEST_USER_EMAIL } });
+        expect(user).toBeDefined();
+        expect(user.keycloakGlobalRole).toBe(response.body.data.keycloak_global_role);
       }
     });
 
@@ -183,48 +188,6 @@ describe('Auth API Integration', () => {
     });
   });
 
-  describe('GET /api/v2/auth/companies', () => {
-    let authToken;
-
-    beforeAll(async () => {
-      // Get auth token for protected endpoints
-      // This MUST succeed - if it fails, run: npm run setup:test-users
-      authToken = await getAuthToken(app, TEST_USER_EMAIL, TEST_USER_PASSWORD);
-    });
-
-    it('should return user companies when authenticated', async () => {
-      const response = await request(app)
-        .get('/api/v2/auth/companies')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBeDefined();
-      expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.meta).toBeDefined();
-    });
-
-    it('should return 401 when not authenticated', async () => {
-      const response = await request(app)
-        .get('/api/v2/auth/companies')
-        .expect(401);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBeDefined();
-      expect(response.body.meta).toBeDefined();
-    });
-
-    it('should return 401 when token is invalid', async () => {
-      const response = await request(app)
-        .get('/api/v2/auth/companies')
-        .set('Authorization', 'Bearer invalid-token')
-        .expect(401);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBeDefined();
-      expect(response.body.meta).toBeDefined();
-    });
-  });
 
   describe('POST /api/v2/auth/companies/:companyId/select', () => {
     let authToken;

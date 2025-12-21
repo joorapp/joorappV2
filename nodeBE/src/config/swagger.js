@@ -443,13 +443,6 @@ const swaggerDefinition = {
             description: 'Company name',
             example: 'Acme Corporation'
           },
-          code: {
-            type: 'string',
-            maxLength: 50,
-            nullable: true,
-            description: 'Company code/abbreviation',
-            example: 'ACME'
-          },
           description: {
             type: 'string',
             nullable: true,
@@ -492,12 +485,6 @@ const swaggerDefinition = {
             description: 'Company name',
             example: 'Acme Corporation'
           },
-          code: {
-            type: 'string',
-            maxLength: 50,
-            description: 'Company code/abbreviation',
-            example: 'ACME'
-          },
           description: {
             type: 'string',
             description: 'Company description',
@@ -519,12 +506,6 @@ const swaggerDefinition = {
             maxLength: 255,
             description: 'Company name',
             example: 'Acme Corporation Updated'
-          },
-          code: {
-            type: 'string',
-            maxLength: 50,
-            description: 'Company code/abbreviation',
-            example: 'ACME_UPD'
           },
           description: {
             type: 'string',

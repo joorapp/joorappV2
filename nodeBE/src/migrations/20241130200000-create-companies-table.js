@@ -17,11 +17,6 @@ export const up = async (queryInterface, Sequelize) => {
       allowNull: false,
       unique: true
     },
-    code: {
-      type: Sequelize.STRING(50),
-      allowNull: true,
-      unique: true
-    },
     description: {
       type: Sequelize.TEXT,
       allowNull: true
@@ -86,12 +81,6 @@ export const up = async (queryInterface, Sequelize) => {
   await queryInterface.addIndex('companies', ['name'], { 
     unique: true, 
     name: 'companies_name_unique' 
-  });
-  
-  await queryInterface.addIndex('companies', ['code'], { 
-    unique: true, 
-    name: 'companies_code_unique',
-    where: { code: { [Sequelize.Op.ne]: null } }
   });
   
   await queryInterface.addIndex('companies', ['is_active'], { 

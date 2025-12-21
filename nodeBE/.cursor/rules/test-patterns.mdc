@@ -219,11 +219,8 @@ describe('Module API Integration', () => {
     app = await createTestApp();
     authToken = await getAuthToken(app, TEST_USER_EMAIL, TEST_USER_PASSWORD);
     
-    // Sync user to database
-    await request(app)
-      .get('/api/v2/auth/companies')
-      .set('Authorization', `Bearer ${authToken}`)
-      .expect(200);
+    // User is synced to database during login
+    // Login endpoint now returns companies and keycloak_global_role
   });
   
   afterAll(async () => {

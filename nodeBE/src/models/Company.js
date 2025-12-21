@@ -28,13 +28,6 @@ const Company = sequelize.define('Company', {
     field: 'name',
     comment: 'Company name'
   },
-  code: {
-    type: DataTypes.STRING(50),
-    allowNull: true,
-    unique: true,
-    field: 'code',
-    comment: 'Company code/abbreviation'
-  },
   description: {
     type: DataTypes.TEXT,
     allowNull: true,

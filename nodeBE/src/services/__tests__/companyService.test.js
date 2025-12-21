@@ -113,7 +113,6 @@ describe('Company Service', () => {
       expect(companyRepository.create).toHaveBeenCalledWith(
         {
           name: 'New Company',
-          code: null,
           description: 'New company description',
           isActive: true
         },
@@ -124,7 +123,6 @@ describe('Company Service', () => {
       expect(result).toEqual({
         id: mockCreatedCompany.id,
         name: mockCreatedCompany.name,
-        code: mockCreatedCompany.code,
         description: mockCreatedCompany.description,
         isActive: mockCreatedCompany.isActive,
         createdDate: mockCreatedCompany.createdDate,
@@ -205,7 +203,6 @@ describe('Company Service', () => {
       expect(result).toEqual({
         id: mockCompany.id,
         name: mockCompany.name,
-        code: mockCompany.code,
         description: mockCompany.description,
         isActive: mockCompany.isActive,
         createdDate: mockCompany.createdDate,
@@ -243,7 +240,6 @@ describe('Company Service', () => {
       expect(result).toEqual({
         id: mockDeletedCompany.id,
         name: mockDeletedCompany.name,
-        code: mockDeletedCompany.code,
         description: mockDeletedCompany.description,
         isActive: mockDeletedCompany.isActive,
         isDeleted: mockDeletedCompany.isDeleted,
@@ -301,7 +297,6 @@ describe('Company Service', () => {
       expect(result).toEqual({
         id: mockUpdatedCompany.id,
         name: mockUpdatedCompany.name,
-        code: mockUpdatedCompany.code,
         description: mockUpdatedCompany.description,
         isActive: mockUpdatedCompany.isActive,
         createdDate: mockUpdatedCompany.createdDate,
@@ -507,7 +502,6 @@ describe('Company Service', () => {
       expect(result).toEqual({
         id: restoredCompany.id,
         name: restoredCompany.name,
-        code: restoredCompany.code,
         description: restoredCompany.description,
         isActive: restoredCompany.isActive,
         createdDate: restoredCompany.createdDate,

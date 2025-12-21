@@ -176,13 +176,9 @@ export const createCompany = async (req, res) => {
     }
 
     // Validate required fields
-    const { name, code, description, isActive } = req.body;
+    const { name, description, isActive } = req.body;
     validateRequired({ name }, req.id);
     validateString(name, 'name', { minLength: 1, maxLength: 100 }, req.id);
-    
-    if (code !== undefined) {
-      validateString(code, 'code', { required: false, maxLength: 50 }, req.id);
-    }
     
     if (description !== undefined) {
       validateString(description, 'description', { required: false }, req.id);
@@ -190,7 +186,7 @@ export const createCompany = async (req, res) => {
 
     // Create company via service
     const company = await companyService.createCompany(
-      { name, code, description, isActive },
+      { name, description, isActive },
       { userId: req.user.id }
     );
 
@@ -385,7 +381,7 @@ export const updateCompany = async (req, res) => {
   
   try {
     const { id } = req.params;
-    const { name, code, description, isActive } = req.body;
+    const { name, description, isActive } = req.body;
 
     // Validate UUID
     validateUUID(id, 'id', req.id);
@@ -406,9 +402,6 @@ export const updateCompany = async (req, res) => {
     if (name !== undefined) {
       validateString(name, 'name', { minLength: 1, maxLength: 100 }, req.id);
     }
-    if (code !== undefined) {
-      validateString(code, 'code', { required: false, maxLength: 50 }, req.id);
-    }
     if (description !== undefined) {
       validateString(description, 'description', { required: false }, req.id);
     }
@@ -416,7 +409,7 @@ export const updateCompany = async (req, res) => {
     // Update company via service
     const company = await companyService.updateCompany(
       id,
-      { name, code, description, isActive },
+      { name, description, isActive },
       { userId: req.user.id }
     );
 
