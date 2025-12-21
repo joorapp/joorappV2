@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LoginService from '../../../core/service/LoginService';
 import { useCompanies } from '../../../context/CompaniesContext';
+import { useAuth } from '../../../context/AuthContext';
 import { Container, Row, Col, Card, CardBody, Alert, Input, Label, Form, FormFeedback } from 'reactstrap';
 
 // Formik validation
@@ -19,6 +20,7 @@ const Login = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { setCompanies } = useCompanies();
+  const { setUser } = useAuth();
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,25 +56,59 @@ const Login = () => {
 
         // Handle successful login response
         if (response.data?.success && response.data?.data) {
-          const { access_token, refresh_token } = response.data.data;
+          const { access_token, refresh_token, companies, keycloak_global_role } = response.data.data;
 
           if (access_token && refresh_token) {
             // Store tokens separately in localStorage
             localStorage.setItem('accessToken', access_token);
             localStorage.setItem('refreshToken', refresh_token);
             
-            // Fetch companies after successful login (uses authenticated interceptor)
-            // Error handling is done by interceptor, so we just catch and continue
-            try {
-              const companiesResponse = await LoginService.getCompanies();
-              if (companiesResponse.data?.success && companiesResponse.data?.data) {
-                // Store companies data in context
-                setCompanies(companiesResponse.data.data);
-                console.log('Companies fetched and stored successfully:', companiesResponse.data.data);
+            // Store keycloak_global_role in localStorage
+            if (keycloak_global_role) {
+              localStorage.setItem('keycloak_global_role', keycloak_global_role);
+            }
+            
+            // Store companies from login response (companies are included in the response)
+            if (companies && Array.isArray(companies) && companies.length > 0) {
+              setCompanies(companies);
+
+              // Select first company and get user data
+              try {
+                const companyId = companies[0].id;
+                const selectResponse = await LoginService.selectCompany(companyId);
+                
+                if (selectResponse.data?.success && selectResponse.data?.data?.user) {
+                  // Map keycloak_global_role to user role and save user to context
+                  const userData = {
+                    ...selectResponse.data.data.user,
+                    role: keycloak_global_role === 'SUPER_ADMIN' ? 'superadmin' : 'company' as const,
+                  };
+                  setUser(userData);
+                }
+
+                // Route based on keycloak_global_role after company selection
+                if (keycloak_global_role === 'SUPER_ADMIN') {
+                  navigate('/superadmin');
+                } else {
+                  navigate('/company');
+                }
+              } catch (selectError) {
+                // Interceptor already shows error toast, continue with login
+                // User will be set from profile API on next page load if needed
+                // Route based on keycloak_global_role even if selectCompany fails
+                if (keycloak_global_role === 'SUPER_ADMIN') {
+                  navigate('/superadmin');
+                } else {
+                  navigate('/company');
+                }
               }
-            } catch (companiesError) {
-              // Interceptor already shows error toast, just continue with login
-              console.error('Failed to fetch companies:', companiesError);
+            } else {
+              // No companies, route based on role
+              if (keycloak_global_role === 'SUPER_ADMIN') {
+                navigate('/superadmin');
+              } else {
+                navigate('/company');
+              }
             }
 
             // Store remember me preference
@@ -81,9 +117,6 @@ const Login = () => {
             } else {
               localStorage.removeItem('rememberMe');
             }
-
-            // Redirect to dashboard
-            navigate('/dashboard');
           } else {
             setError(response.data?.message || t('Login.errors.invalidResponse'));
           }

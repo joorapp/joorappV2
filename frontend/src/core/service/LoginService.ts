@@ -25,5 +25,12 @@ export default class LoginService {
     // Use authenticated interceptor (token will be added automatically)
     return HttpUtil.get(API_ROUTES.LOGIN.GET_COMPANIES);
   }
+
+  static selectCompany(companyId: string) {
+    // Use authenticated interceptor (token will be added automatically)
+    return HttpUtil.post(
+      API_ROUTES.LOGIN.SELECT_COMPANY.replace("<companyId>", companyId)
+    );
+  }
 }
 

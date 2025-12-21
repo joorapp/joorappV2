@@ -14,6 +14,7 @@ const API_ROUTES = {
     GET_PROFILE: API_PATH + "/auth/profile",
     REFRESH_TOKEN: API_PATH + "/auth/refresh",
     GET_COMPANIES: API_PATH + "/auth/companies",
+    SELECT_COMPANY: API_PATH + "/auth/companies/<companyId>/select",
   },
   USER: {
     GET_USERS: API_PATH + "/users?pageSize=<pageSize>&pageNumber=<pageNumber>&key=<key>",
