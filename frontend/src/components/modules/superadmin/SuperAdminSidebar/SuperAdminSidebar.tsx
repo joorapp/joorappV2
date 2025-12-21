@@ -240,6 +240,18 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = () => {
                   <span>Log</span>
                 </Link>
               </li>
+              <li>
+                <Link to="/superadmin/Loglist">
+                  <i className='bx bx-layer'    ></i>
+                  <span>Ticket</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/superadmin/Loglist">
+                  <i className='bx bx-layer'    ></i>
+                  <span>Create plan</span>
+                </Link>
+              </li>
 
             </ul>
           </div>

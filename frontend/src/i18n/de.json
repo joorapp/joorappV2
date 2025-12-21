@@ -142,6 +142,38 @@
       "unlimitedData": "Unbegrenzte individuelle Daten"
     }
   },
+  "UserList": {
+    "user": "Benutzer",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "role": "Rolle",
+    "status": "Status",
+    "lastLogin": "Letzte Anmeldung",
+    "action": "Aktion",
+    "statusActive": "Aktiv",
+    "statusPending": "Ausstehend",
+    "statusInactive": "Inaktiv",
+    "roleSuperAdmin": "Super Admin",
+    "roleCompany": "Unternehmen",
+    "searchUsers": "Benutzer suchen...",
+    "createUser": "Benutzer erstellen",
+    "editUser": "Benutzer bearbeiten",
+    "updateUser": "Benutzer aktualisieren",
+    "userDetails": "Benutzerdetails",
+    "name": "Name",
+    "password": "Passwort",
+    "enterName": "Benutzernamen eingeben",
+    "enterEmail": "E-Mail-Adresse eingeben",
+    "enterPhone": "Telefonnummer eingeben",
+    "enterPassword": "Passwort eingeben",
+    "createdAt": "Erstellt am",
+    "noUsersFound": "Keine Benutzer gefunden",
+    "fillAllFields": "Bitte füllen Sie alle Felder aus",
+    "confirmDelete": "Löschen bestätigen",
+    "areYouSure": "Sind Sie sicher?",
+    "deleteConfirmation": "Möchten Sie wirklich löschen",
+    "cannotBeUndone": "Diese Aktion kann nicht rückgängig gemacht werden"
+  },
   "Roles": {
     "superadmin": "Super Administrator",
     "company": "Unternehmen"

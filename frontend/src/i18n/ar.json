@@ -142,6 +142,38 @@
       "unlimitedData": "بيانات فردية غير محدودة"
     }
   },
+  "UserList": {
+    "user": "المستخدم",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "role": "الدور",
+    "status": "الحالة",
+    "lastLogin": "آخر تسجيل دخول",
+    "action": "الإجراء",
+    "statusActive": "نشط",
+    "statusPending": "قيد الانتظار",
+    "statusInactive": "غير نشط",
+    "roleSuperAdmin": "المسؤول الرئيسي",
+    "roleCompany": "الشركة",
+    "searchUsers": "البحث عن المستخدمين...",
+    "createUser": "إنشاء مستخدم",
+    "editUser": "تعديل المستخدم",
+    "updateUser": "تحديث المستخدم",
+    "userDetails": "تفاصيل المستخدم",
+    "name": "الاسم",
+    "password": "كلمة المرور",
+    "enterName": "أدخل اسم المستخدم",
+    "enterEmail": "أدخل عنوان البريد الإلكتروني",
+    "enterPhone": "أدخل رقم الهاتف",
+    "enterPassword": "أدخل كلمة المرور",
+    "createdAt": "تاريخ الإنشاء",
+    "noUsersFound": "لم يتم العثور على مستخدمين",
+    "fillAllFields": "يرجى ملء جميع الحقول",
+    "confirmDelete": "تأكيد الحذف",
+    "areYouSure": "هل أنت متأكد؟",
+    "deleteConfirmation": "هل تريد حقاً حذف",
+    "cannotBeUndone": "لا يمكن التراجع عن هذا الإجراء"
+  },
   "Roles": {
     "superadmin": "المسؤول الرئيسي",
     "company": "شركة"
