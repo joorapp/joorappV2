@@ -53,7 +53,6 @@ const Login = () => {
           email: values.email,
           password: values.password,
         });
-
         // Handle successful login response
         if (response.data?.success && response.data?.data) {
           const { access_token, refresh_token, companies, keycloak_global_role } = response.data.data;
