@@ -9,8 +9,9 @@ export type UserRole = 'superadmin' | 'company';
 export interface User {
   id: string;
   email: string;
-  role: UserRole;
-  name: string;
+  firstName: string;
+  lastName: string;
+  role?: UserRole; // Optional, can be derived from other data
   companyId?: string; // For company users
 }
 
@@ -34,9 +35,41 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const STORAGE_KEY = 'user';
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
+  // Initialize user from localStorage on mount
+  const [user, setUserState] = useState<User | null>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Failed to parse user from localStorage:', error);
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = useState(true);
+
+  // Sync user to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      if (user) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error('Failed to save user to localStorage:', error);
+    }
+  }, [user]);
+
+  // Wrapper function to update user state
+  const setUser = (newUser: User | null) => {
+    setUserState(newUser);
+  };
 
   // Check for existing session on mount
   useEffect(() => {
@@ -48,24 +81,38 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           try {
             const response = await LoginService.getProfile();
             if (response.data?.success && response.data?.data?.user) {
-              setUser(response.data.data.user);
+              // Map keycloak_global_role to user role if available
+              const keycloakRole = localStorage.getItem('keycloak_global_role');
+              const userData = {
+                ...response.data.data.user,
+                role: keycloakRole === 'SUPER_ADMIN' ? 'superadmin' : (keycloakRole ? 'company' : undefined) as UserRole | undefined,
+              };
+              setUser(userData);
             } else {
+              setUser(null);
               localStorage.removeItem('accessToken');
               localStorage.removeItem('refreshToken');
               localStorage.removeItem('authToken'); // Clean up old key
+              localStorage.removeItem('keycloak_global_role'); // Clear role from localStorage
             }
           } catch (error) {
             // API call failed, clear tokens
+            setUser(null);
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('authToken'); // Clean up old key
+            localStorage.removeItem('keycloak_global_role'); // Clear role from localStorage
           }
+        } else {
+          setUser(null);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
+        setUser(null);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('authToken'); // Clean up old key
+        localStorage.removeItem('keycloak_global_role'); // Clear role from localStorage
       } finally {
         setIsLoading(false);
       }
@@ -121,15 +168,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('authToken'); // Clean up old key
+      localStorage.removeItem(STORAGE_KEY); // Clear user from localStorage
+      localStorage.removeItem('keycloak_global_role'); // Clear role from localStorage
     }
   };
 
   const hasRole = (role: UserRole): boolean => {
-    return user?.role === role;
+    // Check user.role first
+    if (user?.role) {
+      return user.role === role;
+    }
+    // Fallback to keycloak_global_role from localStorage if user.role is not set
+    const keycloakRole = localStorage.getItem('keycloak_global_role');
+    if (keycloakRole === 'SUPER_ADMIN' && role === 'superadmin') {
+      return true;
+    }
+    if (keycloakRole && keycloakRole !== 'SUPER_ADMIN' && role === 'company') {
+      return true;
+    }
+    return false;
   };
 
   const hasAnyRole = (roles: UserRole[]): boolean => {
-    return user ? roles.includes(user.role) : false;
+    return user?.role ? roles.includes(user.role) : false;
   };
 
   const value: AuthContextType = {
