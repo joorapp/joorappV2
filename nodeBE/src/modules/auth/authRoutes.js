@@ -5,7 +5,7 @@
  */
 
 import express from 'express';
-import { login, getUserCompanies, selectCompany, getCurrentContext, refreshToken, logout } from './authController.js';
+import { login, selectCompany, getCurrentContext, refreshToken, logout } from './authController.js';
 import { authMiddleware } from '../../middleware/authMiddleware.js';
 import { asyncHandler } from '../../middleware/errorHandler.js';
 
@@ -18,7 +18,7 @@ const router = express.Router();
  *     tags:
  *       - Auth
  *     summary: Login user with email and password
- *     description: Authenticates user with Keycloak and returns access token and refresh token
+ *     description: Authenticates user with Keycloak, syncs user to database, fetches companies, and returns tokens with user data including keycloak_global_role
  *     requestBody:
  *       required: true
  *       content:
@@ -36,7 +36,55 @@ const router = express.Router();
  *                 - type: object
  *                   properties:
  *                     data:
- *                       $ref: '#/components/schemas/TokenResponse'
+ *                       type: object
+ *                       properties:
+ *                         access_token:
+ *                           type: string
+ *                           example: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ..."
+ *                         refresh_token:
+ *                           type: string
+ *                           example: "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ..."
+ *                         expires_in:
+ *                           type: number
+ *                           example: 300
+ *                         refresh_expires_in:
+ *                           type: number
+ *                           example: 1800
+ *                         token_type:
+ *                           type: string
+ *                           example: "Bearer"
+ *                         keycloak_global_role:
+ *                           type: string
+ *                           enum: [SUPER_ADMIN, COMPANY_ADMIN, COMPANY_USER]
+ *                           example: "SUPER_ADMIN"
+ *                           description: "User's global role from Keycloak"
+ *                         companies:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                                 format: uuid
+ *                                 example: "550e8400-e29b-41d4-a716-446655440000"
+ *                               name:
+ *                                 type: string
+ *                                 example: "Company Name"
+ *                               isActive:
+ *                                 type: boolean
+ *                                 example: true
+ *                               role:
+ *                                 $ref: '#/components/schemas/CompanyRole'
+ *                               companyUser:
+ *                                 type: object
+ *                                 properties:
+ *                                   id:
+ *                                     type: string
+ *                                     format: uuid
+ *                                     example: "770e8400-e29b-41d4-a716-446655440002"
+ *                                   isActive:
+ *                                     type: boolean
+ *                                     example: true
  *             example:
  *               success: true
  *               message: "Login successful"
@@ -46,6 +94,20 @@ const router = express.Router();
  *                 expires_in: 300
  *                 refresh_expires_in: 1800
  *                 token_type: "Bearer"
+ *                 keycloak_global_role: "SUPER_ADMIN"
+ *                 companies:
+ *                   - id: "550e8400-e29b-41d4-a716-446655440000"
+ *                     name: "Company Name"
+ *                     isActive: true
+ *                     role:
+ *                       id: "660e8400-e29b-41d4-a716-446655440001"
+ *                       name: "CompanyAdmin"
+ *                       code: "COMPANY_ADMIN"
+ *                       description: "Company administrator role"
+ *                     companyUser:
+ *                       id: "770e8400-e29b-41d4-a716-446655440002"
+ *                       isActive: true
+ *
  *               timestamp: "2024-11-23T12:00:00.000Z"
  *               meta:
  *                 requestId: "req-1234567890"
@@ -61,80 +123,6 @@ const router = express.Router();
  */
 router.post('/login', asyncHandler(login));
 
-/**
- * @swagger
- * /api/v2/auth/companies:
- *   get:
- *     tags:
- *       - Auth
- *     summary: Get user's associated companies
- *     description: Returns list of companies the authenticated user has access to
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Companies retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           id:
- *                             type: string
- *                             format: uuid
- *                             example: "550e8400-e29b-41d4-a716-446655440000"
- *                           name:
- *                             type: string
- *                             example: "Company Name"
- *                           isActive:
- *                             type: boolean
- *                             example: true
- *                           role:
- *                             $ref: '#/components/schemas/CompanyRole'
- *                           companyUser:
- *                             type: object
- *                             properties:
- *                               id:
- *                                 type: string
- *                                 format: uuid
- *                                 example: "770e8400-e29b-41d4-a716-446655440002"
- *                               isActive:
- *                                 type: boolean
- *                                 example: true
- *             example:
- *               success: true
- *               message: "Companies retrieved successfully"
- *               data:
- *                 - id: "550e8400-e29b-41d4-a716-446655440000"
- *                   name: "Company Name"
- *                   isActive: true
- *                   role:
- *                     id: "660e8400-e29b-41d4-a716-446655440001"
- *                     name: "CompanyAdmin"
- *                     code: "COMPANY_ADMIN"
- *                     description: "Company administrator role"
- *                   companyUser:
- *                     id: "770e8400-e29b-41d4-a716-446655440002"
- *                     isActive: true
- *               timestamp: "2024-11-23T12:00:00.000Z"
- *               meta:
- *                 requestId: "req-1234567890"
- *                 endpoint: "/api/v2/auth/companies"
- *                 method: "GET"
- *                 duration: 156
- *       401:
- *         $ref: '#/components/responses/AuthenticationRequired'
- *       500:
- *         $ref: '#/components/responses/InternalServerError'
- */
-router.get('/companies', authMiddleware, asyncHandler(getUserCompanies));
 
 /**
  * @swagger

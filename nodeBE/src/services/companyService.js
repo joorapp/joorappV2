@@ -17,7 +17,6 @@ const logger = createModuleLogger('companyService');
  * Create new company
  * @param {Object} companyData - Company data
  * @param {string} companyData.name - Company name
- * @param {string} [companyData.code] - Company code
  * @param {string} [companyData.description] - Company description
  * @param {boolean} [companyData.isActive] - Company active status
  * @param {Object} context - Audit context { userId, companyId? }
@@ -27,15 +26,14 @@ const logger = createModuleLogger('companyService');
  * @example
  * const company = await createCompany({
  *   name: 'Acme Corp',
- *   code: 'ACME',
  *   description: 'Leading technology company',
  *   isActive: true
  * }, { userId: 'admin-uuid' });
  */
 export const createCompany = async (companyData, context) => {
-  const { name, code, description, isActive = true } = companyData;
+  const { name, description, isActive = true } = companyData;
   
-  logger.debug('Creating company', { name, code });
+  logger.debug('Creating company', { name });
   
   // Check name uniqueness
   const existingByName = await companyRepository.findOne({ name });
@@ -43,19 +41,10 @@ export const createCompany = async (companyData, context) => {
     throw new ConflictError('Company with this name already exists', { field: 'name', value: name });
   }
   
-  // Check code uniqueness if code is provided
-  if (code) {
-    const existingByCode = await companyRepository.findOne({ code });
-    if (existingByCode) {
-      throw new ConflictError('Company with this code already exists', { field: 'code', value: code });
-    }
-  }
-  
   // Create company
   const company = await companyRepository.create(
     {
       name,
-      code: code || null,
       description: description || null,
       isActive
     },
@@ -67,7 +56,6 @@ export const createCompany = async (companyData, context) => {
   return {
     id: company.id,
     name: company.name,
-    code: company.code,
     description: company.description,
     isActive: company.isActive,
     createdDate: company.createdDate,
@@ -92,7 +80,6 @@ export const getCompanyById = async (companyId) => {
   return {
     id: company.id,
     name: company.name,
-    code: company.code,
     description: company.description,
     isActive: company.isActive,
     createdDate: company.createdDate,
@@ -119,7 +106,6 @@ export const getCompanyByIdIncludingDeleted = async (companyId) => {
   return {
     id: company.id,
     name: company.name,
-    code: company.code,
     description: company.description,
     isActive: company.isActive,
     isDeleted: company.isDeleted,
@@ -137,7 +123,6 @@ export const getCompanyByIdIncludingDeleted = async (companyId) => {
  * @param {string} companyId - Company UUID
  * @param {Object} companyData - Company data to update
  * @param {string} [companyData.name] - Company name
- * @param {string} [companyData.code] - Company code
  * @param {string} [companyData.description] - Company description
  * @param {boolean} [companyData.isActive] - Company active status
  * @param {Object} context - Audit context { userId }
@@ -164,20 +149,9 @@ export const updateCompany = async (companyId, companyData, context) => {
     }
   }
   
-  // Check code uniqueness if code is being changed
-  if (companyData.code !== undefined && companyData.code !== company.code) {
-    if (companyData.code) {
-      const existing = await companyRepository.findOne({ code: companyData.code });
-      if (existing) {
-        throw new ConflictError('Company with this code already exists', { field: 'code', value: companyData.code });
-      }
-    }
-  }
-  
   // Build update object
   const updateData = {};
   if (companyData.name !== undefined) updateData.name = companyData.name;
-  if (companyData.code !== undefined) updateData.code = companyData.code || null;
   if (companyData.description !== undefined) updateData.description = companyData.description;
   if (companyData.isActive !== undefined) updateData.isActive = companyData.isActive;
   
@@ -189,7 +163,6 @@ export const updateCompany = async (companyId, companyData, context) => {
   return {
     id: updated.id,
     name: updated.name,
-    code: updated.code,
     description: updated.description,
     isActive: updated.isActive,
     createdDate: updated.createdDate,
@@ -302,7 +275,6 @@ export const restoreCompany = async (companyId, context) => {
   return {
     id: company.id,
     name: company.name,
-    code: company.code,
     description: company.description,
     isActive: company.isActive,
     createdDate: company.createdDate,

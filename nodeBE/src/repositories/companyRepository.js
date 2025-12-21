@@ -67,8 +67,7 @@ export class CompanyRepository extends BaseRepository {
   }
 
   /**
-   * Search companies by name or code
-   * Searches with OR conditions across name and code fields
+   * Search companies by name
    * @param {string} searchTerm - Search term to match
    * @param {Object} pagination - Pagination parameters { limit, offset }
    * @param {Array} sort - Sequelize order array (e.g., [['name', 'ASC']])
@@ -83,12 +82,9 @@ export class CompanyRepository extends BaseRepository {
     
     const { limit = 10, offset = 0 } = pagination;
     
-    // Build search filter with OR conditions
+    // Build search filter
     const where = searchTerm ? {
-      [Op.or]: [
-        { name: { [Op.like]: `%${searchTerm}%` } },
-        { code: { [Op.like]: `%${searchTerm}%` } }
-      ]
+      name: { [Op.like]: `%${searchTerm}%` }
     } : {};
     
     return await this.Model.findAndCountAll({

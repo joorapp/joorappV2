@@ -175,7 +175,6 @@ router.get('/dashboard', authMiddleware, asyncHandler(getDashboard));
  *               data:
  *                 id: "550e8400-e29b-41d4-a716-446655440001"
  *                 name: "Acme Corporation"
- *                 code: "ACME001"
  *                 description: "Leading provider of innovative solutions"
  *                 isActive: true
  *                 createdDate: "2024-11-23T12:00:00.000Z"
@@ -269,7 +268,6 @@ router.post('/companies', authMiddleware, asyncHandler(createCompany));
  *               data:
  *                 - id: "550e8400-e29b-41d4-a716-446655440001"
  *                   name: "Acme Corporation"
- *                   code: "ACME001"
  *                   description: "Leading provider"
  *                   isActive: true
  *                   createdDate: "2024-11-23T12:00:00.000Z"
@@ -325,7 +323,6 @@ router.get('/companies', authMiddleware, asyncHandler(getCompanies));
  *               data:
  *                 id: "550e8400-e29b-41d4-a716-446655440001"
  *                 name: "Acme Corporation"
- *                 code: "ACME001"
  *                 description: "Leading provider"
  *                 isActive: true
  *                 createdDate: "2024-11-23T12:00:00.000Z"
@@ -374,11 +371,6 @@ router.get('/companies/:id', authMiddleware, asyncHandler(getCompanyById));
  *                 maxLength: 100
  *                 description: Company name
  *                 example: "Updated Acme Corp"
- *               code:
- *                 type: string
- *                 maxLength: 50
- *                 description: Company code (unique identifier, max 50 characters)
- *                 example: "ACME002"
  *               description:
  *                 type: string
  *                 description: Company description
@@ -405,7 +397,6 @@ router.get('/companies/:id', authMiddleware, asyncHandler(getCompanyById));
  *               data:
  *                 id: "550e8400-e29b-41d4-a716-446655440001"
  *                 name: "Updated Acme Corp"
- *                 code: "ACME002"
  *                 description: "Updated description"
  *                 isActive: true
  *                 createdDate: "2024-11-23T12:00:00.000Z"

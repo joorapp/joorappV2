@@ -137,7 +137,6 @@ describe('Swagger API Integration', () => {
       
       // Verify Auth endpoints
       expect(response.body.paths).toHaveProperty('/api/v2/auth/login');
-      expect(response.body.paths).toHaveProperty('/api/v2/auth/companies');
       
       // Verify Users endpoints
       expect(response.body.paths).toHaveProperty('/api/v2/users/list');

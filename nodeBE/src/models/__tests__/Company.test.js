@@ -33,8 +33,7 @@ describe('Company Model', () => {
     it('should create a company with audit fields', async () => {
       // Arrange
       const companyData = createCompanyData({
-        name: 'Test Corporation',
-        code: 'TESTCORP'
+        name: 'Test Corporation'
       });
 
       // Act
@@ -44,7 +43,6 @@ describe('Company Model', () => {
       expect(company).toBeDefined();
       expect(company.id).toBeValidUUID();
       expect(company.name).toBe('Test Corporation');
-      expect(company.code).toBe('TESTCORP');
       expect(company.isActive).toBe(true);
       
       // Verify audit fields
@@ -227,39 +225,10 @@ describe('Company Model', () => {
       // Act & Assert
       await expect(
         Company.create(
-          createCompanyData({ name, code: 'DIFFERENT' }),
+          createCompanyData({ name }),
           { context: testContext }
         )
       ).rejects.toThrow();
-    });
-
-    it('should enforce unique company code', async () => {
-      // Arrange
-      const code = 'UNIQUE';
-      await Company.create(
-        createCompanyData({ code }),
-        { context: testContext }
-      );
-
-      // Act & Assert
-      await expect(
-        Company.create(
-          createCompanyData({ name: 'Different Name', code }),
-          { context: testContext }
-        )
-      ).rejects.toThrow();
-    });
-
-    it('should allow null code', async () => {
-      // Arrange
-      const companyData = createCompanyData({ code: null });
-
-      // Act
-      const company = await Company.create(companyData, { context: testContext });
-
-      // Assert
-      expect(company).toBeDefined();
-      expect(company.code).toBeNull();
     });
 
     it('should allow null description', async () => {

@@ -138,7 +138,6 @@ describe('Super Admin API Integration', () => {
     it('should create company when authenticated as super admin', async () => {
       const companyData = {
         name: `Test Company ${Date.now()}`,
-        code: `TEST${Date.now()}`,
         description: 'Test company description'
       };
 
@@ -152,7 +151,6 @@ describe('Super Admin API Integration', () => {
       expect(response.body.message).toBeDefined();
       expect(response.body.data).toBeDefined();
       expect(response.body.data.name).toBe(companyData.name);
-      expect(response.body.data.code).toBe(companyData.code);
       expect(response.body.meta).toBeDefined();
     });
 

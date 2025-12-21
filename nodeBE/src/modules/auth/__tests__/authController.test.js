@@ -25,10 +25,14 @@ const mockLogger = {
 
 const mockCreateModuleLogger = jest.fn(() => mockLogger);
 const mockLogPerformance = jest.fn();
+const mockLogInfo = jest.fn();
+const mockLogError = jest.fn();
 
 jest.unstable_mockModule('../../../utils/logger.js', () => ({
   createModuleLogger: mockCreateModuleLogger,
-  logPerformance: mockLogPerformance
+  logPerformance: mockLogPerformance,
+  logInfo: mockLogInfo,
+  logError: mockLogError
 }));
 
 // Mock responseHelpers
@@ -53,16 +57,33 @@ jest.unstable_mockModule('../../../utils/validators.js', () => ({
 const mockLoginUser = jest.fn();
 const mockRefreshToken = jest.fn();
 const mockLogoutUser = jest.fn();
+const mockVerifyToken = jest.fn();
+const mockGetUserFromToken = jest.fn();
 
 jest.unstable_mockModule('../../../services/keycloakService.js', () => ({
   loginUser: mockLoginUser,
   refreshToken: mockRefreshToken,
-  logoutUser: mockLogoutUser
+  logoutUser: mockLogoutUser,
+  verifyToken: mockVerifyToken,
+  getUserFromToken: mockGetUserFromToken
 }));
 
 // Mock models
 const mockCompanyUser = {
   findAll: jest.fn(),
+  findOne: jest.fn()
+};
+
+const mockUser = {
+  findOne: jest.fn(),
+  create: jest.fn()
+};
+
+const mockCompany = {
+  findOne: jest.fn()
+};
+
+const mockCompanyRole = {
   findOne: jest.fn()
 };
 
@@ -74,9 +95,9 @@ const mockUserCompanyContext = {
 
 jest.unstable_mockModule('../../../models/index.js', () => ({
   CompanyUser: mockCompanyUser,
-  Company: {},
-  CompanyRole: {},
-  User: {},
+  Company: mockCompany,
+  CompanyRole: mockCompanyRole,
+  User: mockUser,
   UserCompanyContext: mockUserCompanyContext
 }));
 
@@ -126,12 +147,16 @@ describe('Auth Controller', () => {
   });
 
   describe('login', () => {
-    it('should login successfully with valid credentials', async () => {
+    it('should login successfully with valid credentials and return tokens, role, and companies', async () => {
       // Arrange
       req.body = {
         email: 'user@example.com',
         password: 'password123'
       };
+
+      const userId = uuidv4();
+      const companyId = uuidv4();
+      const roleId = uuidv4();
 
       const mockLoginResponse = {
         success: true,
@@ -143,7 +168,64 @@ describe('Auth Controller', () => {
         }
       };
 
+      const mockDecodedToken = {
+        sub: 'keycloak-user-id',
+        email: 'user@example.com',
+        given_name: 'John',
+        family_name: 'Doe',
+        realm_access: { roles: ['SUPER_ADMIN'] }
+      };
+
+      const mockUserInfo = {
+        keycloakId: 'keycloak-user-id',
+        email: 'user@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        keycloakGlobalRole: 'SUPER_ADMIN',
+        sessionState: 'session-123'
+      };
+
+      const mockDbUser = {
+        id: userId,
+        keycloakId: 'keycloak-user-id',
+        email: 'user@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        keycloakGlobalRole: 'SUPER_ADMIN',
+        isActive: true,
+        lastLoginAt: new Date(),
+        save: jest.fn().mockResolvedValue(undefined)
+      };
+
+      const mockCompanyUsers = [
+        {
+          id: uuidv4(),
+          company: {
+            id: companyId,
+            name: 'Test Company',
+            isActive: true
+          },
+          role: {
+            id: roleId,
+            name: 'CompanyAdmin',
+            code: 'COMPANY_ADMIN',
+            description: 'Administrator'
+          },
+          isActive: true
+        }
+      ];
+
       mockLoginUser.mockResolvedValue(mockLoginResponse);
+      mockVerifyToken.mockResolvedValue({
+        success: true,
+        decoded: mockDecodedToken
+      });
+      mockGetUserFromToken.mockReturnValue({
+        success: true,
+        user: mockUserInfo
+      });
+      mockUser.findOne.mockResolvedValue(mockDbUser);
+      mockCompanyUser.findAll.mockResolvedValue(mockCompanyUsers);
 
       // Act
       await authController.login(req, res);
@@ -155,18 +237,25 @@ describe('Auth Controller', () => {
       );
       expect(mockValidateEmail).toHaveBeenCalledWith('user@example.com', 'email', 'test-request-id');
       expect(mockLoginUser).toHaveBeenCalledWith('user@example.com', 'password123');
-      expect(mockLogger.info).toHaveBeenCalledWith('Login successful', {
-        requestId: 'test-request-id',
-        email: 'user@example.com',
-        sessionState: 'session-123'
-      });
+      expect(mockVerifyToken).toHaveBeenCalledWith('access-token');
+      expect(mockGetUserFromToken).toHaveBeenCalledWith(mockDecodedToken);
+      expect(mockUser.findOne).toHaveBeenCalled();
+      expect(mockCompanyUser.findAll).toHaveBeenCalled();
       expect(mockSuccessResponse).toHaveBeenCalledWith(
         'Login successful',
-        {
+        expect.objectContaining({
           access_token: 'access-token',
           refresh_token: 'refresh-token',
-          expires_in: 3600
-        },
+          expires_in: 3600,
+          keycloak_global_role: 'SUPER_ADMIN',
+          companies: expect.arrayContaining([
+            expect.objectContaining({
+              id: companyId,
+              name: 'Test Company',
+              isActive: true
+            })
+          ])
+        }),
         {},
         req,
         expect.any(Number)
@@ -234,16 +323,52 @@ describe('Auth Controller', () => {
         password: 'password123'
       };
 
+      const userId = uuidv4();
+
       mockValidateRequired.mockImplementation(() => {}); // Don't throw
       mockValidateEmail.mockImplementation(() => {}); // Don't throw
 
-      mockLoginUser.mockResolvedValue({
+      const mockLoginResponse = {
         success: true,
         data: {
           access_token: 'token',
+          refresh_token: 'refresh-token',
+          expires_in: 3600,
           session_state: 'session-123'
         }
+      };
+
+      const mockDecodedToken = {
+        sub: 'keycloak-user-id',
+        email: 'user@example.com',
+        realm_access: { roles: ['COMPANY_USER'] }
+      };
+
+      const mockUserInfo = {
+        keycloakId: 'keycloak-user-id',
+        email: 'user@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        keycloakGlobalRole: 'COMPANY_USER',
+        sessionState: 'session-123'
+      };
+
+      const mockDbUser = {
+        id: userId,
+        save: jest.fn().mockResolvedValue(undefined)
+      };
+
+      mockLoginUser.mockResolvedValue(mockLoginResponse);
+      mockVerifyToken.mockResolvedValue({
+        success: true,
+        decoded: mockDecodedToken
       });
+      mockGetUserFromToken.mockReturnValue({
+        success: true,
+        user: mockUserInfo
+      });
+      mockUser.findOne.mockResolvedValue(mockDbUser);
+      mockCompanyUser.findAll.mockResolvedValue([]);
 
       // Act
       await authController.login(req, res);
@@ -252,64 +377,90 @@ describe('Auth Controller', () => {
       const responseData = mockSuccessResponse.mock.calls[0][1];
       expect(responseData).not.toHaveProperty('session_state');
       expect(responseData).toHaveProperty('access_token');
+      expect(responseData).toHaveProperty('keycloak_global_role');
+      expect(responseData).toHaveProperty('companies');
     });
-  });
 
-  describe('getUserCompanies', () => {
-    it('should return user companies successfully', async () => {
+    it('should throw AuthenticationFailedError when token verification fails', async () => {
       // Arrange
-      const userId = uuidv4();
-      req.user = {
-        id: userId,
-        email: 'user@example.com'
+      req.body = {
+        email: 'user@example.com',
+        password: 'password123'
       };
 
-      const mockCompanyUsers = [
-        {
-          id: uuidv4(),
-          company: {
-            id: uuidv4(),
-            name: 'Company 1',
-            isActive: true
-          },
-          role: {
-            id: uuidv4(),
-            name: 'Admin',
-            code: 'ADMIN',
-            description: 'Administrator'
-          }
+      mockValidateRequired.mockImplementation(() => {});
+      mockValidateEmail.mockImplementation(() => {});
+
+      mockLoginUser.mockResolvedValue({
+        success: true,
+        data: {
+          access_token: 'token',
+          refresh_token: 'refresh-token',
+          expires_in: 3600
         }
-      ];
-
-      mockCompanyUser.findAll.mockResolvedValue(mockCompanyUsers);
-
-      // Act
-      await authController.getUserCompanies(req, res);
-
-      // Assert
-      expect(mockCompanyUser.findAll).toHaveBeenCalledWith({
-        where: {
-          userId: userId,
-          isActive: true,
-          isDeleted: false
-        },
-        include: expect.any(Array)
       });
-      expect(mockLogger.info).toHaveBeenCalledWith('User companies retrieved successfully', {
-        requestId: 'test-request-id',
-        userId: userId,
-        companyCount: 1
-      });
-      expect(res.status).toHaveBeenCalledWith(200);
-    });
 
-    it('should throw UnauthorizedError when user is not authenticated', async () => {
-      // Arrange
-      req.user = null;
+      mockVerifyToken.mockResolvedValue({
+        success: false,
+        error: 'Invalid token'
+      });
 
       // Act & Assert
-      await expect(authController.getUserCompanies(req, res)).rejects.toThrow(UnauthorizedError);
-      expect(mockCompanyUser.findAll).not.toHaveBeenCalled();
+      await expect(authController.login(req, res)).rejects.toThrow(AuthenticationFailedError);
+    });
+
+    it('should throw AuthenticationFailedError when company fetch fails', async () => {
+      // Arrange
+      req.body = {
+        email: 'user@example.com',
+        password: 'password123'
+      };
+
+      const userId = uuidv4();
+
+      mockValidateRequired.mockImplementation(() => {});
+      mockValidateEmail.mockImplementation(() => {});
+
+      const mockLoginResponse = {
+        success: true,
+        data: {
+          access_token: 'token',
+          refresh_token: 'refresh-token',
+          expires_in: 3600
+        }
+      };
+
+      const mockDecodedToken = {
+        sub: 'keycloak-user-id',
+        email: 'user@example.com',
+        realm_access: { roles: ['COMPANY_USER'] }
+      };
+
+      const mockUserInfo = {
+        keycloakId: 'keycloak-user-id',
+        email: 'user@example.com',
+        keycloakGlobalRole: 'COMPANY_USER'
+      };
+
+      const mockDbUser = {
+        id: userId,
+        save: jest.fn().mockResolvedValue(undefined)
+      };
+
+      mockLoginUser.mockResolvedValue(mockLoginResponse);
+      mockVerifyToken.mockResolvedValue({
+        success: true,
+        decoded: mockDecodedToken
+      });
+      mockGetUserFromToken.mockReturnValue({
+        success: true,
+        user: mockUserInfo
+      });
+      mockUser.findOne.mockResolvedValue(mockDbUser);
+      mockCompanyUser.findAll.mockRejectedValue(new Error('Database error'));
+
+      // Act & Assert
+      await expect(authController.login(req, res)).rejects.toThrow();
     });
   });
 

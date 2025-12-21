@@ -4,19 +4,131 @@
  * Handles authentication and company selection endpoints
  */
 
-import { loginUser, refreshToken as refreshTokenService, logoutUser } from '../../services/keycloakService.js';
-import { createModuleLogger, logPerformance } from '../../utils/logger.js';
+import { loginUser, refreshToken as refreshTokenService, logoutUser, verifyToken, getUserFromToken } from '../../services/keycloakService.js';
+import { createModuleLogger, logPerformance, logInfo, logError } from '../../utils/logger.js';
 import { successResponse } from '../../utils/responseHelpers.js';
 import { ValidationError, UnauthorizedError, AuthenticationFailedError, ForbiddenError, SessionError, BadRequestError } from '../../utils/errors.js';
 import { validateRequired, validateUUID, validateEmail } from '../../utils/validators.js';
+import { isSuperAdmin } from '../../constants/keycloakRoles.js';
 import { Op } from 'sequelize';
 
 // Create module-specific logger
 const logger = createModuleLogger('auth');
 
 /**
+ * Sync user from Keycloak token to database
+ * Creates or updates user record based on Keycloak data
+ * @param {Object} userInfo - User information from token
+ * @returns {Promise<User>} User instance
+ */
+const syncUserFromKeycloak = async (userInfo) => {
+  try {
+    // Dynamically import models to avoid import-time database access
+    const { User, CompanyUser, Company, CompanyRole } = await import('../../models/index.js');
+    
+    // Find existing user by Keycloak ID
+    let user = await User.findOne({
+      where: {
+        keycloakId: userInfo.keycloakId
+      }
+    });
+
+    if (user) {
+      // Update existing user
+      user.email = userInfo.email;
+      user.firstName = userInfo.firstName;
+      user.lastName = userInfo.lastName;
+      user.keycloakGlobalRole = userInfo.keycloakGlobalRole;
+      user.lastLoginAt = new Date();
+      await user.save();
+
+      logInfo('User updated from Keycloak', {
+        userId: user.id,
+        keycloakId: userInfo.keycloakId,
+        role: userInfo.keycloakGlobalRole
+      });
+    } else {
+      // Create new user
+      user = await User.create({
+        keycloakId: userInfo.keycloakId,
+        email: userInfo.email,
+        firstName: userInfo.firstName,
+        lastName: userInfo.lastName,
+        keycloakGlobalRole: userInfo.keycloakGlobalRole,
+        isActive: true,
+        lastLoginAt: new Date()
+      });
+
+      logInfo('User created from Keycloak', {
+        userId: user.id,
+        keycloakId: userInfo.keycloakId,
+        role: userInfo.keycloakGlobalRole
+      });
+    }
+
+    // If user is SUPER_ADMIN, ensure they're linked to "JOOR APP" company
+    if (isSuperAdmin(userInfo.keycloakGlobalRole)) {
+      try {
+        const joorAppCompany = await Company.findOne({
+          where: {
+            name: 'JOOR APP',
+            isDeleted: false
+          }
+        });
+
+        if (joorAppCompany) {
+          const companyRole = await CompanyRole.findOne({
+            where: {
+              name: 'CompanyAdmin',
+              isDeleted: false
+            }
+          });
+
+          if (companyRole) {
+            const existingLink = await CompanyUser.findOne({
+              where: {
+                userId: user.id,
+                companyId: joorAppCompany.id,
+                isDeleted: false
+              }
+            });
+
+            if (!existingLink) {
+              await CompanyUser.create({
+                userId: user.id,
+                companyId: joorAppCompany.id,
+                companyRoleId: companyRole.id,
+                isActive: true
+              }, {
+                context: {
+                  userId: user.id,
+                  companyId: joorAppCompany.id
+                }
+              });
+
+              logInfo('SUPER_ADMIN user linked to JOOR APP company', {
+                userId: user.id,
+                companyId: joorAppCompany.id
+              });
+            }
+          }
+        }
+      } catch (linkError) {
+        logError('Failed to link SUPER_ADMIN to JOOR APP company', linkError);
+        // Don't throw - this is not critical for login
+      }
+    }
+
+    return user;
+  } catch (error) {
+    logError('Failed to sync user from Keycloak', error);
+    throw error;
+  }
+};
+
+/**
  * Login user with credentials
- * Calls Keycloak to authenticate and returns tokens
+ * Authenticates with Keycloak, syncs user to database, fetches companies, and returns tokens with user data
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @returns {Promise<void>}
@@ -37,7 +149,7 @@ export const login = async (req, res) => {
       ip: req.ip || req.socket?.remoteAddress
     });
 
-    // Call Keycloak login service
+    // Step 1: Call Keycloak login service
     const loginResponse = await loginUser(email, password);
 
     if (!loginResponse.success) {
@@ -52,62 +164,45 @@ export const login = async (req, res) => {
       );
     }
 
-    const duration = Date.now() - startTime;
-    logPerformance('Login', duration, { requestId: req.id, email });
-
-    logger.info('Login successful', {
-      requestId: req.id,
-      email: email,
-      sessionState: loginResponse.data.session_state
-    });
-
-    // Remove session_state from response - it's sensitive and available in JWT token
-    const { session_state, ...tokenData } = loginResponse.data;
-
-    return res.status(200).json(
-      successResponse('Login successful', tokenData, {}, req, startTime)
-    );
-  } catch (error) {
-    logPerformance('Login', Date.now() - startTime, { requestId: req.id, error: true });
-    logger.error('Login error', error, {
-      requestId: req.id,
-      email: req.body?.email
-    });
-
-    // Re-throw to let errorHandler handle
-    throw error;
-  }
-};
-
-/**
- * Get user's associated companies
- * Returns list of companies the authenticated user has access to
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @returns {Promise<void>}
- */
-export const getUserCompanies = async (req, res) => {
-  const startTime = Date.now();
-
-  try {
-    // User should be attached by authMiddleware
-    if (!req.user) {
-      throw new UnauthorizedError('User not found in request', { requestId: req.id });
+    // Step 2: Decode access token to extract user information
+    const verifyResponse = await verifyToken(loginResponse.data.access_token);
+    if (!verifyResponse.success) {
+      logger.error('Token verification failed after login', {
+        requestId: req.id,
+        email: email,
+        error: verifyResponse.error
+      });
+      throw new AuthenticationFailedError(
+        'Failed to verify login token',
+        { requestId: req.id, email, error: verifyResponse.error }
+      );
     }
 
-    logger.info('Get user companies requested', {
-      requestId: req.id,
-      userId: req.user.id,
-      email: req.user.email
-    });
+    // Step 3: Extract user info from decoded token
+    const userInfoResponse = getUserFromToken(verifyResponse.decoded);
+    if (!userInfoResponse.success) {
+      logger.error('Failed to extract user from token', {
+        requestId: req.id,
+        email: email,
+        error: userInfoResponse.error
+      });
+      throw new AuthenticationFailedError(
+        'Failed to extract user information from token',
+        { requestId: req.id, email, error: userInfoResponse.error }
+      );
+    }
 
-    // Dynamically import models to avoid import-time database access
+    const userInfo = userInfoResponse.user;
+
+    // Step 4: Sync user to database
+    const user = await syncUserFromKeycloak(userInfo);
+
+    // Step 5: Fetch user's companies
     const { CompanyUser, Company, CompanyRole } = await import('../../models/index.js');
-
-    // Find all companies user has access to
+    
     const companyUsers = await CompanyUser.findAll({
       where: {
-        userId: req.user.id,
+        userId: user.id,
         isActive: true,
         isDeleted: false
       },
@@ -128,7 +223,7 @@ export const getUserCompanies = async (req, res) => {
       ]
     });
 
-    // Format response
+    // Format companies response
     const companies = companyUsers.map(cu => ({
       id: cu.company.id,
       name: cu.company.name,
@@ -146,32 +241,41 @@ export const getUserCompanies = async (req, res) => {
     }));
 
     const duration = Date.now() - startTime;
-    logPerformance('GetUserCompanies', duration, {
-      requestId: req.id,
-      userId: req.user.id,
-      count: companies.length
-    });
+    logPerformance('Login', duration, { requestId: req.id, email });
 
-    logger.info('User companies retrieved successfully', {
+    logger.info('Login successful', {
       requestId: req.id,
-      userId: req.user.id,
+      email: email,
+      userId: user.id,
+      keycloakGlobalRole: userInfo.keycloakGlobalRole,
       companyCount: companies.length
     });
 
+    // Remove session_state from response - it's sensitive and available in JWT token
+    const { session_state, ...tokenData } = loginResponse.data;
+
+    // Combine token data with user role and companies
+    const responseData = {
+      ...tokenData,
+      keycloak_global_role: userInfo.keycloakGlobalRole,
+      companies: companies
+    };
+
     return res.status(200).json(
-      successResponse('Companies retrieved successfully', companies, {}, req, startTime)
+      successResponse('Login successful', responseData, {}, req, startTime)
     );
   } catch (error) {
-    logPerformance('GetUserCompanies', Date.now() - startTime, { requestId: req.id, error: true });
-    logger.error('Get user companies error', error, {
+    logPerformance('Login', Date.now() - startTime, { requestId: req.id, error: true });
+    logger.error('Login error', error, {
       requestId: req.id,
-      userId: req.user?.id
+      email: req.body?.email
     });
 
     // Re-throw to let errorHandler handle
     throw error;
   }
 };
+
 
 /**
  * Select company for current session
@@ -370,9 +474,7 @@ export const getCurrentContext = async (req, res) => {
     const sessionState = req.user.sessionState;
 
     if (!sessionState) {
-      return res.status(400).json(
-        errorResponse('Session state not found in token', 'SESSION_ERROR', 400, null, req)
-      );
+      throw new SessionError('Session state not found in token', { requestId: req.id, userId: req.user.id });
     }
 
     logger.info('Get current context requested', {
