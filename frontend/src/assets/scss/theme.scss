@@ -8,6 +8,7 @@
 
 body {
   font-size: 13px;
+
   * {
     outline: none;
   }
@@ -912,4 +913,157 @@ aside.EmojiPickerReact.epr-main {
 
 [data-bs-theme=dark] .btn-close-white {
   filter: invert(1) grayscale(100%) brightness(0);
+}
+
+// RTL direction styles
+[dir="rtl"] {
+  body {
+    text-align: right;
+  }
+
+  .table-responsive {
+    direction: rtl;
+  }
+
+  .card,
+  .modal-content,
+  .form-control,
+  .form-select {
+    text-align: right;
+  }
+
+  // Adjust padding and margin for RTL in utility classes
+  .ms-1,
+  .ms-2,
+  .ms-3,
+  .ms-4,
+  .ms-5 {
+    margin-left: 0 !important;
+    margin-right: var(--bs-gutter-x, 0.25rem) !important;
+  }
+
+  .me-1,
+  .me-2,
+  .me-3,
+  .me-4,
+  .me-5 {
+    margin-right: 0 !important;
+    margin-left: var(--bs-gutter-x, 0.25rem) !important;
+  }
+
+  .ps-1,
+  .ps-2,
+  .ps-3,
+  .ps-4,
+  .ps-5 {
+    padding-left: 0 !important;
+    padding-right: var(--bs-gutter-x, 0.25rem) !important;
+  }
+
+  .pe-1,
+  .pe-2,
+  .pe-3,
+  .pe-4,
+  .pe-5 {
+    padding-right: 0 !important;
+    padding-left: var(--bs-gutter-x, 0.25rem) !important;
+  }
+
+  // Use special rules for any icons or buttons with chevrons/arrows
+  .mdi-chevron-right:before {
+    content: "\F0142";
+    transform: rotate(180deg);
+  }
+
+  .mdi-chevron-left:before {
+    content: "\F0141";
+    transform: rotate(180deg);
+  }
+
+  // Flip horizontal utilities for flex alignment
+  .d-flex.justify-content-start {
+    justify-content: flex-end !important;
+  }
+
+  .d-flex.justify-content-end {
+    justify-content: flex-start !important;
+  }
+
+  #page-topbar {
+    left: 0;
+    right: $sidebar-width;
+
+    @media (max-width: 991.98px) {
+      right: 0;
+    }
+  }
+
+  .main-content {
+    margin-left: 0;
+    margin-right: $sidebar-width;
+  }
+
+  .footer {
+    left: 0;
+    right: $sidebar-width;
+  }
+
+  .vertical-menu {
+    #sidebar-menu {
+      text-align: right;
+    }
+  }
+
+  .vertical-collpsed {
+    #page-topbar {
+      left: 0;
+      right: $sidebar-collapsed-width;
+
+      @media (max-width: 991.98px) {
+        right: 0;
+      }
+    }
+
+    .main-content {
+      margin-left: 0;
+      margin-right: $sidebar-collapsed-width;
+    }
+
+    .footer {
+      left: 0;
+      right: $sidebar-collapsed-width;
+    }
+
+    .vertical-menu {
+      #sidebar-menu {
+        text-align: right;
+      }
+    }
+  }
+
+  .main-content {
+    margin-right: 250px;
+    margin-left: 0px;
+  }
+
+  .footer {
+    right: 0 !important;
+  }
+
+  .navbar-brand-box {
+    padding-left: 0;
+    padding-right: 1rem;
+  }
+
+  #sidebar-menu .has-arrow:after {
+    float: left;
+  }
+
+  #sidebar-menu ul li ul.sub-menu li a {
+    padding: 0.4rem 3.5rem 0.4rem 1.5rem;
+  }
+
+  .mm-active {
+    padding-right: 0;
+  }
 }

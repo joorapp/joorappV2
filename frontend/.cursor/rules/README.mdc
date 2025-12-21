@@ -10,7 +10,9 @@ priority: 1
 Before writing any frontend code, follow these rules:
 1. **component-structure.mdc** - React component patterns
 2. **coding-standards.mdc** - General coding standards
-3. **todo.mdc** - General todo and task management
+3. **api-architecture.mdc** - API integration patterns (MANDATORY for all API calls)
+4. **translation.mdc** - Translation and internationalization rules (MANDATORY for all user-facing text)
+5. **todo.mdc** - General todo and task management
 
 ## Quick Reference
 - Use functional components with hooks
@@ -18,3 +20,5 @@ Before writing any frontend code, follow these rules:
 - Use proper state management
 - Follow naming conventions
 - Keep components small and focused
+- **CRITICAL:** All API calls MUST follow api-architecture.mdc pattern
+- **CRITICAL:** All user-facing text MUST be translated (see translation.mdc)

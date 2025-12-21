@@ -6,7 +6,23 @@
     "password": "Passwort",
     "submit": "Anmelden",
     "forgotPassword": "Passwort vergessen?",
-    "rememberMe": "Angemeldet bleiben"
+    "rememberMe": "Angemeldet bleiben",
+    "welcomeBack": "Willkommen zurück !",
+    "signInToContinue": "Melden Sie sich an, um zu JoorApp fortzufahren.",
+    "enterEmail": "E-Mail eingeben",
+    "enterPassword": "Passwort eingeben",
+    "logIn": "Anmelden",
+    "forgotYourPassword": "Haben Sie Ihr Passwort vergessen?",
+    "validation": {
+      "emailRequired": "Bitte geben Sie Ihre E-Mail ein",
+      "emailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "passwordRequired": "Bitte geben Sie Ihr Passwort ein"
+    },
+    "errors": {
+      "invalidResponse": "Anmeldung fehlgeschlagen. Ungültige Antwort vom Server.",
+      "noDataReceived": "Anmeldung fehlgeschlagen. Keine Daten vom Server erhalten.",
+      "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+    }
   },
   "Navigation": {
     "dashboard": "Dashboard",
@@ -15,13 +31,76 @@
     "logout": "Abmelden",
     "userManagement": "Benutzerverwaltung",
     "companyManagement": "Unternehmensverwaltung",
-    "reports": "Berichte"
+    "reports": "Berichte",
+    "admin": "Administrator",
+    "clients": "Kunden",
+    "newClients": "Neue Kunden",
+    "activeClients": "Aktive Kunden",
+    "contacts": "Kontakte",
+    "userGrid": "Benutzerraster",
+    "userList": "Benutzerliste",
+    "userLists": "Benutzerlisten",
+    "report": "Bericht",
+    "log": "Protokoll",
+    "myWallet": "Meine Brieftasche",
+    "lockScreen": "Bildschirm sperren"
   },
   "Dashboard": {
     "welcome": "Willkommen",
     "overview": "Übersicht",
     "recentActivity": "Letzte Aktivitäten",
-    "statistics": "Statistiken"
+    "statistics": "Statistiken",
+    "superAdmin": "Super Administrator",
+    "totalUsers": "Gesamtbenutzer",
+    "companies": "Unternehmen",
+    "totalRevenue": "Gesamteinnahmen",
+    "growthRate": "Wachstumsrate",
+    "recentSystemActivity": "Letzte Systemaktivität",
+    "quickActions": "Schnellaktionen",
+    "manageUsers": "Benutzer verwalten",
+    "manageCompanies": "Unternehmen verwalten",
+    "viewReports": "Berichte anzeigen",
+    "systemSettings": "Systemeinstellungen",
+    "totalOrders": "Gesamtbestellungen",
+    "revenue": "Einnahmen",
+    "customers": "Kunden",
+    "growth": "Wachstum",
+    "recentOrders": "Letzte Bestellungen",
+    "newOrder": "Neue Bestellung",
+    "addCustomer": "Kunde hinzufügen",
+    "settings": "Einstellungen"
+  },
+  "Dashboards": {
+    "Dashboards": "Dashboards",
+    "Dashboard": "Dashboard"
+  },
+  "DashboardContent": {
+    "welcomeBack": "Willkommen zurück !",
+    "joorAppDashboard": "JoorApp Dashboard",
+    "projects": "Projekte",
+    "revenue": "Einnahmen",
+    "monthlyEarning": "Monatliches Einkommen",
+    "thisMonth": "Diesen Monat",
+    "fromPreviousPeriod": "Aus dem vorherigen Zeitraum",
+    "viewMore": "Mehr anzeigen",
+    "weCraftDigital": "Wir gestalten digitales, grafisches und dimensionales Denken.",
+    "totalClients": "Gesamtkunden",
+    "activeClients": "Aktive Kunden",
+    "clients": "Kunden",
+    "week": "Woche",
+    "month": "Monat",
+    "year": "Jahr",
+    "latestTransaction": "Letzte Transaktion",
+    "orderId": "Bestell-ID",
+    "billingName": "Rechnungsname",
+    "date": "Datum",
+    "total": "Gesamt",
+    "paymentStatus": "Zahlungsstatus",
+    "paymentMethod": "Zahlungsmethode",
+    "viewDetails": "Details anzeigen",
+    "paid": "Bezahlt",
+    "refund": "Rückerstattung",
+    "pending": "Ausstehend"
   },
   "Common": {
     "loading": "Lädt...",
@@ -34,10 +113,187 @@
     "confirm": "Bestätigen",
     "back": "Zurück",
     "next": "Weiter",
-    "previous": "Vorherige"
+    "previous": "Vorherige",
+    "search": "Suchen...",
+    "searchPlaceholder": "Suchen...",
+    "add": "Hinzufügen",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "view": "Anzeigen",
+    "close": "Schließen",
+    "apply": "Anwenden",
+    "reset": "Zurücksetzen",
+    "days": "Tage",
+    "status": "Status",
+    "action": "Aktion",
+    "address": "Adresse",
+    "allPlans": "Alle Pläne",
+    "allStatus": "Alle Status",
+    "errors": {
+      "fillAllFields": "Bitte füllen Sie alle Felder aus",
+      "selectPlan": "Bitte wählen Sie einen Plan aus"
+    },
+    "success": {
+      "deleted": "Erfolgreich gelöscht",
+      "saved": "Erfolgreich gespeichert",
+      "updated": "Erfolgreich aktualisiert"
+    }
+  },
+  "NewClients": {
+    "newClient": "Neuer Kunde",
+    "clientName": "Kundenname",
+    "status": "Status",
+    "joinedDate": "Beitrittsdatum",
+    "plan": "Plan",
+    "action": "Aktion",
+    "statusActive": "Aktiv",
+    "statusPending": "Ausstehend",
+    "statusInactive": "Inaktiv",
+    "statusNew": "Neu",
+    "planBasic": "Basis",
+    "planPremium": "Premium",
+    "planDiamond": "Diamant",
+    "addPlan": "Plan",
+    "noClientsFound": "Keine Kunden gefunden",
+    "freeUsing": "Kostenlos nutzen",
+    "daysRemaining": "Tage",
+    "createClient": "Kunde erstellen",
+    "editClient": "Kunde bearbeiten",
+    "updateClient": "Kunde aktualisieren",
+    "profilePhoto": "Profilfoto",
+    "uploadProfilePhoto": "Profilfoto hochladen und ändern",
+    "enterClientName": "Kundenname eingeben",
+    "enterEmailAddress": "E-Mail-Adresse eingeben",
+    "enterPhoneNumber": "Telefonnummer eingeben",
+    "enterAddress": "Adresse eingeben",
+    "confirmDelete": "Löschen bestätigen",
+    "areYouSure": "Sind Sie sicher?",
+    "deleteConfirmation": "Möchten Sie wirklich löschen",
+    "cannotBeUndone": "Diese Aktion kann nicht rückgängig gemacht werden",
+    "selectPlanFor": "Plan auswählen für",
+    "planBasicDescription": "Für einen Vorgeschmack auf unser Produkt",
+    "planPremiumDescription": "Individuelles Produkt erstellen",
+    "planDiamondDescription": "Für Unternehmen",
+    "free": "Kostenlos",
+    "perUserMonth": "Pro Benutzer/Monat",
+    "mostPopular": "Beliebteste",
+    "selected": "Ausgewählt",
+    "selectPlan": "Plan auswählen",
+    "upgradeToPremium": "Auf Premium upgraden",
+    "upgradeToDiamond": "Auf Diamant upgraden",
+    "assignPlan": "Plan zuweisen",
+    "modal": {
+      "clientDetails": "Kundendetails",
+      "lastUpdated": "Zuletzt aktualisiert"
+    },
+    "labels": {
+      "clientName": "Kundenname",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "address": "Adresse"
+    },
+    "planFeatures": {
+      "accessToAllBasic": "Zugriff auf alle Grundfunktionen",
+      "basicReporting": "Grundlegende Berichte und Analysen",
+      "upTo10Users": "Bis zu 10 einzelne Benutzer",
+      "10GBData": "10 GB individuelle Daten pro Benutzer",
+      "100Integrations": "100+ Integrationen",
+      "advancedReporting": "Erweiterte Berichte und Analysen",
+      "upTo20Users": "Bis zu 20 einzelne Benutzer",
+      "30GBData": "30 GB individuelle Daten pro Benutzer",
+      "advancedCustomFields": "Erweiterte benutzerdefinierte Felder",
+      "auditLog": "Prüfprotokoll und Datenverlauf",
+      "unlimitedUsers": "Unbegrenzte einzelne Benutzer",
+      "unlimitedData": "Unbegrenzte individuelle Daten"
+    }
   },
   "Roles": {
     "superadmin": "Super Administrator",
     "company": "Unternehmen"
+  },
+  "Notifications": "Benachrichtigungen",
+  "View all": "Alle anzeigen",
+  "Your order is placed": "Ihre Bestellung wurde aufgegeben",
+  "If several languages coalesce the grammar": "Wenn mehrere Sprachen die Grammatik verschmelzen",
+  "3 min ago": "vor 3 Min.",
+  "It will seem like simplified English": "Es wird wie vereinfachtes Englisch erscheinen",
+  "1 hours ago": "vor 1 Stunde",
+  "Your item is shipped": "Ihr Artikel wurde versandt",
+  "As a skeptical Cambridge friend of mine occidental": "Als skeptischer Cambridge-Freund von mir okzidental",
+  "Footer": {
+    "termsOfService": "Nutzungsbedingungen",
+    "privacyPolicy": "Datenschutzrichtlinie",
+    "support": "Support",
+    "copyright": "Alle Rechte vorbehalten",
+    "copyrightText": "© 2024 JoorApp. Alle Rechte vorbehalten.",
+    "version": "v1.0.0"
+  },
+  "SuperAdmin": {
+    "portal": "Super Administrator Portal",
+    "superAdmin": "Super Administrator",
+    "security": "Sicherheit",
+    "analytics": "Analysen",
+    "systemSettings": "Systemeinstellungen",
+    "auditLogs": "Prüfprotokolle",
+    "userManagementPage": "Benutzerverwaltungsseite - TODO: Benutzerverwaltungsfunktionalität implementieren",
+    "companyManagementPage": "Unternehmensverwaltungsseite - TODO: Unternehmensverwaltungsfunktionalität implementieren",
+    "reportsPage": "Berichtsseite - TODO: Berichtsfunktionalität implementieren",
+    "systemSettingsPage": "Systemeinstellungsseite - TODO: Systemeinstellungsfunktionalität implementieren",
+    "auditLogsPage": "Prüfprotokollseite - TODO: Prüfprotokollfunktionalität implementieren",
+    "information": {
+      "superAdminInformation": "Super Administrator Informationen",
+      "userID": "Benutzer-ID:",
+      "name": "Name:",
+      "email": "E-Mail:",
+      "role": "Rolle:"
+    },
+    "activity": {
+      "newUserRegistered": "Neuer Benutzer registriert: {{name}}",
+      "companyCreated": "Unternehmen \"{{name}}\" erstellt",
+      "securityAlert": "Sicherheitswarnung: Fehlgeschlagener Anmeldeversuch",
+      "minutesAgo": "vor {{count}} Minuten",
+      "hoursAgo": "vor {{count}} Stunde",
+      "hoursAgoPlural": "vor {{count}} Stunden"
+    }
+  },
+  "Company": {
+    "information": {
+      "companyInformation": "Unternehmensinformationen",
+      "companyID": "Unternehmens-ID:",
+      "user": "Benutzer:",
+      "email": "E-Mail:",
+      "role": "Rolle:"
+    },
+    "orders": {
+      "ordersManagement": "Bestellungsverwaltung",
+      "ordersManagementPage": "Bestellungsverwaltungsseite - TODO: Bestellungsfunktionalität implementieren",
+      "completed": "Abgeschlossen",
+      "processing": "In Bearbeitung",
+      "shipped": "Versandt"
+    },
+    "products": {
+      "productsManagement": "Produktverwaltung",
+      "productsManagementPage": "Produktverwaltungsseite - TODO: Produktfunktionalität implementieren"
+    },
+    "customers": {
+      "customersManagement": "Kundenverwaltung",
+      "customersManagementPage": "Kundenverwaltungsseite - TODO: Kundenfunktionalität implementieren"
+    },
+    "analytics": {
+      "analyticsReports": "Analysen & Berichte",
+      "analyticsPage": "Analyseseite - TODO: Analysefunktionalität implementieren"
+    },
+    "settings": {
+      "companySettings": "Unternehmenseinstellungen",
+      "settingsPage": "Einstellungsseite - TODO: Einstellungsfunktionalität implementieren"
+    }
+  },
+  "ActiveClients": {
+    "clientDetails": "Kundendetails",
+    "startDate": "Startdatum",
+    "endDate": "Enddatum",
+    "totalAmount": "Gesamtbetrag",
+    "activePlan": "Aktiver Plan",
+    "daysRemaining": "{{count}} Tage"
   }
 }

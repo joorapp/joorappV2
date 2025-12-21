@@ -6,7 +6,23 @@
     "password": "Password",
     "submit": "Sign In",
     "forgotPassword": "Forgot Password?",
-    "rememberMe": "Remember Me"
+    "rememberMe": "Remember Me",
+    "welcomeBack": "Welcome Back !",
+    "signInToContinue": "Sign in to continue to JoorApp.",
+    "enterEmail": "Enter email",
+    "enterPassword": "Enter Password",
+    "logIn": "Log In",
+    "forgotYourPassword": "Forgot your password?",
+    "validation": {
+      "emailRequired": "Please enter your email",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Please enter your password"
+    },
+    "errors": {
+      "invalidResponse": "Login failed. Invalid response from server.",
+      "noDataReceived": "Login failed. No data received from server.",
+      "unexpectedError": "An unexpected error occurred. Please try again."
+    }
   },
   "Navigation": {
     "dashboard": "Dashboard",
@@ -15,13 +31,76 @@
     "logout": "Logout",
     "userManagement": "User Management",
     "companyManagement": "Company Management",
-    "reports": "Reports"
+    "reports": "Reports",
+    "admin": "Admin",
+    "clients": "Clients",
+    "newClients": "New Clients",
+    "activeClients": "Active Clients",
+    "contacts": "Contacts",
+    "userGrid": "User Grid",
+    "userList": "User List",
+    "userLists": "User Lists",
+    "report": "Report",
+    "log": "Log",
+    "myWallet": "My Wallet",
+    "lockScreen": "Lock screen"
   },
   "Dashboard": {
     "welcome": "Welcome",
     "overview": "Overview",
     "recentActivity": "Recent Activity",
-    "statistics": "Statistics"
+    "statistics": "Statistics",
+    "superAdmin": "Super Admin",
+    "totalUsers": "Total Users",
+    "companies": "Companies",
+    "totalRevenue": "Total Revenue",
+    "growthRate": "Growth Rate",
+    "recentSystemActivity": "Recent System Activity",
+    "quickActions": "Quick Actions",
+    "manageUsers": "Manage Users",
+    "manageCompanies": "Manage Companies",
+    "viewReports": "View Reports",
+    "systemSettings": "System Settings",
+    "totalOrders": "Total Orders",
+    "revenue": "Revenue",
+    "customers": "Customers",
+    "growth": "Growth",
+    "recentOrders": "Recent Orders",
+    "newOrder": "New Order",
+    "addCustomer": "Add Customer",
+    "settings": "Settings"
+  },
+  "Dashboards": {
+    "Dashboards": "Dashboards",
+    "Dashboard": "Dashboard"
+  },
+  "DashboardContent": {
+    "welcomeBack": "Welcome Back !",
+    "joorAppDashboard": "JoorApp Dashboard",
+    "projects": "Projects",
+    "revenue": "Revenue",
+    "monthlyEarning": "Monthly Earning",
+    "thisMonth": "This month",
+    "fromPreviousPeriod": "From previous period",
+    "viewMore": "View More",
+    "weCraftDigital": "We craft digital, graphic and dimensional thinking.",
+    "totalClients": "Total Clients",
+    "activeClients": "Active clients",
+    "clients": "Clients",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year",
+    "latestTransaction": "Latest Transaction",
+    "orderId": "Order ID",
+    "billingName": "Billing Name",
+    "date": "Date",
+    "total": "Total",
+    "paymentStatus": "Payment Status",
+    "paymentMethod": "Payment Method",
+    "viewDetails": "View Details",
+    "paid": "Paid",
+    "refund": "Refund",
+    "pending": "Pending"
   },
   "Common": {
     "loading": "Loading...",
@@ -34,10 +113,190 @@
     "confirm": "Confirm",
     "back": "Back",
     "next": "Next",
-    "previous": "Previous"
+    "previous": "Previous",
+    "search": "Search...",
+    "searchPlaceholder": "Search...",
+    "add": "Add",
+    "email": "Email",
+    "phone": "Phone",
+    "view": "View",
+    "close": "Close",
+    "apply": "Apply",
+    "reset": "Reset",
+    "days": "Days",
+    "status": "Status",
+    "action": "Action",
+    "address": "Address",
+    "allPlans": "All Plans",
+    "allStatus": "All Status",
+    "errors": {
+      "fillAllFields": "Please fill in all fields",
+      "selectPlan": "Please select a plan"
+    },
+    "success": {
+      "deleted": "Successfully deleted",
+      "saved": "Successfully saved",
+      "updated": "Successfully updated"
+    }
+  },
+  "NewClients": {
+    "newClient": "New Client",
+    "clientName": "Client Name",
+    "status": "Status",
+    "joinedDate": "Joined Date",
+    "plan": "Plan",
+    "action": "Action",
+    "statusActive": "Active",
+    "statusPending": "Pending",
+    "statusInactive": "Inactive",
+    "statusNew": "New",
+    "planBasic": "Basic",
+    "planPremium": "Premium",
+    "planDiamond": "Diamond",
+    "addPlan": "Plan",
+    "noClientsFound": "No clients found",
+    "freeUsing": "Free Using",
+    "daysRemaining": "days",
+    "createClient": "Create Client",
+    "editClient": "Edit Client",
+    "updateClient": "Update Client",
+    "profilePhoto": "Profile Photo",
+    "uploadProfilePhoto": "Upload and change profile photo",
+    "enterClientName": "Enter client name",
+    "enterEmailAddress": "Enter email address",
+    "enterPhoneNumber": "Enter phone number",
+    "enterAddress": "Enter address",
+    "confirmDelete": "Confirm Delete",
+    "areYouSure": "Are you sure?",
+    "deleteConfirmation": "Do you really want to delete",
+    "cannotBeUndone": "This action cannot be undone",
+    "selectPlanFor": "Select a plan for",
+    "planBasicDescription": "For a taste our product",
+    "planPremiumDescription": "Make individual product",
+    "planDiamondDescription": "For companies",
+    "free": "Free",
+    "perUserMonth": "Per user/month",
+    "mostPopular": "Most Popular",
+    "selected": "Selected",
+    "selectPlan": "Select Plan",
+    "upgradeToPremium": "Upgrade to Premium",
+    "upgradeToDiamond": "Upgrade to Diamond",
+    "assignPlan": "Assign Plan",
+    "modal": {
+      "clientDetails": "Client Details",
+      "lastUpdated": "Last Updated"
+    },
+    "labels": {
+      "clientName": "Client Name",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address"
+    },
+    "planFeatures": {
+      "accessToAllBasic": "Access to all basic",
+      "basicReporting": "Basic reporting and analytics",
+      "upTo10Users": "Up to 10 individual users",
+      "10GBData": "10GB individual data each user",
+      "100Integrations": "100+ integrations",
+      "advancedReporting": "Advanced reporting and analytics",
+      "upTo20Users": "Up to 20 individual users",
+      "30GBData": "30GB individual data each user",
+      "advancedCustomFields": "Advanced custom fields",
+      "auditLog": "Audit log and data history",
+      "unlimitedUsers": "Unlimited individual users",
+      "unlimitedData": "Unlimited individual data"
+    }
   },
   "Roles": {
     "superadmin": "Super Admin",
     "company": "Company"
+  },
+  "startDate": "Start Date",
+  "endDate": "End Date",
+  "revenue": "Revenue",
+  "Notifications": "Notifications",
+  "View all": "View all",
+  "Your order is placed": "Your order is placed",
+  "If several languages coalesce the grammar": "If several languages coalesce the grammar",
+  "3 min ago": "3 min ago",
+  "It will seem like simplified English": "It will seem like simplified English",
+  "1 hours ago": "1 hours ago",
+  "Your item is shipped": "Your item is shipped",
+  "As a skeptical Cambridge friend of mine occidental": "As a skeptical Cambridge friend of mine occidental",
+  "Footer": {
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "support": "Support",
+    "copyright": "All rights reserved",
+    "copyrightText": "© 2024 JoorApp. All rights reserved.",
+    "version": "v1.0.0"
+  },
+  "SuperAdmin": {
+    "portal": "Super Admin Portal",
+    "superAdmin": "Super Admin",
+    "security": "Security",
+    "analytics": "Analytics",
+    "systemSettings": "System Settings",
+    "auditLogs": "Audit Logs",
+    "userManagementPage": "User management page - TODO: Implement user management functionality",
+    "companyManagementPage": "Company management page - TODO: Implement company management functionality",
+    "reportsPage": "Reports page - TODO: Implement reports functionality",
+    "systemSettingsPage": "System settings page - TODO: Implement system settings functionality",
+    "auditLogsPage": "Audit logs page - TODO: Implement audit logs functionality",
+    "information": {
+      "superAdminInformation": "Super Admin Information",
+      "userID": "User ID:",
+      "name": "Name:",
+      "email": "Email:",
+      "role": "Role:"
+    },
+    "activity": {
+      "newUserRegistered": "New user registered: {{name}}",
+      "companyCreated": "Company \"{{name}}\" created",
+      "securityAlert": "Security alert: Failed login attempt",
+      "minutesAgo": "{{count}} minutes ago",
+      "hoursAgo": "{{count}} hour ago",
+      "hoursAgoPlural": "{{count}} hours ago"
+    }
+  },
+  "Company": {
+    "information": {
+      "companyInformation": "Company Information",
+      "companyID": "Company ID:",
+      "user": "User:",
+      "email": "Email:",
+      "role": "Role:"
+    },
+    "orders": {
+      "ordersManagement": "Orders Management",
+      "ordersManagementPage": "Orders management page - TODO: Implement orders functionality",
+      "completed": "Completed",
+      "processing": "Processing",
+      "shipped": "Shipped"
+    },
+    "products": {
+      "productsManagement": "Products Management",
+      "productsManagementPage": "Products management page - TODO: Implement products functionality"
+    },
+    "customers": {
+      "customersManagement": "Customers Management",
+      "customersManagementPage": "Customers management page - TODO: Implement customers functionality"
+    },
+    "analytics": {
+      "analyticsReports": "Analytics & Reports",
+      "analyticsPage": "Analytics page - TODO: Implement analytics functionality"
+    },
+    "settings": {
+      "companySettings": "Company Settings",
+      "settingsPage": "Settings page - TODO: Implement settings functionality"
+    }
+  },
+  "ActiveClients": {
+    "clientDetails": "Client Details",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "totalAmount": "Total Amount",
+    "activePlan": "Active Plan",
+    "daysRemaining": "{{count}} days"
   }
 }

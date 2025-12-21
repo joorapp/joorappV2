@@ -18,8 +18,20 @@ alwaysApply: true
 - Use early returns to reduce nesting
 - Extract complex logic into custom hooks
 
+## Import Rules
+- **ALWAYS import at the top of the file** - Never use dynamic imports (`import()`) unless absolutely necessary for code splitting
+- ✅ `import { toast } from "react-toastify";` at the top
+- ❌ `import("react-toastify").then(...)` - Dynamic imports should only be used for lazy loading routes/components
+- Group imports: external libraries first, then internal modules
+- Use static imports for all dependencies
+
 ## React Best Practices
 - Use functional components with hooks
+- **Do NOT use React.FC** - Use regular function declarations with TypeScript inference
+  - ✅ `const Component = () => {}` (no props)
+  - ✅ `const Component = ({ prop }: Props) => {}` (with props)
+  - ❌ `const Component: React.FC = () => {}`
+  - ❌ `const Component: React.FC<Props> = ({ prop }) => {}`
 - Avoid unnecessary re-renders (use useMemo, useCallback)
 - Keep state as local as possible
 - Use proper key props in lists
@@ -40,6 +52,7 @@ alwaysApply: true
 
 ## Prohibited Patterns
 - ❌ Class components (use functional components)
+- ❌ React.FC type annotation (use TypeScript inference instead)
 - ❌ Console.log in production (use proper logging)
 - ❌ Inline styles for static styles
 - ❌ Direct DOM manipulation

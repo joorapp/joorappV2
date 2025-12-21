@@ -10,7 +10,7 @@ import CompanyDashboard, {
   CompanySettings,
 } from './CompanyDashboard/CompanyDashboard';
 
-const CompanyRoutes: React.FC = () => {
+const CompanyRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<CompanyDashboard />}>        

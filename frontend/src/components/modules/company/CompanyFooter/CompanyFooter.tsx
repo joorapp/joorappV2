@@ -6,9 +6,9 @@ interface CompanyFooterProps {
   showCompanyInfo?: boolean;
 }
 
-const CompanyFooter: React.FC<CompanyFooterProps> = ({ 
+const CompanyFooter = ({ 
   showCompanyInfo = true 
-}) => {
+}: CompanyFooterProps) => {
   const { t } = useTranslation();
 
   return (

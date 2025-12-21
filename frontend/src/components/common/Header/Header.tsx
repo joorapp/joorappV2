@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../context/AuthContext';
+import { useCompanies } from '../../../context/CompaniesContext';
 import './Header.scss';
 
 interface HeaderProps {
@@ -9,19 +10,22 @@ interface HeaderProps {
   showLanguageSwitcher?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ 
-  title = 'Dashboard', 
+const Header = ({ 
+  title, 
   showUserMenu = true, 
   showLanguageSwitcher = true 
-}) => {
+}: HeaderProps) => {
   const { t, i18n } = useTranslation();
+  const displayTitle = title || t('Navigation.dashboard');
   const { user, logout } = useAuth();
+  const { clearCompanies } = useCompanies();
 
   const handleLanguageChange = (language: string) => {
     i18n.changeLanguage(language);
   };
 
   const handleLogout = () => {
+    clearCompanies();
     logout();
   };
 
@@ -29,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({
     <header className="header">
       <div className="header__container">
         <div className="header__left">
-          <h1 className="header__title">{title}</h1>
+          <h1 className="header__title">{displayTitle}</h1>
         </div>
         
         <div className="header__right">

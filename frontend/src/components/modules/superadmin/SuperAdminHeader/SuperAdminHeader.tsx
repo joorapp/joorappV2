@@ -8,10 +8,10 @@ interface SuperAdminHeaderProps {
   onMenuClick?: () => void;
 }
 
-const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({ 
+const SuperAdminHeader = ({ 
   title = 'Super Admin Dashboard',
   onMenuClick 
-}) => {
+}: SuperAdminHeaderProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
 

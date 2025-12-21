@@ -8,7 +8,7 @@ import CompanyFooter from '../CompanyFooter/CompanyFooter';
 import './CompanyDashboard.scss';
 
 // Placeholder components for company pages
-export const CompanyOverview: React.FC = () => {
+export const CompanyOverview = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -24,7 +24,7 @@ export const CompanyOverview: React.FC = () => {
           <div className="company-overview__stat-icon">📦</div>
           <div className="company-overview__stat-content">
             <h3 className="company-overview__stat-number">156</h3>
-            <p className="company-overview__stat-label">Total Orders</p>
+            <p className="company-overview__stat-label">{t('Dashboard.totalOrders')}</p>
           </div>
         </div>
 
@@ -32,7 +32,7 @@ export const CompanyOverview: React.FC = () => {
           <div className="company-overview__stat-icon">💰</div>
           <div className="company-overview__stat-content">
             <h3 className="company-overview__stat-number">€24,580</h3>
-            <p className="company-overview__stat-label">Revenue</p>
+            <p className="company-overview__stat-label">{t('Dashboard.revenue')}</p>
           </div>
         </div>
 
@@ -40,7 +40,7 @@ export const CompanyOverview: React.FC = () => {
           <div className="company-overview__stat-icon">👥</div>
           <div className="company-overview__stat-content">
             <h3 className="company-overview__stat-number">89</h3>
-            <p className="company-overview__stat-label">Customers</p>
+            <p className="company-overview__stat-label">{t('Dashboard.customers')}</p>
           </div>
         </div>
 
@@ -48,54 +48,54 @@ export const CompanyOverview: React.FC = () => {
           <div className="company-overview__stat-icon">📈</div>
           <div className="company-overview__stat-content">
             <h3 className="company-overview__stat-number">+12%</h3>
-            <p className="company-overview__stat-label">Growth</p>
+            <p className="company-overview__stat-label">{t('Dashboard.growth')}</p>
           </div>
         </div>
       </div>
 
       <div className="company-overview__content">
         <div className="company-overview__recent-orders">
-          <h3 className="company-overview__section-title">Recent Orders</h3>
+          <h3 className="company-overview__section-title">{t('Dashboard.recentOrders')}</h3>
           <div className="company-overview__orders-list">
             <div className="company-overview__order-item">
               <span className="company-overview__order-id">#ORD-001</span>
               <span className="company-overview__order-customer">John Doe</span>
               <span className="company-overview__order-amount">€125.00</span>
-              <span className="company-overview__order-status">Completed</span>
+              <span className="company-overview__order-status">{t('Company.orders.completed')}</span>
             </div>
             <div className="company-overview__order-item">
               <span className="company-overview__order-id">#ORD-002</span>
               <span className="company-overview__order-customer">Jane Smith</span>
               <span className="company-overview__order-amount">€89.50</span>
-              <span className="company-overview__order-status">Processing</span>
+              <span className="company-overview__order-status">{t('Company.orders.processing')}</span>
             </div>
             <div className="company-overview__order-item">
               <span className="company-overview__order-id">#ORD-003</span>
               <span className="company-overview__order-customer">Bob Johnson</span>
               <span className="company-overview__order-amount">€245.75</span>
-              <span className="company-overview__order-status">Shipped</span>
+              <span className="company-overview__order-status">{t('Company.orders.shipped')}</span>
             </div>
           </div>
         </div>
 
         <div className="company-overview__quick-actions">
-          <h3 className="company-overview__section-title">Quick Actions</h3>
+          <h3 className="company-overview__section-title">{t('Dashboard.quickActions')}</h3>
           <div className="company-overview__actions-grid">
             <button className="company-overview__action-btn">
               <span className="company-overview__action-icon">➕</span>
-              <span className="company-overview__action-label">New Order</span>
+              <span className="company-overview__action-label">{t('Dashboard.newOrder')}</span>
             </button>
             <button className="company-overview__action-btn">
               <span className="company-overview__action-icon">👤</span>
-              <span className="company-overview__action-label">Add Customer</span>
+              <span className="company-overview__action-label">{t('Dashboard.addCustomer')}</span>
             </button>
             <button className="company-overview__action-btn">
               <span className="company-overview__action-icon">📊</span>
-              <span className="company-overview__action-label">View Reports</span>
+              <span className="company-overview__action-label">{t('Dashboard.viewReports')}</span>
             </button>
             <button className="company-overview__action-btn">
               <span className="company-overview__action-icon">⚙️</span>
-              <span className="company-overview__action-label">Settings</span>
+              <span className="company-overview__action-label">{t('Dashboard.settings')}</span>
             </button>
           </div>
         </div>
@@ -104,7 +104,7 @@ export const CompanyOverview: React.FC = () => {
   );
 };
 
-export const CompanyProfile: React.FC = () => {
+export const CompanyProfile = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -113,11 +113,11 @@ export const CompanyProfile: React.FC = () => {
       <h2 className="company-profile__title">{t('Navigation.profile')}</h2>
       <div className="company-profile__content">
         <div className="company-profile__info">
-          <h3>Company Information</h3>
-          <p>Company ID: {user?.companyId}</p>
-          <p>User: {user?.name}</p>
-          <p>Email: {user?.email}</p>
-          <p>Role: {user?.role}</p>
+          <h3>{t('Company.information.companyInformation')}</h3>
+          <p>{t('Company.information.companyID')} {user?.companyId}</p>
+          <p>{t('Company.information.user')} {user?.name}</p>
+          <p>{t('Company.information.email')} {user?.email}</p>
+          <p>{t('Company.information.role')} {user?.role}</p>
         </div>
         {/* TODO: Add profile editing form */}
       </div>
@@ -125,52 +125,57 @@ export const CompanyProfile: React.FC = () => {
   );
 };
 
-export const CompanyOrders: React.FC = () => {
+export const CompanyOrders = () => {
+  const { t } = useTranslation();
   return (
     <div className="company-orders">
-      <h2>Orders Management</h2>
-      <p>Orders management page - TODO: Implement orders functionality</p>
+      <h2>{t('Company.orders.ordersManagement')}</h2>
+      <p>{t('Company.orders.ordersManagementPage')}</p>
     </div>
   );
 };
 
-export const CompanyProducts: React.FC = () => {
+export const CompanyProducts = () => {
+  const { t } = useTranslation();
   return (
     <div className="company-products">
-      <h2>Products Management</h2>
-      <p>Products management page - TODO: Implement products functionality</p>
+      <h2>{t('Company.products.productsManagement')}</h2>
+      <p>{t('Company.products.productsManagementPage')}</p>
     </div>
   );
 };
 
-export const CompanyCustomers: React.FC = () => {
+export const CompanyCustomers = () => {
+  const { t } = useTranslation();
   return (
     <div className="company-customers">
-      <h2>Customers Management</h2>
-      <p>Customers management page - TODO: Implement customers functionality</p>
+      <h2>{t('Company.customers.customersManagement')}</h2>
+      <p>{t('Company.customers.customersManagementPage')}</p>
     </div>
   );
 };
 
-export const CompanyAnalytics: React.FC = () => {
+export const CompanyAnalytics = () => {
+  const { t } = useTranslation();
   return (
     <div className="company-analytics">
-      <h2>Analytics & Reports</h2>
-      <p>Analytics page - TODO: Implement analytics functionality</p>
+      <h2>{t('Company.analytics.analyticsReports')}</h2>
+      <p>{t('Company.analytics.analyticsPage')}</p>
     </div>
   );
 };
 
-export const CompanySettings: React.FC = () => {
+export const CompanySettings = () => {
+  const { t } = useTranslation();
   return (
     <div className="company-settings">
-      <h2>Company Settings</h2>
-      <p>Settings page - TODO: Implement settings functionality</p>
+      <h2>{t('Company.settings.companySettings')}</h2>
+      <p>{t('Company.settings.settingsPage')}</p>
     </div>
   );
 };
 
-const CompanyDashboard: React.FC = () => {
+const CompanyDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {
