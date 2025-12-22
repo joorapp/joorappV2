@@ -10,7 +10,6 @@ import SuperAdminDashboard, {
   // SuperAdminProfile,
   NewClients,
   ActiveClients,
-  UserList,
 } from './SuperAdminDashboard/SuperAdminDashboard';
 
 const SuperAdminRoutes: React.FC = () => {
@@ -21,7 +20,6 @@ const SuperAdminRoutes: React.FC = () => {
         <Route path="dashboard" element={<SuperAdminOverview />} />
         <Route path="NewClient" element={<NewClients />} />
         <Route path="ActiveClients" element={<ActiveClients />} />
-        <Route path="UserList" element={<UserList />} />
         {/* Fallback inside superadmin */}
         <Route path="*" element={<Navigate to="/superadmin" replace />} />
       </Route>
