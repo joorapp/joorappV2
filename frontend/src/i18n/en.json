@@ -181,7 +181,6 @@
     "upgradeToPremium": "Upgrade to Premium",
     "upgradeToDiamond": "Upgrade to Diamond",
     "assignPlan": "Assign Plan",
-<<<<<<< HEAD
     "planForEveryTeam": "A plan for every team",
     "getStartedFree": "Get started for free. No credit card required.",
     "currentPlan": "Current plan",
@@ -192,7 +191,6 @@
     "customPricing": "Custom",
     "enterpriseDescription": "Roll out Workast to your whole organization.",
     "contactUs": "Contact us",
-=======
     "modal": {
       "clientDetails": "Client Details",
       "lastUpdated": "Last Updated"
@@ -203,7 +201,6 @@
       "phone": "Phone",
       "address": "Address"
     },
->>>>>>> 4f2abcd0cb29ae0ae513945aaf4c8a33169137b0
     "planFeatures": {
       "accessToAllBasic": "Access to all basic",
       "basicReporting": "Basic reporting and analytics",
