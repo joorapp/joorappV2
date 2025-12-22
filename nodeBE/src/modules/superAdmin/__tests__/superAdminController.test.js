@@ -249,13 +249,11 @@ describe('Super Admin Controller', () => {
       // Arrange
       req.body = {
         name: 'New Company',
-        code: 'NEWCO',
         description: 'New company description'
       };
 
       const mockNewCompany = createMockCompany({
-        name: 'New Company',
-        code: 'NEWCO'
+        name: 'New Company'
       });
 
       mockValidateRequired.mockImplementation(() => {});

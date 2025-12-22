@@ -58,7 +58,6 @@ export const createUserData = (overrides = {}) => {
 export const createCompanyData = (overrides = {}) => {
   return {
     name: generateUniqueName('Company'),
-    code: generateUniqueCode('COMP'),
     description: 'Test company description',
     isActive: true,
     ...overrides

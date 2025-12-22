@@ -9,14 +9,18 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+      KEYCLOAK_DB_NAME: ${KEYCLOAK_DB_NAME}
+      TEST_DB_NAME: ${TEST_DB_NAME}
     ports:
       - "${DB_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Dev database: restore your schema/data (created via pg_dump)
       - ./postgres_init/init-dev-db.sql:/docker-entrypoint-initdb.d/01-init-dev-db.sql:ro
-      # Test database: create empty database
-      - ./docker/init-test-db.sh:/docker-entrypoint-initdb.d/02-init-test-db.sh:ro
+      # Keycloak database: create empty database (Keycloak will create its own tables)
+      - ./docker/init-keycloak-db.sh:/docker-entrypoint-initdb.d/02-init-keycloak-db.sh:ro
+      # Test database: restore from same SQL dump as dev DB
+      - ./docker/init-test-db.sh:/docker-entrypoint-initdb.d/03-init-test-db.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
@@ -35,7 +39,7 @@ services:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME}
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB_NAME}
       KC_DB_USERNAME: ${DB_USER}
       KC_DB_PASSWORD: ${DB_PASSWORD}
       KC_HTTP_ENABLED: "true"

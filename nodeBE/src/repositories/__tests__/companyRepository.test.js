@@ -183,15 +183,15 @@ describe('CompanyRepository', () => {
       await sequelize.query('TRUNCATE TABLE companies CASCADE');
       
       await companyRepository.create(
-        createCompanyData({ name: 'Acme Corporation', code: 'ACME' }),
+        createCompanyData({ name: 'Acme Corporation' }),
         auditContext
       );
       await companyRepository.create(
-        createCompanyData({ name: 'Tech Solutions', code: 'TECH' }),
+        createCompanyData({ name: 'Tech Solutions' }),
         auditContext
       );
       await companyRepository.create(
-        createCompanyData({ name: 'Global Services', code: 'GLOBAL' }),
+        createCompanyData({ name: 'Global Services' }),
         auditContext
       );
     });
@@ -203,15 +203,6 @@ describe('CompanyRepository', () => {
       // Assert
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].name).toContain('Acme');
-    });
-
-    it('should search companies by code', async () => {
-      // Act
-      const result = await companyRepository.searchCompanies('TECH');
-
-      // Assert
-      expect(result.rows).toHaveLength(1);
-      expect(result.rows[0].code).toBe('TECH');
     });
 
     it('should support pagination', async () => {

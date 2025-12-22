@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
   requiredRole?: 'superadmin' | 'company';
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
+const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const { isAuthenticated, hasRole, isLoading } = useAuth();
 
   if (isLoading) {
@@ -32,7 +32,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   return <>{children}</>;
 };
 
-const Unauthorized: React.FC = () => {
+const Unauthorized = () => {
   return (
     <div className="unauthorized">
       <div className="unauthorized__container">
@@ -44,7 +44,7 @@ const Unauthorized: React.FC = () => {
   );
 };
 
-const CommonRoutes: React.FC = () => {
+const CommonRoutes = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
 
   if (isLoading) {

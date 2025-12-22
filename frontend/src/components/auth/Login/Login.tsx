@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import LoginService from '../../../core/service/LoginService';
+import { useCompanies } from '../../../context/CompaniesContext';
 import { useAuth } from '../../../context/AuthContext';
 import { Container, Row, Col, Card, CardBody, Alert, Input, Label, Form, FormFeedback } from 'reactstrap';
 
@@ -14,10 +16,11 @@ import lightlogo from '../../../assets/images/logo-light.svg';
 
 
 
-const Login: React.FC = () => {
+const Login = () => {
   const { t } = useTranslation();
-  const { login } = useAuth();
   const navigate = useNavigate();
+  const { setCompanies } = useCompanies();
+  const { setUser } = useAuth();
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,11 +28,10 @@ const Login: React.FC = () => {
   // Yup validation schema
   const validationSchema = Yup.object({
     email: Yup.string()
-      .required('Please enter your email')
-      .email('Please enter a valid email address'),
+      .required(t('Login.validation.emailRequired'))
+      .email(t('Login.validation.emailInvalid')),
     password: Yup.string()
-      .required('Please enter your password')
-      .min(6, 'Password must be at least 6 characters'),
+      .required(t('Login.validation.passwordRequired')),
     rememberMe: Yup.boolean()
   });
 
@@ -46,30 +48,88 @@ const Login: React.FC = () => {
       setIsSubmitting(true);
 
       try {
-        const result = await login(values.email, values.password);
+        // Call LoginService following API architecture pattern
+        const response = await LoginService.login({
+          email: values.email,
+          password: values.password,
+        });
 
-        if (result.success && result.user) {
-          // Store remember me preference
-          if (values.rememberMe) {
-            localStorage.setItem('rememberMe', 'true');
-          } else {
-            localStorage.removeItem('rememberMe');
-          }
+        // Handle successful login response
+        if (response.data?.success && response.data?.data) {
+          const { access_token, refresh_token, companies, keycloak_global_role } = response.data.data;
 
-          // Redirect based on user role
-          if (result.user.role === 'superadmin') {
-            navigate('/superadmin/dashboard');
-          } else if (result.user.role === 'company') {
-            navigate('/company/dashboard');
+          if (access_token && refresh_token) {
+            // Store tokens separately in localStorage
+            localStorage.setItem('accessToken', access_token);
+            localStorage.setItem('refreshToken', refresh_token);
+            
+            // Store keycloak_global_role in localStorage
+            if (keycloak_global_role) {
+              localStorage.setItem('keycloak_global_role', keycloak_global_role);
+            }
+            
+            // Store companies from login response (companies are included in the response)
+            if (companies && Array.isArray(companies) && companies.length > 0) {
+              setCompanies(companies);
+
+              // Select first company and get user data
+              try {
+                const companyId = companies[0].id;
+                const selectResponse = await LoginService.selectCompany(companyId);
+                
+                if (selectResponse.data?.success && selectResponse.data?.data?.user) {
+                  // Map keycloak_global_role to user role and save user to context
+                  const userData = {
+                    ...selectResponse.data.data.user,
+                    role: keycloak_global_role === 'SUPER_ADMIN' ? 'superadmin' : 'company' as const,
+                  };
+                  setUser(userData);
+                }
+
+                // Route based on keycloak_global_role after company selection
+                if (keycloak_global_role === 'SUPER_ADMIN') {
+                  navigate('/superadmin');
+                } else {
+                  navigate('/company');
+                }
+              } catch (selectError) {
+                // Interceptor already shows error toast, continue with login
+                // User will be set from profile API on next page load if needed
+                // Route based on keycloak_global_role even if selectCompany fails
+                if (keycloak_global_role === 'SUPER_ADMIN') {
+                  navigate('/superadmin');
+                } else {
+                  navigate('/company');
+                }
+              }
+            } else {
+              // No companies, route based on role
+              if (keycloak_global_role === 'SUPER_ADMIN') {
+                navigate('/superadmin');
+              } else {
+                navigate('/company');
+              }
+            }
+
+            // Store remember me preference
+            if (values.rememberMe) {
+              localStorage.setItem('rememberMe', 'true');
+            } else {
+              localStorage.removeItem('rememberMe');
+            }
           } else {
-            navigate('/dashboard');
+            setError(response.data?.message || t('Login.errors.invalidResponse'));
           }
         } else {
-          setError(result.error || 'Login failed. Please try again.');
+          setError(response.data?.message || t('Login.errors.noDataReceived'));
         }
-      } catch (err) {
-        setError('An unexpected error occurred. Please try again.');
-        console.error('Login error:', err);
+      } catch (err: any) {
+        // Error handling - interceptor already shows toast, just set local error state
+        const errorMessage = err?.response?.data?.message || 
+                           err?.response?.data?.error || 
+                           err?.message || 
+                           t('Login.errors.unexpectedError');
+        setError(errorMessage);
       } finally {
         setIsSubmitting(false);
       }
@@ -104,8 +164,8 @@ const Login: React.FC = () => {
                   <Row>
                     <Col xs={7}>
                       <div className="text-primary p-4">
-                        <h5 className="text-primary">Welcome Back !</h5>
-                        <p>Sign in to continue to JoorApp.</p>
+                        <h5 className="text-primary">{t('Login.welcomeBack')}</h5>
+                        <p>{t('Login.signInToContinue')}</p>
                       </div>
                     </Col>
                     <Col className="col-5 align-self-end">
@@ -152,7 +212,7 @@ const Login: React.FC = () => {
                         <Input
                           name="email"
                           className="form-control"
-                          placeholder="Enter email"
+                          placeholder={t('Login.enterEmail')}
                           type="email"
                           onChange={formik.handleChange}
                           onBlur={formik.handleBlur}
@@ -169,13 +229,13 @@ const Login: React.FC = () => {
                       </div>
 
                       <div className="mb-3">
-                        <Label className="form-label">Password</Label>
+                        <Label className="form-label">{t('Login.password')}</Label>
                         <Input
                           name="password"
                           autoComplete="off"
                           value={formik.values.password}
                           type="password"
-                          placeholder="Enter Password"
+                          placeholder={t('Login.enterPassword')}
                           onChange={formik.handleChange}
                           onBlur={formik.handleBlur}
                           invalid={formik.touched.password && !!formik.errors.password}
@@ -203,7 +263,7 @@ const Login: React.FC = () => {
                           className="form-check-label"
                           htmlFor="customControlInline"
                         >
-                          Remember me
+                          {t('Login.rememberMe')}
                         </label>
                       </div>
 
@@ -212,7 +272,7 @@ const Login: React.FC = () => {
                           className="btn btn-primary btn-block"
                           type="submit"
                         >
-                          Log In
+                          {t('Login.logIn')}
                         </button>
                       </div>
 
@@ -221,7 +281,7 @@ const Login: React.FC = () => {
                       <div className="mt-4 text-center">
                         <Link to="/forgot-password" className="text-muted">
                           <i className="mdi mdi-lock me-1" />
-                          Forgot your password?
+                          {t('Login.forgotYourPassword')}
                         </Link>
                       </div>
                     </Form>

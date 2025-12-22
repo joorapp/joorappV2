@@ -6,7 +6,23 @@
     "password": "كلمة المرور",
     "submit": "تسجيل الدخول",
     "forgotPassword": "نسيت كلمة المرور؟",
-    "rememberMe": "تذكرني"
+    "rememberMe": "تذكرني",
+    "welcomeBack": "مرحباً بعودتك !",
+    "signInToContinue": "قم بتسجيل الدخول للمتابعة إلى JoorApp.",
+    "enterEmail": "أدخل البريد الإلكتروني",
+    "enterPassword": "أدخل كلمة المرور",
+    "logIn": "تسجيل الدخول",
+    "forgotYourPassword": "هل نسيت كلمة المرور؟",
+    "validation": {
+      "emailRequired": "يرجى إدخال بريدك الإلكتروني",
+      "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صحيح",
+      "passwordRequired": "يرجى إدخال كلمة المرور"
+    },
+    "errors": {
+      "invalidResponse": "فشل تسجيل الدخول. استجابة غير صالحة من الخادم.",
+      "noDataReceived": "فشل تسجيل الدخول. لم يتم استلام بيانات من الخادم.",
+      "unexpectedError": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى."
+    }
   },
   "Navigation": {
     "dashboard": "لوحة التحكم",
@@ -33,7 +49,26 @@
     "welcome": "مرحباً",
     "overview": "نظرة عامة",
     "recentActivity": "النشاط الأخير",
-    "statistics": "الإحصائيات"
+    "statistics": "الإحصائيات",
+    "superAdmin": "المسؤول الرئيسي",
+    "totalUsers": "إجمالي المستخدمين",
+    "companies": "الشركات",
+    "totalRevenue": "إجمالي الإيرادات",
+    "growthRate": "معدل النمو",
+    "recentSystemActivity": "النشاط الأخير للنظام",
+    "quickActions": "إجراءات سريعة",
+    "manageUsers": "إدارة المستخدمين",
+    "manageCompanies": "إدارة الشركات",
+    "viewReports": "عرض التقارير",
+    "systemSettings": "إعدادات النظام",
+    "totalOrders": "إجمالي الطلبات",
+    "revenue": "الإيرادات",
+    "customers": "العملاء",
+    "growth": "النمو",
+    "recentOrders": "الطلبات الأخيرة",
+    "newOrder": "طلب جديد",
+    "addCustomer": "إضافة عميل",
+    "settings": "الإعدادات"
   },
   "Dashboards": {
     "Dashboards": "لوحات التحكم",
@@ -83,7 +118,26 @@
     "searchPlaceholder": "بحث...",
     "add": "إضافة",
     "email": "البريد الإلكتروني",
-    "phone": "الهاتف"
+    "phone": "الهاتف",
+    "view": "عرض",
+    "close": "إغلاق",
+    "apply": "تطبيق",
+    "reset": "إعادة تعيين",
+    "days": "أيام",
+    "status": "الحالة",
+    "action": "الإجراء",
+    "address": "العنوان",
+    "allPlans": "جميع الخطط",
+    "allStatus": "جميع الحالات",
+    "errors": {
+      "fillAllFields": "يرجى ملء جميع الحقول",
+      "selectPlan": "يرجى اختيار خطة"
+    },
+    "success": {
+      "deleted": "تم الحذف بنجاح",
+      "saved": "تم الحفظ بنجاح",
+      "updated": "تم التحديث بنجاح"
+    }
   },
   "NewClients": {
     "newClient": "عميل جديد",
@@ -95,6 +149,7 @@
     "statusActive": "نشط",
     "statusPending": "قيد الانتظار",
     "statusInactive": "غير نشط",
+    "statusNew": "جديد",
     "planBasic": "أساسي",
     "planPremium": "مميز",
     "planDiamond": "الماس",
@@ -127,6 +182,16 @@
     "upgradeToPremium": "الترقية إلى المميز",
     "upgradeToDiamond": "الترقية إلى الماس",
     "assignPlan": "تعيين الخطة",
+    "modal": {
+      "clientDetails": "تفاصيل العميل",
+      "lastUpdated": "آخر تحديث"
+    },
+    "labels": {
+      "clientName": "اسم العميل",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "address": "العنوان"
+    },
     "planFeatures": {
       "accessToAllBasic": "الوصول إلى جميع الأساسيات",
       "basicReporting": "التقارير والتحليلات الأساسية",
@@ -191,7 +256,77 @@
     "termsOfService": "شروط الخدمة",
     "privacyPolicy": "سياسة الخصوصية",
     "support": "الدعم",
-    "copyright": "جميع الحقوق محفوظة"
+    "copyright": "جميع الحقوق محفوظة",
+    "copyrightText": "© 2024 JoorApp. جميع الحقوق محفوظة.",
+    "version": "v1.0.0"
+  },
+  "SuperAdmin": {
+    "portal": "بوابة المسؤول الرئيسي",
+    "superAdmin": "المسؤول الرئيسي",
+    "security": "الأمان",
+    "analytics": "التحليلات",
+    "systemSettings": "إعدادات النظام",
+    "auditLogs": "سجلات التدقيق",
+    "userManagementPage": "صفحة إدارة المستخدمين - TODO: تنفيذ وظيفة إدارة المستخدمين",
+    "companyManagementPage": "صفحة إدارة الشركات - TODO: تنفيذ وظيفة إدارة الشركات",
+    "reportsPage": "صفحة التقارير - TODO: تنفيذ وظيفة التقارير",
+    "systemSettingsPage": "صفحة إعدادات النظام - TODO: تنفيذ وظيفة إعدادات النظام",
+    "auditLogsPage": "صفحة سجلات التدقيق - TODO: تنفيذ وظيفة سجلات التدقيق",
+    "information": {
+      "superAdminInformation": "معلومات المسؤول الرئيسي",
+      "userID": "معرف المستخدم:",
+      "name": "الاسم:",
+      "email": "البريد الإلكتروني:",
+      "role": "الدور:"
+    },
+    "activity": {
+      "newUserRegistered": "تم تسجيل مستخدم جديد: {{name}}",
+      "companyCreated": "تم إنشاء شركة \"{{name}}\"",
+      "securityAlert": "تنبيه أمني: محاولة تسجيل دخول فاشلة",
+      "minutesAgo": "منذ {{count}} دقائق",
+      "hoursAgo": "منذ {{count}} ساعة",
+      "hoursAgoPlural": "منذ {{count}} ساعات"
+    }
+  },
+  "Company": {
+    "information": {
+      "companyInformation": "معلومات الشركة",
+      "companyID": "معرف الشركة:",
+      "user": "المستخدم:",
+      "email": "البريد الإلكتروني:",
+      "role": "الدور:"
+    },
+    "orders": {
+      "ordersManagement": "إدارة الطلبات",
+      "ordersManagementPage": "صفحة إدارة الطلبات - TODO: تنفيذ وظيفة الطلبات",
+      "completed": "مكتمل",
+      "processing": "قيد المعالجة",
+      "shipped": "تم الشحن"
+    },
+    "products": {
+      "productsManagement": "إدارة المنتجات",
+      "productsManagementPage": "صفحة إدارة المنتجات - TODO: تنفيذ وظيفة المنتجات"
+    },
+    "customers": {
+      "customersManagement": "إدارة العملاء",
+      "customersManagementPage": "صفحة إدارة العملاء - TODO: تنفيذ وظيفة العملاء"
+    },
+    "analytics": {
+      "analyticsReports": "التحليلات والتقارير",
+      "analyticsPage": "صفحة التحليلات - TODO: تنفيذ وظيفة التحليلات"
+    },
+    "settings": {
+      "companySettings": "إعدادات الشركة",
+      "settingsPage": "صفحة الإعدادات - TODO: تنفيذ وظيفة الإعدادات"
+    }
+  },
+  "ActiveClients": {
+    "clientDetails": "تفاصيل العميل",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء",
+    "totalAmount": "المبلغ الإجمالي",
+    "activePlan": "الخطة النشطة",
+    "daysRemaining": "{{count}} أيام"
   }
 }
 

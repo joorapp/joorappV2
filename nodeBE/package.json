@@ -55,6 +55,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-validator": "^7.2.1",
+    "js-yaml": "^4.1.1",
     "jsonwebtoken": "^9.0.2",
     "jwk-to-pem": "^2.0.7",
     "morgan": "^1.10.0",
@@ -64,6 +65,8 @@
     "sanitize-html": "^2.17.0",
     "sequelize": "^6.37.7",
     "sql-formatter": "^15.6.10",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0",
     "uuid": "^11.1.0",
     "winston": "^3.11.0",
     "winston-daily-rotate-file": "^4.7.1"

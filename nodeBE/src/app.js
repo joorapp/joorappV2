@@ -32,6 +32,7 @@ export const createApp = async () => {
   const { superAdminRoutes } = await import('./modules/superAdmin/index.js');
   const { authRoutes } = await import('./modules/auth/index.js');
   const { userRoutes } = await import('./modules/users/index.js');
+  const { docsRoutes } = await import('./modules/docs/index.js');
 
   // Create Express app
   const app = express();
@@ -92,6 +93,7 @@ export const createApp = async () => {
   app.use('/api/v2/admin', adminRoutes);
   app.use('/api/v2/superAdmin', superAdminRoutes);
   app.use('/api/v2/users', userRoutes);
+  app.use('/api/v2/docs', docsRoutes);
 
   // 404 handler for undefined routes
   app.use('*', (req, res) => {
@@ -126,5 +128,6 @@ export const registeredModules = [
   { path: '/api/v2/auth', name: 'Auth' },
   { path: '/api/v2/admin', name: 'Admin' },
   { path: '/api/v2/superAdmin', name: 'Super Admin' },
-  { path: '/api/v2/users', name: 'Users' }
+  { path: '/api/v2/users', name: 'Users' },
+  { path: '/api/v2/docs', name: 'Swagger' }
 ];

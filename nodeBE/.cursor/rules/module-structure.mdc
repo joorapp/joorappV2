@@ -7,12 +7,12 @@ alwaysApply: true
 
 ## Creating New Modules
 1. Create directory: `src/modules/{moduleName}/`
-2. Create `{module}Routes.js` - Route definitions (exports default router)
+2. Create `{module}Routes.js` - Route definitions with Swagger annotations (exports default router)
 3. Create `{module}Controller.js` - Request handlers (exports named functions)
-4. Create `{module}Docs.js` - API documentation (exports named docs object)
-5. Create `index.js` - Module exports (exports routes and docs)
-6. Register in `app.js`: `app.use('/api/v2/{module}', {module}Routes)`
-7. **Add to `registeredModules` array in `app.js`** - Required for startup logging
+4. Create `index.js` - Module exports (exports routes)
+5. Register in `app.js`: `app.use('/api/v2/{module}', {module}Routes)`
+6. **Add to `registeredModules` array in `app.js`** - Required for startup logging
+7. **Add Swagger annotations** to all routes in `{module}Routes.js` using JSDoc `@swagger` tags
 8. **Create controller test** in `src/modules/{module}/__tests__/{module}Controller.test.js` (see test-file-locations.mdc)
 9. **Create integration test** in `src/modules/__tests__/{module}.integration.test.js` (see test-file-locations.mdc)
 
@@ -220,23 +220,52 @@ export const {module}Docs = {
 ```javascript
 import express from 'express';
 import { handler1, handler2 } from './{module}Controller.js';
-import { {module}Docs } from './{module}Docs.js';
+import { authMiddleware } from '../../middleware/authMiddleware.js';
+import { asyncHandler } from '../../middleware/errorHandler.js';
 
 const router = express.Router();
 
-// Documentation route
-router.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: '{Module} module documentation',
-    data: {module}Docs,
-    timestamp: new Date().toISOString()
-  });
-});
+/**
+ * @swagger
+ * /api/v2/{module}/action1:
+ *   get:
+ *     tags:
+ *       - {Module}
+ *     summary: Brief description
+ *     description: Detailed description
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *             example:
+ *               success: true
+ *               message: "Success message"
+ *               data: { ... }
+ *               timestamp: "2024-01-01T00:00:00.000Z"
+ *               meta:
+ *                 requestId: "req-1234567890"
+ *                 endpoint: "/api/v2/{module}/action1"
+ *                 method: "GET"
+ *                 duration: 145
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/action1', authMiddleware, asyncHandler(handler1));
 
-// Action routes
-router.get('/action1', handler1);
-router.get('/action2', handler2);
+// More routes with Swagger annotations...
+router.get('/action2', authMiddleware, asyncHandler(handler2));
 
 export default router;  // Default export
 ```
@@ -256,96 +285,28 @@ export const handler2 = async (req, res) => {
 };
 ```
 
-### Docs File ({module}Docs.js)
-
-**CRITICAL**: All module documentation MUST follow the standardized format (authDocs style).
-
-**Standard Structure:**
-```javascript
-export const {module}Docs = {
-  module: "{Module}",
-  description: "...",
-  version: "2.0.0",
-  endpoints: [
-    {
-      method: "GET|POST|PUT|DELETE",
-      path: "/api/v2/{module}/endpoint",
-      description: "Endpoint description",
-      access: "Public|Protected (requires Bearer token)",
-      
-      // Request (if applicable)
-      requestBody: { ... },      // For POST/PUT
-      headers: { ... },          // If required
-      queryParameters: { ... },  // If query params
-      pathParameters: { ... },   // If path params
-      
-      // Responses - ALL in one object (NOT separate responseExample/errorResponses)
-      responses: {
-        200: {
-          description: "Success description",
-          example: {
-            success: true,
-            message: "...",
-            data: { ... },
-            timestamp: "...",
-            meta: { ... }  // Always include meta field
-          }
-        },
-        400: {
-          description: "Error description",
-          example: {
-            success: false,
-            error: "ERROR_CODE",
-            message: "...",
-            timestamp: "...",
-            meta: { ... }  // Always include meta field
-          }
-        },
-        401: { ... },
-        403: { ... },
-        500: { ... }
-      }
-    }
-  ]
-};
-```
-
-**Key Requirements:**
-- ✅ Use `responses` object with status codes as keys (200, 400, 401, etc.)
-- ✅ Each status code has `description` and `example` (full JSON response)
-- ✅ All examples include `meta` field (except health/docs endpoints)
-- ❌ DO NOT use `responseExample` (single success example)
-- ❌ DO NOT use `errorResponses` array
-- ❌ DO NOT use `statusCodes` object (redundant)
-
 ### Index File (index.js)
 ```javascript
 import {module}Routes from './{module}Routes.js';
-import { {module}Docs } from './{module}Docs.js';
 
 // Named exports
-export { {module}Routes, {module}Docs };
+export { {module}Routes };
 
 // Default export (optional, for convenience)
 export default {
   routes: {module}Routes,
-  docs: {module}Docs,
   moduleName: '{module}'
 };
 ```
 
 ## Route Structure
-- Documentation route: `router.get('/', (req, res) => { /* return docs */ })`
 - Action routes: `router.get('/action', controller.handler)`
 - All routes are relative to `/api/v2/{module}`
+- **All routes MUST have Swagger annotations** using JSDoc `@swagger` tags
 
 ## Endpoint Conflict Prevention
 
-**CRITICAL**: No endpoint should conflict with documentation or health endpoints.
-
-### Documentation Endpoint Pattern
-- Documentation endpoint: `GET /api/v2/{module}` (base module path)
-- Pattern matched by error handler: `/^\/api\/v2\/[^\/]+$/` (exactly `/api/v2/{module}` with no additional path)
+**CRITICAL**: No endpoint should conflict with health endpoints.
 
 ### Health Endpoint Pattern
 - Health endpoints: `/api/v2/health/*` (any path under health)
@@ -353,10 +314,6 @@ export default {
 ### Conflict Rules
 
 **DO NOT** create endpoints that match these patterns:
-- ❌ `POST /api/v2/{module}` - Conflicts with docs endpoint `GET /api/v2/{module}`
-- ❌ `PUT /api/v2/{module}` - Conflicts with docs endpoint
-- ❌ `DELETE /api/v2/{module}` - Conflicts with docs endpoint
-- ❌ `PATCH /api/v2/{module}` - Conflicts with docs endpoint
 - ❌ Any method on `/api/v2/health` - Reserved for health checks
 
 **DO** use sub-paths for actions:
@@ -368,27 +325,14 @@ export default {
 
 ### Examples
 
-**BAD** (conflicts with docs):
-```javascript
-// ❌ POST /api/v2/users conflicts with GET /api/v2/users (docs)
-router.post('/', authMiddleware, asyncHandler(createUser));
-```
-
 **GOOD** (no conflict):
 ```javascript
 // ✅ POST /api/v2/users/create - No conflict
 router.post('/create', authMiddleware, asyncHandler(createUser));
 
-// ✅ POST /api/v2/users - OK if it's a sub-path like /api/v2/users/list
-router.post('/list', authMiddleware, asyncHandler(listUsers));
+// ✅ GET /api/v2/users/list - List users
+router.get('/list', authMiddleware, asyncHandler(listUsers));
 ```
-
-### Verification
-Before creating a new endpoint, verify:
-1. Does it match `/^\/api\/v2\/[^\/]+$/` pattern? → **MUST use sub-path**
-2. Is it under `/api/v2/health`? → **NOT ALLOWED**
-3. Is it `GET /api/v2/{module}`? → **OK (docs endpoint)**
-4. Does it have additional path segments? → **OK (no conflict)**
 
 ## Module Registration
 
@@ -415,7 +359,7 @@ export const registeredModules = [
 ];
 ```
 
-**Why**: The `registeredModules` array is used by `server.js` to automatically list all documentation endpoints in startup logs. If you don't add your module here, it won't appear in the startup logs.
+**Why**: The `registeredModules` array is used by `server.js` to automatically list all modules in startup logs. If you don't add your module here, it won't appear in the startup logs.
 
 ## Request Logger Availability
 - `req.logger` is automatically attached by requestLogger middleware

@@ -1,11 +1,10 @@
 /**
  * @author Bhavesh Venugopal
  * Users Module
- * Exports routes and documentation for user management
+ * Exports routes for user management
  */
 
 import userRoutes from './userRoutes.js';
-import { userDocs } from './userDocs.js';
 
-export { userRoutes, userDocs };
+export { userRoutes };
 

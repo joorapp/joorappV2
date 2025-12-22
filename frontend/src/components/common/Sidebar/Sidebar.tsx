@@ -16,7 +16,7 @@ interface NavigationItem {
   roles?: string[];
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
+const Sidebar = ({ isOpen = true, onClose }: SidebarProps) => {
   const { t } = useTranslation();
   const { user, hasRole } = useAuth();
 

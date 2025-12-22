@@ -8,10 +8,10 @@ interface CompanyHeaderProps {
   onMenuClick?: () => void;
 }
 
-const CompanyHeader: React.FC<CompanyHeaderProps> = ({ 
+const CompanyHeader = ({ 
   title = 'Company Dashboard',
   onMenuClick 
-}) => {
+}: CompanyHeaderProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
 
