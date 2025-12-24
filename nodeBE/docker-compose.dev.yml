@@ -17,10 +17,10 @@ services:
       - postgres_data:/var/lib/postgresql/data
       # Dev database: restore your schema/data (created via pg_dump)
       - ./postgres_init/init-dev-db.sql:/docker-entrypoint-initdb.d/01-init-dev-db.sql:ro
-      # Keycloak database: create empty database (Keycloak will create its own tables)
-      - ./docker/init-keycloak-db.sh:/docker-entrypoint-initdb.d/02-init-keycloak-db.sh:ro
-      # Test database: restore from same SQL dump as dev DB
-      - ./docker/init-test-db.sh:/docker-entrypoint-initdb.d/03-init-test-db.sh:ro
+      # Extra databases: create test and Keycloak DBs at initialization time (SQL-based, no shell scripts)
+      - ./postgres_init/init-create-extra-dbs.sql:/docker-entrypoint-initdb.d/02-create-extra-dbs.sql:ro
+      # Initialize test DB with the same schema as dev DB using the existing SQL dump
+      - ./postgres_init/init-test-db.sql:/docker-entrypoint-initdb.d/03-init-test-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
