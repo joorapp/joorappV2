@@ -129,6 +129,7 @@
     "address": "Adresse",
     "allPlans": "Alle Pläne",
     "allStatus": "Alle Status",
+    "noDataAvailable": "Keine Daten verfügbar",
     "errors": {
       "fillAllFields": "Bitte füllen Sie alle Felder aus",
       "selectPlan": "Bitte wählen Sie einen Plan aus"
@@ -138,6 +139,17 @@
       "saved": "Erfolgreich gespeichert",
       "updated": "Erfolgreich aktualisiert"
     }
+  },
+  "Validation": {
+    "emailRequired": "Bitte geben Sie Ihre E-Mail ein",
+    "emailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "phoneRequired": "Bitte geben Sie Ihre Telefonnummer ein",
+    "phoneInvalid": "Bitte geben Sie eine gültige Telefonnummer ein",
+    "nameRequired": "Bitte geben Sie den Kundennamen ein",
+    "addressRequired": "Bitte geben Sie die Adresse ein",
+    "nameMinLength": "Der Kundename muss mindestens 2 Zeichen lang sein",
+    "addressMinLength": "Die Adresse muss mindestens 5 Zeichen lang sein",
+    "fieldRequired": "Dieses Feld ist erforderlich"
   },
   "NewClients": {
     "newClient": "Neuer Kunde",
@@ -166,6 +178,7 @@
     "enterEmailAddress": "E-Mail-Adresse eingeben",
     "enterPhoneNumber": "Telefonnummer eingeben",
     "enterAddress": "Adresse eingeben",
+    "enterDescription": "Beschreibung eingeben (optional)",
     "confirmDelete": "Löschen bestätigen",
     "areYouSure": "Sind Sie sicher?",
     "deleteConfirmation": "Möchten Sie wirklich löschen",
@@ -190,7 +203,8 @@
       "clientName": "Kundenname",
       "email": "E-Mail",
       "phone": "Telefon",
-      "address": "Adresse"
+      "address": "Adresse",
+      "description": "Beschreibung"
     },
     "planFeatures": {
       "accessToAllBasic": "Zugriff auf alle Grundfunktionen",

@@ -9,17 +9,26 @@ import {
 //i18n
 import { withTranslation } from "react-i18next";
 
-import { Link } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 
 import user1 from "../../../assets/images/users/avatar-1.jpg";
+import LoginService from "../../../core/service/LoginService";
 
 const ProfileMenu = (props: { t: (key: string) => string }) => {
   // Declare a new state variable, which we'll call "menu"
   const [menu, setMenu] = useState(false);
   const username = "Admin";
-
- 
- 
+  const navigate = useNavigate();
+  const handleLogout = async () => {
+    try {
+     const response = await LoginService.logout();
+     if (response?.data?.success) {
+      navigate("/login");
+     }
+    } catch (error) {
+      console.error(error);
+    }
+  };    
 
   return (
     <React.Fragment>
@@ -60,10 +69,10 @@ const ProfileMenu = (props: { t: (key: string) => string }) => {
             {props.t('Navigation.lockScreen')}
           </DropdownItem>
           <div className="dropdown-divider" />
-          <Link to="/logout" className="dropdown-item">
+          <DropdownItem className="dropdown-item" onClick={handleLogout}>
             <i className="bx bx-power-off font-size-16 align-middle me-1 text-danger" />
             <span>{props.t('Navigation.logout')}</span>
-          </Link>
+          </DropdownItem>
         </DropdownMenu>
       </Dropdown>
     </React.Fragment>

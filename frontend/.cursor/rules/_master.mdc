@@ -13,6 +13,7 @@ priority: 1
 4. **State Management** - Use appropriate state management (Context, Redux, etc.)
 5. **Code Organization** - Follow component-based architecture
 6. **API Architecture** - ALL API calls MUST follow api-architecture.mdc pattern (see api-architecture.mdc)
+7. **Form Validation** - ALL form validation MUST use Utils.ts functions (see validation.mdc)
 
 ## Quick Reference
 - Component naming: `UserProfile.jsx` (PascalCase)
@@ -28,3 +29,5 @@ priority: 1
 - ❌ Console.log in production code (use proper logging)
 - ❌ Inline styles (use CSS modules or styled-components)
 - ❌ Direct DOM manipulation (use React patterns)
+- ❌ Inline validation logic (use Utils.ts validation functions)
+- ❌ Toast messages for validation errors (use inline FormFeedback)

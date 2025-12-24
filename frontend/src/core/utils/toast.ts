@@ -1,3 +1,12 @@
+/**
+ * @author Ananthapadmanabhan V K
+ * Toast utility for the application
+ * This file contains the toast utility for the application
+ * @returns TOAST_CONFIG object with the toast configuration
+ * @param message - The message to display
+ * @param options - The options to display the toast
+ */
+
 import { toast } from 'react-toastify';
 
 /**

@@ -1,0 +1,163 @@
+---
+description: Data handling patterns - No mock data and empty state handling
+globs: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"]
+alwaysApply: true
+priority: 1
+---
+# Data Handling Rules
+
+## CRITICAL: No Mock Data
+
+### Absolute Requirements - NO EXCEPTIONS
+
+1. **NEVER use mock/hardcoded data in components** - Always initialize state as empty arrays/objects
+2. **ALWAYS show "no data" message** - When any list/array is empty, display a user-friendly message
+3. **ALWAYS use translated messages** - "No data" messages must use translation keys
+4. **ALWAYS fetch data from API** - Use proper API calls to populate data, never hardcode
+
+## State Initialization Pattern
+
+### ❌ NEVER DO THIS:
+```typescript
+// Mock data - FORBIDDEN
+const [clients, setClients] = useState([
+  { id: '1', name: 'Client 1', email: 'client1@example.com' },
+  { id: '2', name: 'Client 2', email: 'client2@example.com' },
+]);
+```
+
+### ✅ ALWAYS DO THIS:
+```typescript
+// Empty state initialization
+const [clients, setClients] = useState<Client[]>([]);
+```
+
+## Empty State Handling Pattern
+
+### For Lists/Tables:
+
+```typescript
+// ✅ CORRECT - Show no data message when list is empty
+{filteredClients.length > 0 ? (
+  filteredClients.map((client) => (
+    <tr key={client.id}>
+      {/* Render item */}
+    </tr>
+  ))
+) : (
+  <tr>
+    <td colSpan={9} className="text-center py-4">
+      <p className="text-muted mb-0">{t('NewClients.noClientsFound')}</p>
+    </td>
+  </tr>
+)}
+```
+
+### For Cards/Grids:
+
+```typescript
+// ✅ CORRECT - Show no data message when array is empty
+{items.length > 0 ? (
+  <div className="row">
+    {items.map((item) => (
+      <div key={item.id} className="col-md-4">
+        {/* Render card */}
+      </div>
+    ))}
+  </div>
+) : (
+  <div className="text-center py-5">
+    <p className="text-muted mb-0">{t('Common.noDataAvailable')}</p>
+  </div>
+)}
+```
+
+### For Simple Lists:
+
+```typescript
+// ✅ CORRECT - Show no data message
+{users.length > 0 ? (
+  <ul>
+    {users.map((user) => (
+      <li key={user.id}>{user.name}</li>
+    ))}
+  </ul>
+) : (
+  <p className="text-muted text-center py-4">
+    {t('Common.noDataAvailable')}
+  </p>
+)}
+```
+
+## Translation Keys for Empty States
+
+Common translation keys to use:
+- `Common.noDataAvailable` - Generic "No data available" message
+- `FeatureName.noItemsFound` - Feature-specific empty state (e.g., `NewClients.noClientsFound`)
+- `FeatureName.emptyList` - Alternative empty state message
+
+**CRITICAL**: Always add these keys to ALL language files (en.json, de.json, ar.json)
+
+## Loading States
+
+When fetching data from API, also handle loading states:
+
+```typescript
+const [clients, setClients] = useState<Client[]>([]);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const fetchClients = async () => {
+    try {
+      setLoading(true);
+      const response = await ClientService.getClients();
+      setClients(response.data || []);
+    } catch (error) {
+      // Error handled by interceptor
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchClients();
+}, []);
+
+// In render:
+{loading ? (
+  <div className="text-center py-4">
+    <Spinner />
+    <p>{t('Common.loading')}</p>
+  </div>
+) : clients.length > 0 ? (
+  // Render list
+) : (
+  // Render empty state
+)}
+```
+
+## Checklist for Data Handling
+
+Before submitting code, verify:
+
+- [ ] No mock/hardcoded data in components
+- [ ] State initialized as empty array/object
+- [ ] Empty state message displayed when list is empty
+- [ ] Empty state message uses translation keys
+- [ ] Translation keys added to ALL language files
+- [ ] Loading state handled (if fetching from API)
+- [ ] Error state handled (if fetching from API)
+
+## Common Mistakes to Avoid
+
+1. ❌ **Using mock data for development** - Remove all mock data before committing
+2. ❌ **Forgetting empty state** - Always show message when list is empty
+3. ❌ **Hardcoding "No data" message** - Always use translation keys
+4. ❌ **Not handling loading state** - Show loading indicator while fetching
+5. ❌ **Not handling error state** - Show error message if fetch fails
+
+## Remember
+
+**Every list/array in the application must:**
+1. Start as empty (no mock data)
+2. Show a translated "no data" message when empty
+3. Fetch data from API (if needed)
+4. Handle loading and error states properly

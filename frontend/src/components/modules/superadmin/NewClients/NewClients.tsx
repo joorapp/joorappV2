@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+/**
+ * @author Ananthapadmanabhan V K
+ * New clients component for the application
+ * This component is the new clients page for the application
+ */
+
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardBody, Row, Col, Table, Button, Badge, Input, InputGroup, Modal, ModalHeader, ModalBody, ModalFooter, Label } from 'reactstrap';
+import { Card, CardBody, Row, Col, Table, Button, Badge, Input, InputGroup, Modal, ModalHeader, ModalBody, ModalFooter, Label, FormFeedback } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
-import { showErrorToast } from '../../../../core/utils/toast';
+import { showErrorToast, showSuccessToast } from '../../../../core/utils/toast';
+import SuperAdminService from '../../../../core/service/SuperAdminService';
+import { validateEmail, validatePhone, validateRequired } from '../../../../core/utils/Utils';
 
 interface Client {
   id: string;
@@ -10,6 +18,7 @@ interface Client {
   email: string;
   phone: string;
   address: string;
+  description?: string;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -30,80 +39,94 @@ const NewClients = () => {
   const [clientForPlan, setClientForPlan] = useState<Client | null>(null);
   const [selectedPlan, setSelectedPlan] = useState('');
   const [currentClientPlan, setCurrentClientPlan] = useState('Essential');
+  const [isCreatingClient, setIsCreatingClient] = useState(false);
   const [newClient, setNewClient] = useState({
     name: '',
     email: '',
     phone: '',
     address: '',
-    plan: '',
-    profile: null as { file: File; preview: string | ArrayBuffer | null } | null,
+    description: '',
+    logo: null as { file: File; preview: string | ArrayBuffer | null } | null,
   });
   const [editClient, setEditClient] = useState({
     name: '',
     email: '',
     phone: '',
     address: '',
-    profile: null as { file: File; preview: string | ArrayBuffer | null } | null,
+    logo: null as { file: File; preview: string | ArrayBuffer | null } | null,
   });
 
-  // Mock data for new clients
-  const [clients, setClients] = useState([
-    {
-      id: '1',
-      name: 'Larsen & Toubro (L&T)',
-      email: 'john.doe@example.com',
-      phone: '+1 234-567-8900',
-      address: '123 Main Street, New York, NY',
-      status: 'New',
-      createdAt: '2024-01-15T10:00:00Z',
-      updatedAt: '2024-01-20T14:30:00Z',
-      plan: 'Basic',
-    },
-    {
-      id: '2',
-      name: 'Reliance Industries',
-      email: 'jane.smith@example.com',
-      phone: '+1 234-567-8901',
-      address: '456 Main Street, Los Angeles, CA',
-      status: 'New',
-      createdAt: '2024-02-10T09:15:00Z',
-      updatedAt: '2024-02-15T11:45:00Z',
-      plan: 'Premium',
-    },
-    {
-      id: '3',
-      name: 'Tata Sons',
-      email: 'mike.w@digitalinnovations.com',
-      phone: '+1 234-567-8902',
-      address: '789 Main Street, Chicago, IL',
-      status: 'New',
-      createdAt: '2024-03-15T12:30:00Z',
-      updatedAt: '2024-03-20T15:45:00Z',
-      plan: 'Diamond',
-    },
-    {
-      id: '4',
-      name: 'Hindustan Unilever',
-      email: 'emily.d@futureenterprises.com',
-      phone: '+1 234-567-8903',
-      address: '101 Main Street, San Francisco, CA',
-      status: 'New',
-      createdAt: '2024-04-15T13:15:00Z',
-      updatedAt: '2024-04-20T16:30:00Z',
-      plan: 'Plan',
-    },
-    {
-      id: '5',
-      name: 'Bharti Airtel',
-      email: 'david.b@smartsystems.com',
-      phone: '+1 234-567-8904',
-      address: '123 Main Street, New York, NY',
-      status: 'New',
-      createdAt: '2024-05-15T14:00:00Z',
-      updatedAt: '2024-05-20T17:15:00Z',
-      plan: 'Plan',
+  const [clients, setClients] = useState<Client[]>([]);
+  
+  // Client form validation interfaces and function
+  interface ClientFormData {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  }
+
+  interface ClientValidationResult {
+    isValid: boolean;
+    errors: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+    };
+  }
+
+  // Form-specific validator - uses common validators from Utils.ts
+  const validateClientForm = (formData: ClientFormData): ClientValidationResult => {
+    const errors: ClientValidationResult['errors'] = {};
+    let isValid = true;
+
+    // Validate name
+    const nameValidation = validateRequired(formData.name, 'name');
+    if (!nameValidation.isValid) {
+      errors.name = nameValidation.errorMessage;
+      isValid = false;
     }
-  ]);
+
+    // Validate email
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.isValid) {
+      errors.email = emailValidation.errorMessage;
+      isValid = false;
+    }
+
+    // Validate phone
+    const phoneValidation = validatePhone(formData.phone);
+    if (!phoneValidation.isValid) {
+      errors.phone = phoneValidation.errorMessage;
+      isValid = false;
+    }
+
+    // Validate address
+    const addressValidation = validateRequired(formData.address, 'address');
+    if (!addressValidation.isValid) {
+      errors.address = addressValidation.errorMessage;
+      isValid = false;
+    }
+
+    return { isValid, errors };
+  };
+  
+  // Validation errors state for create form
+  const [createFormErrors, setCreateFormErrors] = useState<{
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  }>({});
+  
+  // Validation errors state for edit form
+  const [editFormErrors, setEditFormErrors] = useState<{
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  }>({});
 
   // Get initials from client name
   const getInitials = (name: string): string => {
@@ -168,34 +191,107 @@ const NewClients = () => {
     }
   };
 
-  const handleCreateClient = () => {
-    if (!newClient.name || !newClient.email || !newClient.phone || !newClient.address || !newClient.plan) {
-      showErrorToast(t('Common.errors.fillAllFields'));
-      return;
-    }
-
-    const client: Client = {
-      id: String(clients.length + 1),
-      name: newClient.name,
-      email: newClient.email,
-      phone: newClient.phone,
-      address: newClient.address,
-      status: 'New',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      plan: newClient.plan,
-    };
-
-    setClients([...clients, client]);
+  // Helper function to close create modal and reset form/errors
+  const handleCloseCreateModal = () => {
+    setCreateModalOpen(false);
     setNewClient({
       name: '',
       email: '',
       phone: '',
       address: '',
-      plan: '',
-      profile: null,
+      description: '',
+      logo: null,
     });
-    setCreateModalOpen(false);
+    setCreateFormErrors({});
+  };
+
+  // Helper function to close edit modal and reset form/errors
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+    setEditingClient(null);
+    setEditClient({
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      logo: null,
+    });
+    setEditFormErrors({});
+  };
+
+  const handleCreateClient = async () => {
+    // Validate form fields using the validation utility
+    const validation = validateClientForm({
+      name: newClient.name,
+      email: newClient.email,
+      phone: newClient.phone,
+      address: newClient.address,
+    });
+
+    if (!validation.isValid) {
+      // Set all validation errors to display under fields
+      setCreateFormErrors(validation.errors);
+      return;
+    }
+
+    // Clear errors if validation passes
+    setCreateFormErrors({});
+    setIsCreatingClient(true);
+
+    try {
+      // Extract base64 string from data URL (remove data:image/...;base64, prefix)
+      let logoBase64: string | null = null;
+      if (newClient.logo && newClient.logo.preview) {
+        const preview = newClient.logo.preview as string;
+        // If it's a data URL, extract just the base64 part
+        if (preview.startsWith('data:')) {
+          logoBase64 = preview.split(',')[1] || preview;
+        } else {
+          logoBase64 = preview;
+        }
+      }
+
+      const companyData = {
+        name: newClient.name,
+        description: newClient.description || '',
+        isActive: true,
+        email: newClient.email,
+        phone: newClient.phone,
+        address: newClient.address,
+        logo: logoBase64,
+      };
+      console.log(companyData);
+      // return;
+      const response = await SuperAdminService.createCompany(companyData);
+
+      // On success, add the new client to the list
+      if (response?.data) {
+        const newClientData = response.data;
+        const client: Client = {
+          id: newClientData.id || String(clients.length + 1),
+          name: newClientData.name || newClient.name,
+          email: newClientData.email || newClient.email,
+          phone: newClientData.phone || newClient.phone,
+          address: newClientData.address || newClient.address,
+          description: newClientData.description || newClient.description || '',
+          status: newClientData.status || 'New',
+          createdAt: newClientData.createdAt || new Date().toISOString(),
+          updatedAt: newClientData.updatedAt || new Date().toISOString(),
+          plan: newClientData.plan || '',
+        };
+
+        setClients([...clients, client]);
+        showSuccessToast(t('NewClients.clientCreatedSuccessfully') || 'Client created successfully');
+        
+        handleCloseCreateModal(); // Close modal and clear form/errors
+      }
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor
+      // Just log for debugging if needed
+      console.error('Error creating client:', error);
+    } finally {
+      setIsCreatingClient(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string | { file: File; preview: string | ArrayBuffer | null }) => {
@@ -203,6 +299,14 @@ const NewClients = () => {
       ...prev,
       [field]: value,
     }));
+    // Clear error for this field when user starts typing
+    if (createFormErrors[field as keyof typeof createFormErrors]) {
+      setCreateFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field as keyof typeof createFormErrors];
+        return newErrors;
+      });
+    }
   };
 
   const handleEditInputChange = (field: string, value: string | { file: File; preview: string | ArrayBuffer | null }) => {
@@ -210,6 +314,14 @@ const NewClients = () => {
       ...prev,
       [field]: value,
     }));
+    // Clear error for this field when user starts typing
+    if (editFormErrors[field as keyof typeof editFormErrors]) {
+      setEditFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field as keyof typeof editFormErrors];
+        return newErrors;
+      });
+    }
   };
 
   const handleEditClient = (client: Client) => {
@@ -219,39 +331,49 @@ const NewClients = () => {
       email: client.email,
       phone: client.phone,
       address: client.address,
-      profile: null,
+      logo: null,
     });
+    setEditFormErrors({}); // Clear errors when opening edit modal
     setEditModalOpen(true);
   };
 
   const handleUpdateClient = () => {
-    if (!editingClient || !editClient.name || !editClient.email || !editClient.phone || !editClient.address) {
+    if (!editingClient) {
       showErrorToast(t('Common.errors.fillAllFields'));
       return;
     }
 
+    // Validate form fields using the validation utility
+    const validation = validateClientForm({
+      name: editClient.name,
+      email: editClient.email,
+      phone: editClient.phone,
+      address: editClient.address,
+    });
+
+    if (!validation.isValid) {
+      // Set all validation errors to display under fields
+      setEditFormErrors(validation.errors);
+      return;
+    }
+
+    // Clear errors if validation passes
+    setEditFormErrors({});
+
     setClients(clients.map(client =>
       client.id === editingClient.id
         ? {
-          ...client,
-          name: editClient.name,
-          email: editClient.email,
-          phone: editClient.phone,
-          address: editClient.address,
-          updatedAt: new Date().toISOString()
-        }
+            ...client,
+            name: editClient.name,
+            email: editClient.email,
+            phone: editClient.phone,
+            address: editClient.address,
+            updatedAt: new Date().toISOString()
+          }
         : client
     ));
 
-    setEditModalOpen(false);
-    setEditingClient(null);
-            setEditClient({
-              name: '',
-              email: '',
-              phone: '',
-              address: '',
-              profile: null,
-            });
+    handleCloseEditModal(); // Close modal and clear form/errors
   };
 
   const handleDeleteClick = (client: Client) => {
@@ -518,8 +640,8 @@ const NewClients = () => {
       </Modal>
 
       {/* Create New Client Modal */}
-      <Modal isOpen={createModalOpen} toggle={() => setCreateModalOpen(!createModalOpen)} size="md" centered>
-        <ModalHeader toggle={() => setCreateModalOpen(!createModalOpen)}>
+      <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="md" centered>
+        <ModalHeader toggle={handleCloseCreateModal}>
           {t('NewClients.createClient')}
         </ModalHeader>
         <ModalBody>
@@ -530,9 +652,9 @@ const NewClients = () => {
                 className="profile-photo-upload position-relative d-flex align-items-center justify-content-center"
                 onClick={() => document.getElementById('client-profile-upload-input')?.click()}
               >
-                {newClient.profile && newClient.profile.preview ? (
+                {newClient.logo && newClient.logo.preview ? (
                   <img
-                    src={newClient.profile.preview as string}
+                    src={newClient.logo.preview as string}
                     alt="Profile"
                   />
                 ) : (
@@ -556,7 +678,7 @@ const NewClients = () => {
                       const file = e.target.files[0];
                       const reader = new FileReader();
                       reader.onload = function(ev) {
-                        handleInputChange('profile', {
+                        handleInputChange('logo', {
                           file,
                           preview: ev.target?.result || null
                         });
@@ -575,7 +697,13 @@ const NewClients = () => {
                 value={newClient.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder={t('NewClients.enterClientName')}
+                invalid={!!createFormErrors.name}
               />
+              {createFormErrors.name && (
+                <FormFeedback type="invalid">
+                  {t(createFormErrors.name)}
+                </FormFeedback>
+              )}
             </div>
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.email')} <span className="text-danger">*</span></Label>
@@ -584,7 +712,13 @@ const NewClients = () => {
                 value={newClient.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 placeholder={t('NewClients.enterEmailAddress')}
+                invalid={!!createFormErrors.email}
               />
+              {createFormErrors.email && (
+                <FormFeedback type="invalid">
+                  {t(createFormErrors.email)}
+                </FormFeedback>
+              )}
             </div>
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.phone')} <span className="text-danger">*</span></Label>
@@ -593,7 +727,13 @@ const NewClients = () => {
                 value={newClient.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 placeholder={t('NewClients.enterPhoneNumber')}
+                invalid={!!createFormErrors.phone}
               />
+              {createFormErrors.phone && (
+                <FormFeedback type="invalid">
+                  {t(createFormErrors.phone)}
+                </FormFeedback>
+              )}
             </div>
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.address')} <span className="text-danger">*</span></Label>
@@ -602,26 +742,32 @@ const NewClients = () => {
                 value={newClient.address}
                 onChange={(e) => handleInputChange('address', e.target.value)}
                 placeholder={t('NewClients.enterAddress')}
+                invalid={!!createFormErrors.address}
+              />
+              {createFormErrors.address && (
+                <FormFeedback type="invalid">
+                  {t(createFormErrors.address)}
+                </FormFeedback>
+              )}
+            </div>
+            <div className="col-md-12 mb-3">
+              <Label className="form-label fw-semibold">{t('NewClients.labels.description')}</Label>
+              <Input
+                type="textarea"
+                rows={3}
+                value={newClient.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder={t('NewClients.enterDescription')}
               />
             </div>
 
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button color="primary" onClick={handleCreateClient}>
-            {t('NewClients.createClient')}
+          <Button color="primary" onClick={handleCreateClient} disabled={isCreatingClient}>
+            {isCreatingClient ? t('Common.loading') || 'Loading...' : t('NewClients.createClient')}
           </Button>
-          <Button color="secondary" onClick={() => {
-            setCreateModalOpen(false);
-            setNewClient({
-              name: '',
-              email: '',
-              phone: '',
-              address: '',
-              plan: '',
-              profile: null,
-            });
-          }}>
+          <Button color="secondary" onClick={handleCloseCreateModal}>
             {t('Common.cancel')}
           </Button>
           
@@ -629,8 +775,8 @@ const NewClients = () => {
       </Modal>
 
       {/* Edit Client Modal */}
-      <Modal isOpen={editModalOpen} toggle={() => setEditModalOpen(!editModalOpen)} size="md" centered>
-        <ModalHeader toggle={() => setEditModalOpen(!editModalOpen)}>
+      <Modal isOpen={editModalOpen} toggle={handleCloseEditModal} size="md" centered>
+        <ModalHeader toggle={handleCloseEditModal}>
           {t('NewClients.editClient')}
         </ModalHeader>
         <ModalBody>
@@ -641,9 +787,9 @@ const NewClients = () => {
                 className="profile-photo-upload position-relative d-flex align-items-center justify-content-center"
                 onClick={() => document.getElementById('edit-client-profile-upload-input')?.click()}
               >
-                {editClient.profile && editClient.profile.preview ? (
+                {editClient.logo && editClient.logo.preview ? (
                   <img
-                    src={editClient.profile.preview as string}
+                    src={editClient.logo.preview as string}
                     alt="Profile"
                   />
                 ) : (
@@ -669,7 +815,7 @@ const NewClients = () => {
                       const file = e.target.files[0];
                       const reader = new FileReader();
                       reader.onload = function(ev) {
-                        handleEditInputChange('profile', {
+                        handleEditInputChange('logo', {
                           file,
                           preview: ev.target?.result || null
                         });
@@ -688,7 +834,13 @@ const NewClients = () => {
                 value={editClient.name}
                 onChange={(e) => handleEditInputChange('name', e.target.value)}
                 placeholder={t('NewClients.enterClientName')}
+                invalid={!!editFormErrors.name}
               />
+              {editFormErrors.name && (
+                <FormFeedback type="invalid">
+                  {t(editFormErrors.name)}
+                </FormFeedback>
+              )}
             </div>
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.email')} <span className="text-danger">*</span></Label>
@@ -697,7 +849,13 @@ const NewClients = () => {
                 value={editClient.email}
                 onChange={(e) => handleEditInputChange('email', e.target.value)}
                 placeholder={t('NewClients.enterEmailAddress')}
+                invalid={!!editFormErrors.email}
               />
+              {editFormErrors.email && (
+                <FormFeedback type="invalid">
+                  {t(editFormErrors.email)}
+                </FormFeedback>
+              )}
             </div>
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.phone')} <span className="text-danger">*</span></Label>
@@ -706,7 +864,13 @@ const NewClients = () => {
                 value={editClient.phone}
                 onChange={(e) => handleEditInputChange('phone', e.target.value)}
                 placeholder={t('NewClients.enterPhoneNumber')}
+                invalid={!!editFormErrors.phone}
               />
+              {editFormErrors.phone && (
+                <FormFeedback type="invalid">
+                  {t(editFormErrors.phone)}
+                </FormFeedback>
+              )}
             </div>
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.address')} <span className="text-danger">*</span></Label>
@@ -715,22 +879,18 @@ const NewClients = () => {
                 value={editClient.address}
                 onChange={(e) => handleEditInputChange('address', e.target.value)}
                 placeholder={t('NewClients.enterAddress')}
+                invalid={!!editFormErrors.address}
               />
+              {editFormErrors.address && (
+                <FormFeedback type="invalid">
+                  {t(editFormErrors.address)}
+                </FormFeedback>
+              )}
             </div>
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button color="secondary" onClick={() => {
-            setEditModalOpen(false);
-            setEditingClient(null);
-            setEditClient({
-              name: '',
-              email: '',
-              phone: '',
-              address: '',
-              profile: null,
-            });
-          }}>
+          <Button color="secondary" onClick={handleCloseEditModal}>
             {t('Common.cancel')}
           </Button>
           <Button color="primary" onClick={handleUpdateClient}>

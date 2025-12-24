@@ -1,10 +1,15 @@
+/**
+ * @author Ananthapadmanabhan V K
+ * API constants for the application
+ * This file contains the API constants for the application
+ * @returns API_ROUTES object with the API constants
+ */
+
 // 1. Define API path constants
 const API_PATH = "/api/v2";
-const CUSTOM_SERVICE_PATH = "/custom-service/api";
 
 // 2. Export base URLs from environment
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3030';
-export const CUSTOM_BASE_URL = import.meta.env.VITE_CUSTOM_SERVICE_URL || '';
 
 // 3. Create nested API_ROUTES object organized by feature
 const API_ROUTES = {
@@ -30,6 +35,9 @@ const API_ROUTES = {
   DASHBOARD: {
     GET_SUPERADMIN_DASHBOARD: API_PATH + "/dashboard/superadmin",
     GET_COMPANY_DASHBOARD: API_PATH + "/dashboard/company/<companyId>",
+  },
+  SUPERADMIN: {
+    CREATE_COMPANY: API_PATH + "/superAdmin/companies",
   },
 };
 

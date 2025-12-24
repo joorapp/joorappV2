@@ -129,6 +129,7 @@
     "address": "العنوان",
     "allPlans": "جميع الخطط",
     "allStatus": "جميع الحالات",
+    "noDataAvailable": "لا توجد بيانات متاحة",
     "errors": {
       "fillAllFields": "يرجى ملء جميع الحقول",
       "selectPlan": "يرجى اختيار خطة"
@@ -138,6 +139,17 @@
       "saved": "تم الحفظ بنجاح",
       "updated": "تم التحديث بنجاح"
     }
+  },
+  "Validation": {
+    "emailRequired": "يرجى إدخال بريدك الإلكتروني",
+    "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صحيح",
+    "phoneRequired": "يرجى إدخال رقم هاتفك",
+    "phoneInvalid": "يرجى إدخال رقم هاتف صحيح",
+    "nameRequired": "يرجى إدخال اسم العميل",
+    "addressRequired": "يرجى إدخال العنوان",
+    "nameMinLength": "يجب أن يكون اسم العميل على الأقل حرفين",
+    "addressMinLength": "يجب أن يكون العنوان على الأقل 5 أحرف",
+    "fieldRequired": "هذا الحقل مطلوب"
   },
   "NewClients": {
     "newClient": "عميل جديد",
@@ -166,6 +178,7 @@
     "enterEmailAddress": "أدخل عنوان البريد الإلكتروني",
     "enterPhoneNumber": "أدخل رقم الهاتف",
     "enterAddress": "أدخل العنوان",
+    "enterDescription": "أدخل الوصف (اختياري)",
     "confirmDelete": "تأكيد الحذف",
     "areYouSure": "هل أنت متأكد؟",
     "deleteConfirmation": "هل تريد حقاً حذف",
@@ -190,7 +203,8 @@
       "clientName": "اسم العميل",
       "email": "البريد الإلكتروني",
       "phone": "الهاتف",
-      "address": "العنوان"
+      "address": "العنوان",
+      "description": "الوصف"
     },
     "planFeatures": {
       "accessToAllBasic": "الوصول إلى جميع الأساسيات",
