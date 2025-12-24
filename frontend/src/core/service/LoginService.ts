@@ -13,8 +13,23 @@ export default class LoginService {
     return HttpUtil.uniterceptedPost(API_ROUTES.LOGIN.LOGINAPI, credentials);
   }
 
-  static logout() {
-    return HttpUtil.post(API_ROUTES.LOGIN.LOGOUTAPI);
+  static async logout() {
+    const refreshToken = localStorage.getItem("refreshToken");
+    localStorage.clear();
+    if (!refreshToken) {
+      localStorage.clear();
+      return Promise.reject(new Error("Refresh token not found"));
+    }
+    try {
+      const response = await HttpUtil.post(API_ROUTES.LOGIN.LOGOUTAPI, {
+        refresh_token: refreshToken,
+      });
+      localStorage.clear();
+      return response;
+    } catch (error) {
+      localStorage.clear();
+      return Promise.reject(error);
+    }
   }
 
   static getProfile() {
