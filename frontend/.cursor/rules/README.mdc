@@ -12,7 +12,9 @@ Before writing any frontend code, follow these rules:
 2. **coding-standards.mdc** - General coding standards
 3. **api-architecture.mdc** - API integration patterns (MANDATORY for all API calls)
 4. **translation.mdc** - Translation and internationalization rules (MANDATORY for all user-facing text)
-5. **todo.mdc** - General todo and task management
+5. **data-handling.mdc** - Data handling patterns (MANDATORY - No mock data, empty state handling)
+6. **validation.mdc** - Form validation rules (MANDATORY - Use Utils.ts for all validation)
+7. **todo.mdc** - General todo and task management
 
 ## Quick Reference
 - Use functional components with hooks
@@ -22,3 +24,5 @@ Before writing any frontend code, follow these rules:
 - Keep components small and focused
 - **CRITICAL:** All API calls MUST follow api-architecture.mdc pattern
 - **CRITICAL:** All user-facing text MUST be translated (see translation.mdc)
+- **CRITICAL:** No mock data - Always initialize as empty, show "no data" message (see data-handling.mdc)
+- **CRITICAL:** All form validation MUST use Utils.ts functions (see validation.mdc)

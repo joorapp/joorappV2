@@ -1,0 +1,357 @@
+---
+description: Form validation rules and patterns - use Utils.ts for common validators, create form-specific validators in components
+globs: ["ReactFE/**/*.jsx", "ReactFE/**/*.tsx", "ReactFE/**/*.js"]
+alwaysApply: true
+---
+# Form Validation Rules
+
+## CRITICAL: Use Utils.ts for Common Validators Only
+
+**MANDATORY:** 
+- **Utils.ts** contains ONLY common/reusable field validation functions (validateEmail, validatePhone, validateRequired, etc.)
+- **Form-specific validators** (like validateClientForm, validateUserForm) should be created IN THE COMPONENT, using the common validators from Utils.ts
+- Never create inline validation logic or duplicate validation code
+
+## Validation Utility Location
+
+**File:** `frontend/src/core/utils/Utils.ts`
+
+**Contains:** Only common/reusable field validators that can be used across multiple forms
+
+## Available Common Validation Functions (Utils.ts)
+
+### Individual Field Validators
+
+1. **validateEmail(email)** - Validates email format
+   - Returns: `ValidationResult` with `isValid` and optional `errorMessage`
+   - Error messages: `Validation.emailRequired`, `Validation.emailInvalid`
+
+2. **validatePhone(phone)** - Validates phone number format (7-15 digits, international format)
+   - Returns: `ValidationResult` with `isValid` and optional `errorMessage`
+   - Error messages: `Validation.phoneRequired`, `Validation.phoneInvalid`
+
+3. **validateRequired(value, fieldName)** - Validates required fields
+   - Returns: `ValidationResult` with `isValid` and optional `errorMessage`
+   - Error message: `Validation.{fieldName}Required`
+
+4. **validateMinLength(value, minLength, fieldName)** - Validates minimum length
+   - Returns: `ValidationResult` with `isValid` and optional `errorMessage`
+   - Error message: `Validation.{fieldName}MinLength`
+
+5. **validateMaxLength(value, maxLength, fieldName)** - Validates maximum length
+   - Returns: `ValidationResult` with `isValid` and optional `errorMessage`
+   - Error message: `Validation.{fieldName}MaxLength`
+
+## Validation Pattern in Components
+
+### Step 1: Import Common Validation Functions
+
+```typescript
+import { validateEmail, validatePhone, validateRequired } from '../../../../core/utils/Utils';
+```
+
+### Step 2: Create Form-Specific Validator in Component
+
+**CRITICAL:** Form-specific validators should be created IN THE COMPONENT, not in Utils.ts
+
+```typescript
+// Inside your component
+interface ClientFormData {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}
+
+interface ClientValidationResult {
+  isValid: boolean;
+  errors: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  };
+}
+
+// Form-specific validator - uses common validators from Utils.ts
+const validateClientForm = (formData: ClientFormData): ClientValidationResult => {
+  const errors: ClientValidationResult['errors'] = {};
+  let isValid = true;
+
+  // Use common validators from Utils.ts
+  const nameValidation = validateRequired(formData.name, 'name');
+  if (!nameValidation.isValid) {
+    errors.name = nameValidation.errorMessage;
+    isValid = false;
+  }
+
+  const emailValidation = validateEmail(formData.email);
+  if (!emailValidation.isValid) {
+    errors.email = emailValidation.errorMessage;
+    isValid = false;
+  }
+
+  const phoneValidation = validatePhone(formData.phone);
+  if (!phoneValidation.isValid) {
+    errors.phone = phoneValidation.errorMessage;
+    isValid = false;
+  }
+
+  const addressValidation = validateRequired(formData.address, 'address');
+  if (!addressValidation.isValid) {
+    errors.address = addressValidation.errorMessage;
+    isValid = false;
+  }
+
+  return { isValid, errors };
+};
+```
+
+### Step 3: Add Validation Error State
+
+```typescript
+const [formErrors, setFormErrors] = useState<{
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}>({});
+```
+
+### Step 4: Validate on Form Submit
+
+```typescript
+const handleSubmit = async () => {
+  // Use form-specific validator (created in component)
+  const validation = validateClientForm({
+    name: formData.name,
+    email: formData.email,
+    phone: formData.phone,
+    address: formData.address,
+  });
+
+  if (!validation.isValid) {
+    // Set all errors at once to display under fields
+    setFormErrors(validation.errors);
+    return;
+  }
+
+  // Clear errors if validation passes
+  setFormErrors({});
+  
+  // Proceed with form submission
+};
+```
+
+### Step 5: Display Inline Validation Errors
+
+```typescript
+import { FormFeedback } from 'reactstrap';
+
+// In your JSX:
+<Input
+  type="email"
+  value={formData.email}
+  onChange={(e) => handleInputChange('email', e.target.value)}
+  invalid={!!formErrors.email}
+/>
+{formErrors.email && (
+  <FormFeedback type="invalid">
+    {t(formErrors.email)}
+  </FormFeedback>
+)}
+```
+
+### Step 6: Clear Errors on Input Change
+
+```typescript
+const handleInputChange = (field: string, value: string) => {
+  setFormData(prev => ({ ...prev, [field]: value }));
+  
+  // Clear error for this field when user starts typing
+  if (formErrors[field as keyof typeof formErrors]) {
+    setFormErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[field as keyof typeof formErrors];
+      return newErrors;
+    });
+  }
+};
+```
+
+### Step 7: Clear Errors on Modal/Form Close
+
+```typescript
+const handleCloseModal = () => {
+  setModalOpen(false);
+  setFormData(initialFormData);
+  setFormErrors({}); // Always clear errors when closing
+};
+```
+
+## Validation Error Messages
+
+### Translation Keys Structure
+
+All validation error messages are stored in translation files under the `Validation` key:
+
+**Location:** `frontend/src/i18n/{language}.json`
+
+```json
+{
+  "Validation": {
+    "emailRequired": "Please enter your email",
+    "emailInvalid": "Please enter a valid email address",
+    "phoneRequired": "Please enter your phone number",
+    "phoneInvalid": "Please enter a valid phone number",
+    "nameRequired": "Please enter the client name",
+    "addressRequired": "Please enter the address",
+    "nameMinLength": "Client name must be at least 2 characters",
+    "addressMinLength": "Address must be at least 5 characters",
+    "fieldRequired": "This field is required"
+  }
+}
+```
+
+### Adding New Validation Messages
+
+1. Add the translation key to `Validation` section in all language files:
+   - `frontend/src/i18n/en.json`
+   - `frontend/src/i18n/de.json`
+   - `frontend/src/i18n/ar.json`
+
+2. Use the pattern: `Validation.{fieldName}{ErrorType}`
+   - Examples: `Validation.emailInvalid`, `Validation.phoneRequired`
+
+## Displaying Validation Errors
+
+### ✅ CORRECT: Inline Errors (All at Once)
+
+```typescript
+// Validate and show ALL errors at once
+const validation = validateClientForm(formData);
+if (!validation.isValid) {
+  setFormErrors(validation.errors); // Show all errors
+  return;
+}
+
+// Display errors under each field
+<Input invalid={!!formErrors.email} />
+{formErrors.email && (
+  <FormFeedback type="invalid">{t(formErrors.email)}</FormFeedback>
+)}
+```
+
+### ❌ WRONG: Toast Messages (One by One)
+
+```typescript
+// DON'T show validation errors as toast messages
+if (!validation.isValid) {
+  showErrorToast(t(validation.errors.email)); // ❌ Wrong
+  return;
+}
+```
+
+## Creating New Form Validators
+
+When you need validation for a new form type:
+
+1. **Create form-specific validator IN THE COMPONENT** (not in Utils.ts)
+2. **Use common validators from Utils.ts** (validateEmail, validatePhone, validateRequired, etc.)
+3. **Add translation keys** to all language files
+4. **Use the same pattern** in your component (state, validation, display)
+
+### Example: Adding User Form Validation
+
+```typescript
+// In your component file (e.g., UserForm.tsx)
+import { validateEmail, validateRequired, validateMinLength } from '../../../../core/utils/Utils';
+
+// Inside component
+interface UserFormData {
+  username?: string;
+  email?: string;
+  password?: string;
+}
+
+interface UserValidationResult {
+  isValid: boolean;
+  errors: {
+    username?: string;
+    email?: string;
+    password?: string;
+  };
+}
+
+// Form-specific validator - created in component
+const validateUserForm = (formData: UserFormData): UserValidationResult => {
+  const errors: UserValidationResult['errors'] = {};
+  let isValid = true;
+
+  // Use common validators from Utils.ts
+  const usernameValidation = validateRequired(formData.username, 'username');
+  if (!usernameValidation.isValid) {
+    errors.username = usernameValidation.errorMessage;
+    isValid = false;
+  }
+
+  const emailValidation = validateEmail(formData.email);
+  if (!emailValidation.isValid) {
+    errors.email = emailValidation.errorMessage;
+    isValid = false;
+  }
+
+  const passwordValidation = validateMinLength(formData.password, 8, 'password');
+  if (!passwordValidation.isValid) {
+    errors.password = passwordValidation.errorMessage;
+    isValid = false;
+  }
+
+  return { isValid, errors };
+};
+```
+
+## What Goes in Utils.ts vs Component
+
+### ✅ Utils.ts (Common/Reusable Validators)
+- `validateEmail()` - Can be used in any form
+- `validatePhone()` - Can be used in any form
+- `validateRequired()` - Can be used in any form
+- `validateMinLength()` - Can be used in any form
+- `validateMaxLength()` - Can be used in any form
+- Any validator that can be reused across multiple forms
+
+### ✅ Component (Form-Specific Validators)
+- `validateClientForm()` - Specific to client form
+- `validateUserForm()` - Specific to user form
+- `validateOrderForm()` - Specific to order form
+- Any validator that combines common validators for a specific form
+
+## Prohibited Patterns
+
+- ❌ **Inline validation logic** - Always use Utils.ts common validators
+- ❌ **Form-specific validators in Utils.ts** - Create them in components
+- ❌ **Toast messages for validation** - Use inline FormFeedback instead
+- ❌ **Hardcoded error messages** - Always use translation keys
+- ❌ **Duplicate validation code** - Reuse Utils.ts common validators
+- ❌ **One-by-one error display** - Show all errors at once
+- ❌ **Missing error clearing** - Always clear errors on input change and form close
+
+## Required Patterns
+
+- ✅ **Use Utils.ts common validators** - Import and use common validation functions
+- ✅ **Create form-specific validators in components** - Use common validators to build form validators
+- ✅ **Inline error display** - Use FormFeedback under each field
+- ✅ **Show all errors at once** - Set all errors in state simultaneously
+- ✅ **Translation keys** - All error messages must be translatable
+- ✅ **Clear on input** - Clear field error when user types
+- ✅ **Clear on close** - Clear all errors when form/modal closes
+- ✅ **Type safety** - Use TypeScript interfaces for form data and errors
+
+## Examples
+
+See `frontend/src/components/modules/superadmin/NewClients/NewClients.tsx` for a complete implementation example showing:
+- Importing common validators from Utils.ts
+- Creating form-specific validator in component
+- Using validation in form submission
+- Displaying inline errors

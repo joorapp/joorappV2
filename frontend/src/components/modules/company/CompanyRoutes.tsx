@@ -1,4 +1,10 @@
-import React from 'react';
+/**
+ * @author Ananthapadmanabhan V K
+ * Company routes for the application
+ * This file contains the company routes for the application
+ * @returns CompanyRoutes component with Routes, Route, Navigate
+ */
+
 import { Routes, Route, Navigate } from 'react-router-dom';
 import CompanyDashboard, {
   CompanyOverview,

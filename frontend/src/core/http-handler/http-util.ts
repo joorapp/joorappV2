@@ -1,3 +1,13 @@
+/**
+ * @author Ananthapadmanabhan V K
+ * Http utility for the application
+ * This file contains the http utility for the application
+ * @returns HttpUtil class with post, put, get, delete, patch, uniterceptedPost, uniterceptedGet
+ * @param url - The url to make the request to
+ * @param params - The parameters to send with the request
+ * @returns The response from the request
+ */
+
 import axios from "./http-incep";
 import unincepaxios from "./http-unintercept";
 

@@ -32,6 +32,41 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   return <>{children}</>;
 };
 
+interface PublicRouteProps {
+  children: React.ReactNode;
+}
+
+const PublicRoute = ({ children }: PublicRouteProps) => {
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  // If user is authenticated (has accessToken), redirect to appropriate dashboard
+  if (isAuthenticated) {
+    if (user?.role === 'superadmin') {
+      return <Navigate to="/superadmin" replace />;
+    } else if (user?.role === 'company') {
+      return <Navigate to="/company" replace />;
+    } else {
+      // Fallback: check localStorage for accessToken as additional check
+      const accessToken = localStorage.getItem('accessToken');
+      if (accessToken) {
+        // If token exists but role is not set, default to company
+        return <Navigate to="/company" replace />;
+      }
+    }
+  }
+
+  return <>{children}</>;
+};
+
 const Unauthorized = () => {
   return (
     <div className="unauthorized">
@@ -59,7 +94,14 @@ const CommonRoutes = () => {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/login" element={<Login />} />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        }
+      />
       <Route path="/unauthorized" element={<Unauthorized />} />
 
       {/* Protected Module Entrypoints */}

@@ -1,3 +1,10 @@
+/**
+ * @author Ananthapadmanabhan V K
+ * Main App component for the application
+ * This component is the main entry point for the application
+ * @returns App component with AuthProvider, CompaniesProvider, Router, ToastContainer, CommonRoutes
+ */
+
 import { BrowserRouter as Router } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { AuthProvider } from './context/AuthContext';

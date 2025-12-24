@@ -129,6 +129,7 @@
     "address": "Address",
     "allPlans": "All Plans",
     "allStatus": "All Status",
+    "noDataAvailable": "No data available",
     "errors": {
       "fillAllFields": "Please fill in all fields",
       "selectPlan": "Please select a plan"
@@ -138,6 +139,17 @@
       "saved": "Successfully saved",
       "updated": "Successfully updated"
     }
+  },
+  "Validation": {
+    "emailRequired": "Please enter your email",
+    "emailInvalid": "Please enter a valid email address",
+    "phoneRequired": "Please enter your phone number",
+    "phoneInvalid": "Please enter a valid phone number",
+    "nameRequired": "Please enter the client name",
+    "addressRequired": "Please enter the address",
+    "nameMinLength": "Client name must be at least 2 characters",
+    "addressMinLength": "Address must be at least 5 characters",
+    "fieldRequired": "This field is required"
   },
   "NewClients": {
     "newClient": "New Client",
@@ -166,6 +178,7 @@
     "enterEmailAddress": "Enter email address",
     "enterPhoneNumber": "Enter phone number",
     "enterAddress": "Enter address",
+    "enterDescription": "Enter description (optional)",
     "confirmDelete": "Confirm Delete",
     "areYouSure": "Are you sure?",
     "deleteConfirmation": "Do you really want to delete",
@@ -190,7 +203,8 @@
       "clientName": "Client Name",
       "email": "Email",
       "phone": "Phone",
-      "address": "Address"
+      "address": "Address",
+      "description": "Description"
     },
     "planFeatures": {
       "accessToAllBasic": "Access to all basic",

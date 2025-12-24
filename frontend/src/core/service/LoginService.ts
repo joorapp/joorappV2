@@ -1,3 +1,10 @@
+/**
+ * @author Ananthapadmanabhan V K
+ * Login service for the application
+ * This file contains the login service for the application
+ * @returns LoginService class with login, logout, getProfile, refreshToken, getCompanies, selectCompany
+ */
+
 import API_ROUTES from "../constants/api";
 import HttpUtil from "../http-handler/http-util";
 

@@ -1,4 +1,16 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+/**
+ * @author Ananthapadmanabhan V K
+ * Auth context for the application
+ * This context provides the authentication state and methods for the application
+ * @returns AuthContextType with user, isAuthenticated, isLoading, login, logout, hasRole, hasAnyRole, setUser
+ * @param user - The user object
+ * @param isAuthenticated - Whether the user is authenticated
+ * @param isLoading - Whether the authentication is loading
+ * @param login - The login method
+ * @param logout - The logout method
+ */
+
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import LoginService from '../core/service/LoginService';
 
@@ -35,36 +47,10 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-const STORAGE_KEY = 'user';
-
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  // Initialize user from localStorage on mount
-  const [user, setUserState] = useState<User | null>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (error) {
-      console.error('Failed to parse user from localStorage:', error);
-      localStorage.removeItem(STORAGE_KEY);
-    }
-    return null;
-  });
+  // User state - derived from keycloak_global_role in localStorage
+  const [user, setUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Sync user to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      if (user) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-      } else {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch (error) {
-      console.error('Failed to save user to localStorage:', error);
-    }
-  }, [user]);
 
   // Wrapper function to update user state
   const setUser = (newUser: User | null) => {
@@ -73,35 +59,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   // Check for existing session on mount
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuth = () => {
       try {
         const token = localStorage.getItem('accessToken') || localStorage.getItem('authToken'); // Support both for migration
         if (token) {
-          // Use LoginService to get profile and validate token
-          try {
-            const response = await LoginService.getProfile();
-            if (response.data?.success && response.data?.data?.user) {
-              // Map keycloak_global_role to user role if available
-              const keycloakRole = localStorage.getItem('keycloak_global_role');
-              const userData = {
-                ...response.data.data.user,
-                role: keycloakRole === 'SUPER_ADMIN' ? 'superadmin' : (keycloakRole ? 'company' : undefined) as UserRole | undefined,
-              };
-              setUser(userData);
-            } else {
-              setUser(null);
-              localStorage.removeItem('accessToken');
-              localStorage.removeItem('refreshToken');
-              localStorage.removeItem('authToken'); // Clean up old key
-              localStorage.removeItem('keycloak_global_role'); // Clear role from localStorage
-            }
-          } catch (error) {
-            // API call failed, clear tokens
-            setUser(null);
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('authToken'); // Clean up old key
-            localStorage.removeItem('keycloak_global_role'); // Clear role from localStorage
+          // Derive user role from keycloak_global_role in localStorage
+          const keycloakRole = localStorage.getItem('keycloak_global_role');
+          if (keycloakRole) {
+            const userRole: UserRole = keycloakRole === 'SUPER_ADMIN' ? 'superadmin' : 'company';
+            // Create minimal user object with role only (no API call needed)
+            setUser({
+              id: '',
+              email: '',
+              firstName: '',
+              lastName: '',
+              role: userRole,
+            });
           }
         } else {
           setUser(null);
@@ -168,7 +141,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('authToken'); // Clean up old key
-      localStorage.removeItem(STORAGE_KEY); // Clear user from localStorage
       localStorage.removeItem('keycloak_global_role'); // Clear role from localStorage
     }
   };
@@ -193,9 +165,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return user?.role ? roles.includes(user.role) : false;
   };
 
+  // Check authentication based on accessToken presence (reactive)
+  const isAuthenticated = useMemo(() => {
+    return !!(localStorage.getItem('accessToken') || localStorage.getItem('authToken'));
+  }, [user]); // Recalculate when user changes
+
   const value: AuthContextType = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated,
     isLoading,
     login,
     logout,

@@ -1,4 +1,11 @@
-import { useState } from 'react';
+/**
+ * @author Ananthapadmanabhan V K
+ * Login component for the application
+ * This component is the login page for the application
+ * @returns Login component with formik, validation schema, error, isSubmitting, handleSubmit, handleDemoLogin
+ */
+
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LoginService from '../../../core/service/LoginService';
@@ -20,10 +27,41 @@ const Login = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { setCompanies } = useCompanies();
-  const { setUser } = useAuth();
+  const { setUser, isAuthenticated, user, isLoading } = useAuth();
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Redirect if user is already authenticated (has accessToken)
+  useEffect(() => {
+    // Wait for auth check to complete
+    if (isLoading) {
+      return;
+    }
+
+    // Check if user is authenticated via context
+    if (isAuthenticated && user) {
+      if (user.role === 'superadmin') {
+        navigate('/superadmin', { replace: true });
+      } else {
+        navigate('/company', { replace: true });
+      }
+      return;
+    }
+
+    // Additional check: if accessToken exists in localStorage, redirect
+    // This handles cases where token exists but context hasn't loaded yet
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken && !isLoading) {
+      // Check role from localStorage
+      const keycloakRole = localStorage.getItem('keycloak_global_role');
+      if (keycloakRole === 'SUPER_ADMIN') {
+        navigate('/superadmin', { replace: true });
+      } else {
+        navigate('/company', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, isLoading, navigate]);
 
   // Yup validation schema
   const validationSchema = Yup.object({
