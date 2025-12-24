@@ -1,3 +1,10 @@
+/**
+ * @author Ananthapadmanabhan V K
+ * User service for the application
+ * This file contains the user service for the application
+ * @returns UserService class with getUsers, getUserDetails, createUser, updateUser, deleteUser
+ */
+
 import API_ROUTES from "../constants/api";
 import HttpUtil from "../http-handler/http-util";
 

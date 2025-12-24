@@ -1,3 +1,10 @@
+/**
+ * @author Ananthapadmanabhan V K
+ * Axios interceptor for unauthenticated requests
+ * This file contains the axios interceptor for unauthenticated requests
+ * @returns unincepaxios - The axios instance with interceptors
+ */
+
 import axios from "axios";
 import { BASE_URL } from "../constants/api";
 import { showErrorToastFromError } from "../utils/toast";

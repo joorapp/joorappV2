@@ -1,3 +1,14 @@
+/**
+ * @author Ananthapadmanabhan V K
+ * Companies context for the application
+ * This context provides the companies state and methods for the application
+ * @returns CompaniesContextType with companies, isLoading, setCompanies, clearCompanies
+ * @param companies - The companies array
+ * @param isLoading - Whether the companies are loading
+ * @param setCompanies - The function to set the companies
+ * @param clearCompanies - The function to clear the companies
+ */
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 

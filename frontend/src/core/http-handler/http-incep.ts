@@ -1,3 +1,10 @@
+/**
+ * @author Ananthapadmanabhan V K
+ * Axios interceptor for authenticated requests
+ * This file contains the axios interceptor for authenticated requests
+ * @returns mainAxios - The axios instance with interceptors
+ */
+
 import axios from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { BASE_URL } from "../constants/api";
