@@ -3,7 +3,7 @@ import HttpUtil from "../http-handler/http-util";
 
 export default class LoginService {
   static login(credentials: { email: string; password: string }) {
-    return HttpUtil.post(API_ROUTES.LOGIN.LOGINAPI, credentials);
+    return HttpUtil.uniterceptedPost(API_ROUTES.LOGIN.LOGINAPI, credentials);
   }
 
   static logout() {
@@ -24,6 +24,13 @@ export default class LoginService {
   static getCompanies() {
     // Use authenticated interceptor (token will be added automatically)
     return HttpUtil.get(API_ROUTES.LOGIN.GET_COMPANIES);
+  }
+
+  static selectCompany(companyId: string) {
+    // Use authenticated interceptor (token will be added automatically)
+    return HttpUtil.post(
+      API_ROUTES.LOGIN.SELECT_COMPANY.replace("<companyId>", companyId)
+    );
   }
 }
 
