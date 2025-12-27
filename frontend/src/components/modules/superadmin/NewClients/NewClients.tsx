@@ -46,6 +46,10 @@ const NewClients = () => {
     phone: '',
     address: '',
     description: '',
+    country: '',
+    state: '',
+    city: '',
+    zipCode: '',
     logo: null as { file: File; preview: string | ArrayBuffer | null } | null,
   });
   const [editClient, setEditClient] = useState({
@@ -200,6 +204,10 @@ const NewClients = () => {
       phone: '',
       address: '',
       description: '',
+      country: '',
+      state: '',
+      city: '',
+      zipCode: '',
       logo: null,
     });
     setCreateFormErrors({});
@@ -640,7 +648,7 @@ const NewClients = () => {
       </Modal>
 
       {/* Create New Client Modal */}
-      <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="md" centered>
+      <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="lg" centered>
         <ModalHeader toggle={handleCloseCreateModal}>
           {t('NewClients.createClient')}
         </ModalHeader>
@@ -705,7 +713,7 @@ const NewClients = () => {
                 </FormFeedback>
               )}
             </div>
-            <div className="col-md-12 mb-3">
+            <div className="col-md-6 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.email')} <span className="text-danger">*</span></Label>
               <Input
                 type="email"
@@ -720,7 +728,7 @@ const NewClients = () => {
                 </FormFeedback>
               )}
             </div>
-            <div className="col-md-12 mb-3">
+            <div className="col-md-6 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.phone')} <span className="text-danger">*</span></Label>
               <Input
                 type="tel"
@@ -735,6 +743,7 @@ const NewClients = () => {
                 </FormFeedback>
               )}
             </div>
+            
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.address')} <span className="text-danger">*</span></Label>
               <Input
@@ -749,6 +758,42 @@ const NewClients = () => {
                   {t(createFormErrors.address)}
                 </FormFeedback>
               )}
+            </div>
+            <div className="col-md-6 mb-3">
+                <Label className='form-label fw-semibold'>{t('NewClients.labels.country')}</Label>
+                <Input
+                  type="text"
+                  value={newClient.country}
+                  onChange={(e) => handleInputChange('country', e.target.value)}
+                  placeholder={t('NewClients.placeholders.enterCountry')}
+                />
+            </div>
+            <div className="col-md-6 mb-3">
+                <Label className='form-label fw-semibold'>{t('NewClients.labels.state')}</Label>
+                <Input
+                  type="text"
+                  value={newClient.state}
+                  onChange={(e) => handleInputChange('state', e.target.value)}
+                  placeholder={t('NewClients.placeholders.enterState')}
+                />
+            </div>
+            <div className="col-md-6 mb-3">
+                <Label className='form-label fw-semibold'>{t('NewClients.labels.city')}</Label>
+                <Input
+                  type="text"
+                  value={newClient.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  placeholder={t('NewClients.placeholders.enterCity')}
+                />
+            </div>
+            <div className="col-md-6 mb-3">
+                <Label className='form-label fw-semibold'>{t('NewClients.labels.zipCode')}</Label>
+                <Input
+                  type="text"
+                  value={newClient.zipCode}
+                  onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                  placeholder={t('NewClients.placeholders.enterZipCode')}
+                />
             </div>
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.description')}</Label>
