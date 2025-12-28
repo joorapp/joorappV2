@@ -198,7 +198,7 @@ export const login = async (req, res) => {
     const user = await syncUserFromKeycloak(userInfo);
 
     // Step 5: Fetch user's companies
-    const { CompanyUser, Company, CompanyRole } = await import('../../models/index.js');
+    const { CompanyUser, Company, CompanyRole, Plan } = await import('../../models/index.js');
     
     const companyUsers = await CompanyUser.findAll({
       where: {
@@ -213,7 +213,14 @@ export const login = async (req, res) => {
           where: {
             isDeleted: false
           },
-          required: true
+          required: true,
+          include: [
+            {
+              model: Plan,
+              as: 'plan',
+              required: false
+            }
+          ]
         },
         {
           model: CompanyRole,
@@ -227,7 +234,28 @@ export const login = async (req, res) => {
     const companies = companyUsers.map(cu => ({
       id: cu.company.id,
       name: cu.company.name,
+      description: cu.company.description,
       isActive: cu.company.isActive,
+      status: cu.company.status,
+      email: cu.company.email,
+      phone: cu.company.phone,
+      buildingAddress: cu.company.buildingAddress,
+      streetAddress: cu.company.streetAddress,
+      city: cu.company.city,
+      state: cu.company.state,
+      postalCode: cu.company.postalCode,
+      country: cu.company.country,
+      plan: cu.company.plan ? {
+        id: cu.company.plan.id,
+        name: cu.company.plan.name,
+        code: cu.company.plan.code,
+        description: cu.company.plan.description,
+        price: parseFloat(cu.company.plan.price) || 0.00,
+        isActive: cu.company.plan.isActive,
+        createdDate: cu.company.plan.createdDate,
+        updatedDate: cu.company.plan.updatedDate,
+        version: cu.company.plan.version
+      } : null,
       role: {
         id: cu.role.id,
         name: cu.role.name,
@@ -315,7 +343,7 @@ export const selectCompany = async (req, res) => {
     });
 
     // Dynamically import models to avoid import-time database access
-    const { CompanyUser, Company, CompanyRole, User, UserCompanyContext } = await import('../../models/index.js');
+    const { CompanyUser, Company, CompanyRole, User, UserCompanyContext, Plan } = await import('../../models/index.js');
 
     // Validate user has access to this company
     const companyUser = await CompanyUser.findOne({
@@ -332,7 +360,14 @@ export const selectCompany = async (req, res) => {
           where: {
             isDeleted: false
           },
-          required: true
+          required: true,
+          include: [
+            {
+              model: Plan,
+              as: 'plan',
+              required: false
+            }
+          ]
         },
         {
           model: CompanyRole,
@@ -381,7 +416,29 @@ export const selectCompany = async (req, res) => {
       company: {
         id: companyUser.company.id,
         name: companyUser.company.name,
-        isActive: companyUser.company.isActive
+        description: companyUser.company.description,
+        isActive: companyUser.company.isActive,
+        status: companyUser.company.status,
+        email: companyUser.company.email,
+        phone: companyUser.company.phone,
+        buildingAddress: companyUser.company.buildingAddress,
+        streetAddress: companyUser.company.streetAddress,
+        city: companyUser.company.city,
+        state: companyUser.company.state,
+        postalCode: companyUser.company.postalCode,
+        country: companyUser.company.country,
+        logo: companyUser.company.logo,
+        plan: companyUser.company.plan ? {
+          id: companyUser.company.plan.id,
+          name: companyUser.company.plan.name,
+          code: companyUser.company.plan.code,
+          description: companyUser.company.plan.description,
+          price: parseFloat(companyUser.company.plan.price) || 0.00,
+          isActive: companyUser.company.plan.isActive,
+          createdDate: companyUser.company.plan.createdDate,
+          updatedDate: companyUser.company.plan.updatedDate,
+          version: companyUser.company.plan.version
+        } : null
       },
       role: {
         id: companyUser.role.id,
@@ -484,7 +541,7 @@ export const getCurrentContext = async (req, res) => {
     });
 
     // Dynamically import models to avoid import-time database access
-    const { UserCompanyContext, Company } = await import('../../models/index.js');
+    const { UserCompanyContext, Company, Plan } = await import('../../models/index.js');
 
     // Find company context for this session
     const userCompanyContext = await UserCompanyContext.findOne({
@@ -495,7 +552,14 @@ export const getCurrentContext = async (req, res) => {
         {
           model: Company,
           as: 'company',
-          required: false
+          required: false,
+          include: [
+            {
+              model: Plan,
+              as: 'plan',
+              required: false
+            }
+          ]
         }
       ]
     });
@@ -526,7 +590,28 @@ export const getCurrentContext = async (req, res) => {
           company: {
             id: userCompanyContext.company.id,
             name: userCompanyContext.company.name,
-            isActive: userCompanyContext.company.isActive
+            description: userCompanyContext.company.description,
+            isActive: userCompanyContext.company.isActive,
+            status: userCompanyContext.company.status,
+            email: userCompanyContext.company.email,
+            phone: userCompanyContext.company.phone,
+            buildingAddress: userCompanyContext.company.buildingAddress,
+            streetAddress: userCompanyContext.company.streetAddress,
+            city: userCompanyContext.company.city,
+            state: userCompanyContext.company.state,
+            postalCode: userCompanyContext.company.postalCode,
+            country: userCompanyContext.company.country,
+            plan: userCompanyContext.company.plan ? {
+              id: userCompanyContext.company.plan.id,
+              name: userCompanyContext.company.plan.name,
+              code: userCompanyContext.company.plan.code,
+              description: userCompanyContext.company.plan.description,
+              price: parseFloat(userCompanyContext.company.plan.price) || 0.00,
+              isActive: userCompanyContext.company.plan.isActive,
+              createdDate: userCompanyContext.company.plan.createdDate,
+              updatedDate: userCompanyContext.company.plan.updatedDate,
+              version: userCompanyContext.company.plan.version
+            } : null
           }
         },
         {},

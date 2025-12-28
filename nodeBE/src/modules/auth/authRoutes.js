@@ -98,7 +98,27 @@ const router = express.Router();
  *                 companies:
  *                   - id: "550e8400-e29b-41d4-a716-446655440000"
  *                     name: "Company Name"
+ *                     description: "A leading technology company"
  *                     isActive: true
+ *                     status: "ACTIVE"
+ *                     email: "contact@company.com"
+ *                     phone: "+1 234-567-8900"
+ *                     buildingAddress: "Suite 100"
+ *                     streetAddress: "123 Main Street"
+ *                     city: "New York"
+ *                     state: "NY"
+ *                     postalCode: "10001"
+ *                     country: "United States"
+ *                     plan:
+ *                       id: "550e8400-e29b-41d4-a716-446655440003"
+ *                       name: "Basic"
+ *                       code: "BASIC"
+ *                       description: "Basic subscription plan"
+ *                       price: 0.00
+ *                       isActive: true
+ *                       createdDate: "2024-11-23T12:00:00.000Z"
+ *                       updatedDate: "2024-11-23T12:00:00.000Z"
+ *                       version: 1
  *                     role:
  *                       id: "660e8400-e29b-41d4-a716-446655440001"
  *                       name: "CompanyAdmin"
@@ -170,7 +190,28 @@ router.post('/login', asyncHandler(login));
  *                 company:
  *                   id: "550e8400-e29b-41d4-a716-446655440000"
  *                   name: "Company Name"
+ *                   description: "A leading technology company"
  *                   isActive: true
+ *                   status: "ACTIVE"
+ *                   email: "contact@company.com"
+ *                   phone: "+1 234-567-8900"
+ *                   buildingAddress: "Suite 100"
+ *                   streetAddress: "123 Main Street"
+ *                   city: "New York"
+ *                   state: "NY"
+ *                   postalCode: "10001"
+ *                   country: "United States"
+ *                   logo: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+ *                   plan:
+ *                     id: "550e8400-e29b-41d4-a716-446655440003"
+ *                     name: "Basic"
+ *                     code: "BASIC"
+ *                     description: "Basic subscription plan"
+ *                     price: 0.00
+ *                     isActive: true
+ *                     createdDate: "2024-11-23T12:00:00.000Z"
+ *                     updatedDate: "2024-11-23T12:00:00.000Z"
+ *                     version: 1
  *                 role:
  *                   id: "7a9d55d7-e89c-4cab-b30f-0d5d9fc2f7e7"
  *                   name: "CompanyAdmin"
@@ -239,7 +280,27 @@ router.post('/companies/:companyId/select', authMiddleware, asyncHandler(selectC
  *                     company:
  *                       id: "550e8400-e29b-41d4-a716-446655440000"
  *                       name: "Company Name"
+ *                       description: "A leading technology company"
  *                       isActive: true
+ *                       status: "ACTIVE"
+ *                       email: "contact@company.com"
+ *                       phone: "+1 234-567-8900"
+ *                       buildingAddress: "Suite 100"
+ *                       streetAddress: "123 Main Street"
+ *                       city: "New York"
+ *                       state: "NY"
+ *                       postalCode: "10001"
+ *                       country: "United States"
+ *                       plan:
+ *                         id: "550e8400-e29b-41d4-a716-446655440003"
+ *                         name: "Basic"
+ *                         code: "BASIC"
+ *                         description: "Basic subscription plan"
+ *                         price: 0.00
+ *                         isActive: true
+ *                         createdDate: "2024-11-23T12:00:00.000Z"
+ *                         updatedDate: "2024-11-23T12:00:00.000Z"
+ *                         version: 1
  *                   timestamp: "2024-11-23T12:00:00.000Z"
  *                   meta:
  *                     requestId: "req-1234567890"

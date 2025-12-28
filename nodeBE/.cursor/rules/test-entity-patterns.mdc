@@ -1,0 +1,754 @@
+---
+description: Test patterns for MasterDataEntity vs AuditableEntity - prevent confusion
+globs: ["nodeBE/**/*.test.js"]
+alwaysApply: true
+priority: 1
+---
+# Test Entity Patterns: MasterDataEntity vs AuditableEntity
+
+## CRITICAL: Determine Entity Type First
+
+**Before writing ANY test**, determine if the model uses:
+- **MasterDataEntity** - System/reference data (Plan, User, etc.)
+- **AuditableEntity** - Business data (Company, Order, etc.)
+
+**See master-data-entity.mdc for when to use each.**
+
+## Quick Decision Tree
+
+```
+Is this system/reference data?
+├─ YES → MasterDataEntity → NO context required
+└─ NO → AuditableEntity → Context REQUIRED
+```
+
+## How to Identify Entity Type
+
+### Check the Model File
+
+```javascript
+// MasterDataEntity pattern
+import { getMasterDataFields, getMasterDataHooks } from './base/MasterDataEntity.js';
+
+// AuditableEntity pattern
+import { getAuditableFields, getAuditableHooks } from './base/AuditableEntity.js';
+```
+
+### Check the Repository File
+
+```javascript
+// MasterDataEntity pattern
+import { MasterBaseRepository } from './base/MasterBaseRepository.js';
+export class PlanRepository extends MasterBaseRepository { }
+
+// AuditableEntity pattern
+import { BaseRepository } from './base/BaseRepository.js';
+export class CompanyRepository extends BaseRepository { }
+```
+
+## Side-by-Side Comparison
+
+### Model Tests
+
+#### AuditableEntity Pattern
+```javascript
+import { createAuditContext } from '../../../__tests__/helpers/factories.js';
+
+describe('Company Model', () => {
+  let auditContext;
+  
+  beforeEach(async () => {
+    testUser = await User.create(createUserData());
+    auditContext = createAuditContext(testUser.id, companyId);
+  });
+  
+  it('should create with context', async () => {
+    // ✅ CORRECT: Context REQUIRED
+    const company = await Company.create(data, { context: auditContext });
+    
+    expect(company.createdUserId).toBe(testUser.id);
+    expect(company.createdCompanyId).toBe(companyId);
+    expect(company.createdDate).toBeDefined();
+  });
+  
+  it('should update with context', async () => {
+    const company = await Company.create(data, { context: auditContext });
+    
+    // ✅ CORRECT: Context REQUIRED
+    await company.update(updateData, { context: auditContext });
+    
+    expect(company.updatedUserId).toBe(testUser.id);
+    expect(company.updatedDate).toBeDefined();
+  });
+  
+  it('should delete with context', async () => {
+    const company = await Company.create(data, { context: auditContext });
+    
+    // ✅ CORRECT: Context REQUIRED
+    await company.destroy({ context: auditContext });
+    
+    expect(company.deletedUserId).toBe(testUser.id);
+    expect(company.isDeleted).toBe(true);
+  });
+});
+```
+
+#### MasterDataEntity Pattern
+```javascript
+describe('Plan Model', () => {
+  it('should create without context', async () => {
+    // ✅ CORRECT: NO context required
+    const plan = await Plan.create({
+      name: 'Test Plan',
+      code: 'TEST',
+      price: 0.00
+    });
+    
+    expect(plan).toBeDefined();
+    expect(plan.createdDate).toBeDefined();
+    expect(plan.updatedDate).toBeDefined();
+    expect(plan.version).toBe(1);
+    expect(plan.isDeleted).toBe(false);
+    // ❌ NO createdUserId - doesn't exist!
+    // ❌ NO updatedUserId - doesn't exist!
+  });
+  
+  it('should update without context', async () => {
+    const plan = await Plan.create({ name: 'Test', code: 'TEST' });
+    
+    // ✅ CORRECT: NO context required
+    await plan.update({ name: 'Updated' });
+    
+    expect(plan.name).toBe('Updated');
+    expect(plan.updatedDate).toBeDefined();
+    expect(plan.version).toBe(2); // Incremented
+    // ❌ NO updatedUserId - doesn't exist!
+  });
+  
+  it('should delete without context', async () => {
+    const plan = await Plan.create({ name: 'Test', code: 'TEST' });
+    
+    // ✅ CORRECT: deletedUserId optional
+    await plan.destroy(); // deletedUserId will be null
+    // OR
+    await plan.destroy({ deletedUserId: testUser.id }); // Optional: track who deleted
+    
+    const deleted = await Plan.scope('onlyDeleted').findByPk(plan.id);
+    expect(deleted.isDeleted).toBe(true);
+    expect(deleted.deletedUserId).toBeNull(); // Or testUser.id if provided
+  });
+});
+```
+
+### Repository Tests
+
+#### AuditableEntity Pattern (BaseRepository)
+```javascript
+import { BaseRepository } from '../base/BaseRepository.js';
+import { createAuditContext } from '../../../__tests__/helpers/factories.js';
+
+describe('CompanyRepository', () => {
+  let repository;
+  let auditContext;
+  
+  beforeEach(async () => {
+    repository = new CompanyRepository();
+    testUser = await User.create(createUserData());
+    auditContext = createAuditContext(testUser.id, companyId);
+  });
+  
+  it('should create with context', async () => {
+    // ✅ CORRECT: Context REQUIRED
+    const company = await repository.create(data, auditContext);
+    
+    expect(company.createdUserId).toBe(testUser.id);
+    expect(mockRepository.create).toHaveBeenCalledWith(data, auditContext);
+  });
+  
+  it('should update with context', async () => {
+    const company = await repository.create(data, auditContext);
+    
+    // ✅ CORRECT: Context REQUIRED
+    const updated = await repository.update(company.id, updateData, auditContext);
+    
+    expect(updated.updatedUserId).toBe(testUser.id);
+  });
+  
+  it('should delete with context', async () => {
+    const company = await repository.create(data, auditContext);
+    
+    // ✅ CORRECT: Context REQUIRED
+    await repository.delete(company.id, auditContext);
+    
+    expect(company.deletedUserId).toBe(testUser.id);
+  });
+});
+```
+
+#### MasterDataEntity Pattern (MasterBaseRepository)
+```javascript
+import { MasterBaseRepository } from '../base/MasterBaseRepository.js';
+
+describe('PlanRepository', () => {
+  let repository;
+  
+  beforeEach(async () => {
+    repository = new PlanRepository();
+  });
+  
+  it('should create without context', async () => {
+    // ✅ CORRECT: NO context required
+    const plan = await repository.create({
+      name: 'Test Plan',
+      code: 'TEST',
+      price: 0.00
+    });
+    
+    expect(plan).toBeDefined();
+    expect(plan.createdDate).toBeDefined();
+    // ❌ NO createdUserId assertion
+  });
+  
+  it('should update without context', async () => {
+    const plan = await repository.create({ name: 'Test', code: 'TEST' });
+    
+    // ✅ CORRECT: NO context required
+    const updated = await repository.update(plan.id, { name: 'Updated' });
+    
+    expect(updated.name).toBe('Updated');
+    expect(updated.version).toBe(2);
+    // ❌ NO updatedUserId assertion
+  });
+  
+  it('should delete without context', async () => {
+    const plan = await repository.create({ name: 'Test', code: 'TEST' });
+    
+    // ✅ CORRECT: deletedUserId optional in options
+    await repository.delete(plan.id); // deletedUserId: null
+    // OR
+    await repository.delete(plan.id, { deletedUserId: testUser.id }); // Optional
+    
+    const deleted = await repository.findByIdDeleted(plan.id);
+    expect(deleted.isDeleted).toBe(true);
+  });
+});
+```
+
+### Service Tests
+
+#### AuditableEntity Pattern
+```javascript
+jest.unstable_mockModule('../repositories/companyRepository.js', () => ({
+  companyRepository: {
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn()
+  }
+}));
+
+describe('CompanyService', () => {
+  let companyService;
+  let companyRepository;
+  let mockContext;
+  
+  beforeEach(() => {
+    mockContext = { userId: 'user-id', companyId: 'company-id' };
+    jest.clearAllMocks();
+  });
+  
+  it('should create company with context', async () => {
+    // ✅ CORRECT: Context REQUIRED
+    const result = await companyService.createCompany(data, mockContext);
+    
+    expect(companyRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ ... }),
+      mockContext
+    );
+    expect(result.createdUserId).toBe(mockContext.userId);
+  });
+  
+  it('should update company with context', async () => {
+    // ✅ CORRECT: Context REQUIRED
+    await companyService.updateCompany(id, data, mockContext);
+    
+    expect(companyRepository.update).toHaveBeenCalledWith(
+      id,
+      expect.objectContaining({ ... }),
+      mockContext
+    );
+  });
+});
+```
+
+#### MasterDataEntity Pattern
+```javascript
+jest.unstable_mockModule('../repositories/planRepository.js', () => ({
+  planRepository: {
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn()
+  }
+}));
+
+describe('PlanService', () => {
+  let planService;
+  let planRepository;
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  it('should create plan without context', async () => {
+    // ✅ CORRECT: NO context required
+    const result = await planService.createPlan(data);
+    
+    expect(planRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ ... })
+      // ❌ NO context parameter
+    );
+    expect(result.createdDate).toBeDefined();
+    // ❌ NO createdUserId assertion
+  });
+  
+  it('should update plan without context', async () => {
+    // ✅ CORRECT: NO context required
+    await planService.updatePlan(id, data);
+    
+    expect(planRepository.update).toHaveBeenCalledWith(
+      id,
+      expect.objectContaining({ ... })
+      // ❌ NO context parameter
+    );
+  });
+  
+  it('should delete plan with deletedUserId in options', async () => {
+    // ✅ CORRECT: deletedUserId in options, not context
+    await planService.deletePlan(id, { deletedUserId: 'user-id' });
+    
+    expect(planRepository.delete).toHaveBeenCalledWith(
+      id,
+      { deletedUserId: 'user-id' }
+    );
+  });
+});
+```
+
+### Controller Tests
+
+#### AuditableEntity Pattern
+```javascript
+jest.unstable_mockModule('../../services/companyService.js', () => ({
+  createCompany: jest.fn(),
+  updateCompany: jest.fn(),
+  deleteCompany: jest.fn()
+}));
+
+describe('CompanyController', () => {
+  let req, res;
+  
+  beforeEach(() => {
+    req = {
+      body: { name: 'Test Company' },
+      user: { id: 'user-id' },
+      company: { id: 'company-id' },
+      id: 'req-123'
+    };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+  });
+  
+  it('should create company with context', async () => {
+    // ✅ CORRECT: Context passed to service
+    await createCompany(req, res);
+    
+    expect(mockCreateCompany).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Test Company' }),
+      { userId: req.user.id, companyId: req.company.id }
+    );
+  });
+  
+  it('should update company with context', async () => {
+    // ✅ CORRECT: Context passed to service
+    await updateCompany(req, res);
+    
+    expect(mockUpdateCompany).toHaveBeenCalledWith(
+      req.params.id,
+      expect.objectContaining({ ... }),
+      { userId: req.user.id, companyId: req.company.id }
+    );
+  });
+});
+```
+
+#### MasterDataEntity Pattern
+```javascript
+jest.unstable_mockModule('../../services/planService.js', () => ({
+  createPlan: jest.fn(),
+  updatePlan: jest.fn(),
+  deletePlan: jest.fn()
+}));
+
+describe('PlanController', () => {
+  let req, res;
+  
+  beforeEach(() => {
+    req = {
+      body: { name: 'Test Plan', code: 'TEST' },
+      user: { id: 'user-id' },
+      id: 'req-123'
+    };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+  });
+  
+  it('should create plan without context', async () => {
+    // ✅ CORRECT: NO context passed
+    await createPlan(req, res);
+    
+    expect(mockCreatePlan).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Test Plan', code: 'TEST' })
+      // ❌ NO context parameter
+    );
+  });
+  
+  it('should update plan without context', async () => {
+    // ✅ CORRECT: NO context passed
+    await updatePlan(req, res);
+    
+    expect(mockUpdatePlan).toHaveBeenCalledWith(
+      req.params.id,
+      expect.objectContaining({ ... })
+      // ❌ NO context parameter
+    );
+  });
+  
+  it('should delete plan with deletedUserId in options', async () => {
+    // ✅ CORRECT: deletedUserId in options, not context
+    await deletePlan(req, res);
+    
+    expect(mockDeletePlan).toHaveBeenCalledWith(
+      req.params.id,
+      { deletedUserId: req.user.id }
+    );
+  });
+});
+```
+
+### Integration Test Cleanup
+
+#### AuditableEntity Pattern
+```javascript
+describe('Company Integration Tests', () => {
+  afterAll(async () => {
+    // ✅ CORRECT: Can filter by createdUserId
+    await Company.destroy({
+      where: {
+        createdUserId: { [Op.ne]: testUser.id }
+      }
+    });
+  });
+});
+```
+
+#### MasterDataEntity Pattern
+```javascript
+import { sequelize } from '../../config/database.js';
+
+describe('Plan Integration Tests', () => {
+  afterAll(async () => {
+    // ✅ CORRECT: NO createdUserId field - use soft delete
+    // Exclude system-required master data (e.g., 'BASIC' plan)
+    await sequelize.query(`
+      UPDATE plans 
+      SET is_deleted = true,
+          deleted_user_id = :testUserId,
+          updated_date = CURRENT_TIMESTAMP
+      WHERE code != 'BASIC'
+    `, {
+      replacements: { testUserId: testUser.id }
+    });
+    
+    // OR truncate if no system data to preserve
+    await sequelize.query('TRUNCATE TABLE plans CASCADE');
+  });
+});
+```
+
+## Field Assertions
+
+### AuditableEntity - Assert These Fields
+```javascript
+// ✅ CORRECT: These fields exist
+expect(record.createdUserId).toBe(testUser.id);
+expect(record.updatedUserId).toBe(testUser.id);
+expect(record.deletedUserId).toBe(testUser.id); // On delete
+expect(record.createdCompanyId).toBe(company.id); // If applicable
+expect(record.createdDate).toBeDefined();
+expect(record.updatedDate).toBeDefined();
+expect(record.version).toBeDefined();
+```
+
+### MasterDataEntity - Assert These Fields
+```javascript
+// ✅ CORRECT: These fields exist
+expect(record.createdDate).toBeDefined();
+expect(record.updatedDate).toBeDefined();
+expect(record.version).toBe(1);
+expect(record.isDeleted).toBe(false);
+expect(record.deletedUserId).toBe(testUser.id); // Optional, only if provided on delete
+
+// ❌ WRONG: These fields DON'T exist
+// expect(record.createdUserId).toBe(testUser.id); // Field doesn't exist!
+// expect(record.updatedUserId).toBe(testUser.id); // Field doesn't exist!
+// expect(record.createdCompanyId).toBe(company.id); // Field doesn't exist!
+```
+
+## Common Mistakes to Avoid
+
+### ❌ Mistake 1: Passing Context to MasterDataEntity
+```javascript
+// ❌ WRONG
+const plan = await planRepository.create(data, auditContext);
+await planService.createPlan(data, context);
+await plan.update(updateData, { context: auditContext });
+
+// ✅ CORRECT
+const plan = await planRepository.create(data);
+await planService.createPlan(data);
+await plan.update(updateData);
+```
+
+### ❌ Mistake 2: Asserting User Audit Fields in MasterDataEntity
+```javascript
+// ❌ WRONG
+expect(plan.createdUserId).toBe(testUser.id); // Field doesn't exist!
+expect(plan.updatedUserId).toBe(testUser.id); // Field doesn't exist!
+expect(plan.createdCompanyId).toBe(company.id); // Field doesn't exist!
+
+// ✅ CORRECT
+expect(plan.createdDate).toBeDefined();
+expect(plan.updatedDate).toBeDefined();
+expect(plan.version).toBe(1);
+```
+
+### ❌ Mistake 3: Using createdUserId in Cleanup for MasterDataEntity
+```javascript
+// ❌ WRONG
+await Plan.destroy({
+  where: { createdUserId: { [Op.ne]: testUser.id } } // Field doesn't exist!
+});
+
+// ✅ CORRECT
+await sequelize.query(`
+  UPDATE plans 
+  SET is_deleted = true,
+      deleted_user_id = :testUserId
+  WHERE code != 'BASIC'
+`, { replacements: { testUserId: testUser.id } });
+```
+
+### ❌ Mistake 4: SQL Queries with Non-Existent Fields
+```javascript
+// ❌ WRONG
+await sequelize.query(`
+  UPDATE plans 
+  SET created_user_id = :userId,  -- Field doesn't exist!
+      updated_user_id = :userId   -- Field doesn't exist!
+  WHERE id = :planId
+`, { replacements: { userId: testUser.id, planId: plan.id } });
+
+// ✅ CORRECT
+await sequelize.query(`
+  UPDATE plans 
+  SET name = :name,
+      updated_date = CURRENT_TIMESTAMP,
+      version = version + 1
+  WHERE id = :planId
+`, { replacements: { name: 'Updated', planId: plan.id } });
+```
+
+### ❌ Mistake 5: Passing Context to MasterBaseRepository Methods
+```javascript
+// ❌ WRONG
+await planRepository.create(data, auditContext);
+await planRepository.update(id, data, auditContext);
+await planRepository.delete(id, auditContext);
+
+// ✅ CORRECT
+await planRepository.create(data);
+await planRepository.update(id, data);
+await planRepository.delete(id, { deletedUserId: testUser.id }); // Optional
+```
+
+### ❌ Mistake 6: Expecting Context Parameter in MasterDataEntity Service Mocks
+```javascript
+// ❌ WRONG
+expect(mockCreatePlan).toHaveBeenCalledWith(data, context);
+expect(mockUpdatePlan).toHaveBeenCalledWith(id, data, context);
+
+// ✅ CORRECT
+expect(mockCreatePlan).toHaveBeenCalledWith(data);
+expect(mockUpdatePlan).toHaveBeenCalledWith(id, data);
+expect(mockDeletePlan).toHaveBeenCalledWith(id, { deletedUserId: userId });
+```
+
+## Checklist for Test Creation
+
+### Before Writing Tests
+
+- [ ] Determined entity type (MasterDataEntity vs AuditableEntity)
+- [ ] Checked model file to confirm which base entity it uses
+- [ ] Checked repository to confirm which base repository it extends
+- [ ] Reviewed master-data-entity.mdc for guidance
+
+### For AuditableEntity Tests
+
+- [ ] All create/update/delete operations pass `context`
+- [ ] Context includes `userId` (and `companyId` if applicable)
+- [ ] Assertions include `createdUserId`, `updatedUserId`
+- [ ] Assertions include `createdCompanyId` if model has it
+- [ ] Cleanup can use `createdUserId` filters
+- [ ] Service functions accept and pass `context` parameter
+- [ ] Controller tests verify context is passed to services
+- [ ] Repository tests use `BaseRepository` methods with context
+
+### For MasterDataEntity Tests
+
+- [ ] NO context passed to create/update operations
+- [ ] NO assertions for `createdUserId`, `updatedUserId`, `createdCompanyId`
+- [ ] Assertions include `createdDate`, `updatedDate`, `version`
+- [ ] Delete operations use `{ deletedUserId }` in options (optional)
+- [ ] Cleanup uses soft delete queries (no `createdUserId` filters)
+- [ ] Cleanup preserves system-required master data (e.g., 'BASIC' plan)
+- [ ] Service functions don't accept `context` parameter
+- [ ] Controller tests verify NO context is passed to services
+- [ ] Controller tests verify `deletedUserId` in options for delete
+- [ ] Repository tests use `MasterBaseRepository` methods without context
+- [ ] SQL queries don't reference `created_user_id` or `updated_user_id`
+
+## Real-World Examples
+
+### Example 1: Plan Model (MasterDataEntity)
+```javascript
+// Model: Plan extends MasterDataEntity
+// Repository: PlanRepository extends MasterBaseRepository
+
+describe('PlanRepository', () => {
+  it('should create plan without context', async () => {
+    // ✅ CORRECT
+    const plan = await planRepository.create({
+      name: 'Test Plan',
+      code: 'TEST',
+      price: 0.00
+    });
+    
+    expect(plan.createdDate).toBeDefined();
+    expect(plan.version).toBe(1);
+    // NO createdUserId
+  });
+});
+```
+
+### Example 2: Company Model (AuditableEntity)
+```javascript
+// Model: Company extends AuditableEntity
+// Repository: CompanyRepository extends BaseRepository
+
+describe('CompanyRepository', () => {
+  it('should create company with context', async () => {
+    // ✅ CORRECT
+    const auditContext = createAuditContext(testUser.id, companyId);
+    const company = await companyRepository.create(data, auditContext);
+    
+    expect(company.createdUserId).toBe(testUser.id);
+    expect(company.createdCompanyId).toBe(companyId);
+  });
+});
+```
+
+### Example 3: Integration Test Cleanup
+```javascript
+// MasterDataEntity cleanup
+afterAll(async () => {
+  // Preserve system-required data
+  await sequelize.query(`
+    UPDATE plans 
+    SET is_deleted = true,
+        deleted_user_id = :testUserId
+    WHERE code != 'BASIC'
+  `, { replacements: { testUserId: testUser.id } });
+});
+
+// AuditableEntity cleanup
+afterAll(async () => {
+  await Company.destroy({
+    where: { createdUserId: { [Op.ne]: testUser.id } }
+  });
+});
+```
+
+## Type-Specific Patterns
+
+### MasterDataEntity Service Pattern
+```javascript
+/**
+ * Create plan (no context required)
+ * @param {Object} data - Plan data
+ * @returns {Promise<Object>} Created plan
+ */
+export async function createPlan(data) {
+  // NO context parameter
+  return await planRepository.create(data);
+}
+
+/**
+ * Delete plan (deletedUserId optional)
+ * @param {string} id - Plan ID
+ * @param {Object} options - Options with optional deletedUserId
+ * @returns {Promise<Object>} Deleted plan
+ */
+export async function deletePlan(id, options = {}) {
+  // deletedUserId in options, not context
+  return await planRepository.delete(id, options);
+}
+```
+
+### AuditableEntity Service Pattern
+```javascript
+/**
+ * Create company (context required)
+ * @param {Object} data - Company data
+ * @param {Object} context - Audit context { userId, companyId }
+ * @returns {Promise<Object>} Created company
+ */
+export async function createCompany(data, context) {
+  // Context REQUIRED
+  return await companyRepository.create(data, context);
+}
+```
+
+## Related Rules
+
+- **master-data-entity.mdc** - When to use MasterDataEntity vs AuditableEntity
+- **model-creation.mdc** - Model creation guidelines
+- **repository-service-pattern.mdc** - Repository and service patterns
+- **test-creation-requirements.mdc** - General test requirements
+- **test-patterns.mdc** - Common test patterns
+- **testing.mdc** - Main testing rules
+
+## Quick Reference
+
+| Aspect | MasterDataEntity | AuditableEntity |
+|--------|------------------|-----------------|
+| **Base Class** | `MasterDataEntity` | `AuditableEntity` |
+| **Repository** | `MasterBaseRepository` | `BaseRepository` |
+| **Create** | `create(data)` | `create(data, context)` |
+| **Update** | `update(id, data)` | `update(id, data, context)` |
+| **Delete** | `delete(id, { deletedUserId? })` | `delete(id, context)` |
+| **Fields** | `createdDate`, `updatedDate`, `version` | `createdUserId`, `updatedUserId`, `createdDate`, `updatedDate`, `version` |
+| **Service Param** | No context | Context required |
+| **Cleanup** | Soft delete SQL (preserve system data) | Filter by `createdUserId` |

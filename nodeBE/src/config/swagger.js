@@ -454,6 +454,79 @@ const swaggerDefinition = {
             description: 'Whether the company is active',
             example: true
           },
+          status: {
+            type: 'string',
+            enum: ['NEW', 'ACTIVE', 'LICENSE_EXPIRED'],
+            description: 'Company status',
+            example: 'NEW'
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            nullable: true,
+            description: 'Company email address',
+            example: 'contact@acme.com'
+          },
+          phone: {
+            type: 'string',
+            maxLength: 50,
+            nullable: true,
+            description: 'Company phone number',
+            example: '+1 234-567-8900'
+          },
+          buildingAddress: {
+            type: 'string',
+            maxLength: 255,
+            nullable: true,
+            description: 'Building number, unit, or premise address',
+            example: 'Suite 100'
+          },
+          streetAddress: {
+            type: 'string',
+            maxLength: 255,
+            nullable: true,
+            description: 'Street name, area, or locality',
+            example: '123 Main Street'
+          },
+          city: {
+            type: 'string',
+            maxLength: 100,
+            nullable: true,
+            description: 'City name',
+            example: 'New York'
+          },
+          state: {
+            type: 'string',
+            maxLength: 100,
+            nullable: true,
+            description: 'State or province',
+            example: 'NY'
+          },
+          postalCode: {
+            type: 'string',
+            maxLength: 20,
+            nullable: true,
+            description: 'Postal or ZIP code',
+            example: '10001'
+          },
+          country: {
+            type: 'string',
+            maxLength: 100,
+            nullable: true,
+            description: 'Country name',
+            example: 'United States'
+          },
+          logo: {
+            type: 'string',
+            nullable: true,
+            description: 'Base64 encoded company logo (only included when includeLogo=true)',
+            example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'
+          },
+          plan: {
+            $ref: '#/components/schemas/Plan',
+            nullable: true,
+            description: 'Associated subscription plan object (assigned automatically to BASIC plan for new companies)'
+          },
           createdDate: {
             type: 'string',
             format: 'date-time',
@@ -472,7 +545,7 @@ const swaggerDefinition = {
             example: 1
           }
         },
-        required: ['id', 'name', 'isActive']
+        required: ['id', 'name', 'isActive', 'status']
       },
       // Company create request schema
       CompanyCreateRequest: {
@@ -481,12 +554,14 @@ const swaggerDefinition = {
         properties: {
           name: {
             type: 'string',
+            minLength: 1,
             maxLength: 255,
             description: 'Company name',
             example: 'Acme Corporation'
           },
           description: {
             type: 'string',
+            nullable: true,
             description: 'Company description',
             example: 'A leading technology company'
           },
@@ -494,6 +569,82 @@ const swaggerDefinition = {
             type: 'boolean',
             description: 'Whether the company is active',
             example: true
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            nullable: true,
+            description: 'Company email address',
+            example: 'contact@acme.com'
+          },
+          phone: {
+            type: 'string',
+            maxLength: 50,
+            nullable: true,
+            description: 'Company phone number',
+            example: '+1 234-567-8900'
+          },
+          buildingAddress: {
+            type: 'string',
+            maxLength: 255,
+            nullable: true,
+            description: 'Building number, unit, or premise address',
+            example: 'Suite 100'
+          },
+          streetAddress: {
+            type: 'string',
+            maxLength: 255,
+            nullable: true,
+            description: 'Street name, area, or locality',
+            example: '123 Main Street'
+          },
+          city: {
+            type: 'string',
+            maxLength: 100,
+            nullable: true,
+            description: 'City name',
+            example: 'New York'
+          },
+          state: {
+            type: 'string',
+            maxLength: 100,
+            nullable: true,
+            description: 'State or province',
+            example: 'NY'
+          },
+          postalCode: {
+            type: 'string',
+            maxLength: 20,
+            nullable: true,
+            description: 'Postal or ZIP code',
+            example: '10001'
+          },
+          country: {
+            type: 'string',
+            maxLength: 100,
+            nullable: true,
+            description: 'Country name',
+            example: 'United States'
+          },
+          logo: {
+            type: 'string',
+            nullable: true,
+            description: 'Base64 encoded company logo',
+            example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'
+          },
+          status: {
+            type: 'string',
+            enum: ['NEW', 'ACTIVE', 'LICENSE_EXPIRED'],
+            default: 'NEW',
+            description: 'Company status (defaults to NEW)',
+            example: 'NEW'
+          },
+          planId: {
+            type: 'string',
+            format: 'uuid',
+            nullable: true,
+            description: 'Plan UUID (optional, defaults to BASIC plan if not provided)',
+            example: '550e8400-e29b-41d4-a716-446655440003'
           }
         }
       },
@@ -503,12 +654,14 @@ const swaggerDefinition = {
         properties: {
           name: {
             type: 'string',
+            minLength: 1,
             maxLength: 255,
             description: 'Company name',
             example: 'Acme Corporation Updated'
           },
           description: {
             type: 'string',
+            nullable: true,
             description: 'Company description',
             example: 'Updated company description'
           },
@@ -516,6 +669,81 @@ const swaggerDefinition = {
             type: 'boolean',
             description: 'Whether the company is active',
             example: true
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            nullable: true,
+            description: 'Company email address',
+            example: 'contact@acme.com'
+          },
+          phone: {
+            type: 'string',
+            maxLength: 50,
+            nullable: true,
+            description: 'Company phone number',
+            example: '+1 234-567-8900'
+          },
+          buildingAddress: {
+            type: 'string',
+            maxLength: 255,
+            nullable: true,
+            description: 'Building number, unit, or premise address',
+            example: 'Suite 100'
+          },
+          streetAddress: {
+            type: 'string',
+            maxLength: 255,
+            nullable: true,
+            description: 'Street name, area, or locality',
+            example: '123 Main Street'
+          },
+          city: {
+            type: 'string',
+            maxLength: 100,
+            nullable: true,
+            description: 'City name',
+            example: 'New York'
+          },
+          state: {
+            type: 'string',
+            maxLength: 100,
+            nullable: true,
+            description: 'State or province',
+            example: 'NY'
+          },
+          postalCode: {
+            type: 'string',
+            maxLength: 20,
+            nullable: true,
+            description: 'Postal or ZIP code',
+            example: '10001'
+          },
+          country: {
+            type: 'string',
+            maxLength: 100,
+            nullable: true,
+            description: 'Country name',
+            example: 'United States'
+          },
+          logo: {
+            type: 'string',
+            nullable: true,
+            description: 'Base64 encoded company logo',
+            example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'
+          },
+          status: {
+            type: 'string',
+            enum: ['NEW', 'ACTIVE', 'LICENSE_EXPIRED'],
+            description: 'Company status',
+            example: 'ACTIVE'
+          },
+          planId: {
+            type: 'string',
+            format: 'uuid',
+            nullable: true,
+            description: 'Plan UUID',
+            example: '550e8400-e29b-41d4-a716-446655440003'
           }
         }
       },
@@ -712,6 +940,138 @@ const swaggerDefinition = {
             format: 'uuid',
             description: 'New CompanyRole UUID',
             example: '550e8400-e29b-41d4-a716-446655440002'
+          }
+        }
+      },
+      // Plan entity schema
+      Plan: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Plan UUID',
+            example: '550e8400-e29b-41d4-a716-446655440003'
+          },
+          name: {
+            type: 'string',
+            maxLength: 100,
+            description: 'Plan name',
+            example: 'Basic'
+          },
+          code: {
+            type: 'string',
+            maxLength: 50,
+            description: 'Unique plan code',
+            example: 'BASIC'
+          },
+          description: {
+            type: 'string',
+            nullable: true,
+            description: 'Plan description',
+            example: 'Basic subscription plan - default plan for new companies'
+          },
+          price: {
+            type: 'number',
+            format: 'decimal',
+            minimum: 0,
+            description: 'Plan price/cost',
+            example: 0.00
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the plan is active',
+            example: true
+          },
+          createdDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          updatedDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          version: {
+            type: 'integer',
+            description: 'Optimistic locking version',
+            example: 1
+          }
+        },
+        required: ['id', 'name', 'code', 'price', 'isActive']
+      },
+      // Plan create request schema
+      PlanCreateRequest: {
+        type: 'object',
+        required: ['name', 'code'],
+        properties: {
+          name: {
+            type: 'string',
+            maxLength: 100,
+            description: 'Plan name',
+            example: 'Premium'
+          },
+          code: {
+            type: 'string',
+            maxLength: 50,
+            description: 'Unique plan code',
+            example: 'PREMIUM'
+          },
+          description: {
+            type: 'string',
+            description: 'Plan description',
+            example: 'Premium subscription plan with advanced features'
+          },
+          price: {
+            type: 'number',
+            format: 'decimal',
+            minimum: 0,
+            default: 0.00,
+            description: 'Plan price/cost',
+            example: 99.99
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the plan is active',
+            example: true
+          }
+        }
+      },
+      // Plan update request schema
+      PlanUpdateRequest: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            maxLength: 100,
+            description: 'Plan name',
+            example: 'Updated Premium'
+          },
+          code: {
+            type: 'string',
+            maxLength: 50,
+            description: 'Unique plan code',
+            example: 'PREMIUM'
+          },
+          description: {
+            type: 'string',
+            description: 'Plan description',
+            example: 'Updated plan description'
+          },
+          price: {
+            type: 'number',
+            format: 'decimal',
+            minimum: 0,
+            description: 'Plan price/cost',
+            example: 149.99
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the plan is active',
+            example: true
           }
         }
       },
