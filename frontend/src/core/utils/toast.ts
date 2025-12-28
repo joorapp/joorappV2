@@ -9,12 +9,17 @@
 
 import { toast } from 'react-toastify';
 
+// Get toast configuration from environment variables
+const TOAST_AUTO_CLOSE = Number(import.meta.env.VITE_TOAST_AUTO_CLOSE) || 5000;
+const TOAST_POSITION = (import.meta.env.VITE_TOAST_POSITION as any) || 'top-right';
+
 /**
  * Toast configuration constants
+ * Uses environment variables with fallback to defaults
  */
 export const TOAST_CONFIG = {
-  position: 'top-right' as const,
-  autoClose: 5000,
+  position: TOAST_POSITION,
+  autoClose: TOAST_AUTO_CLOSE,
   hideProgressBar: false,
   closeOnClick: true,
   pauseOnHover: true,
