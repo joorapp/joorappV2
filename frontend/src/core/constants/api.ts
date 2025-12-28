@@ -9,7 +9,21 @@
 const API_PATH = "/api/v2";
 
 // 2. Export base URLs from environment
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3030';
+// Ensure VITE_API_BASE_URL is set in .env file
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+if (!apiBaseUrl) {
+  if (import.meta.env.DEV) {
+    console.warn(
+      '⚠️ VITE_API_BASE_URL is not defined in .env file.\n' +
+      'Please create a .env file in the frontend directory with:\n' +
+      'VITE_API_BASE_URL=http://localhost:3030\n' +
+      'The application may not work correctly without this variable.'
+    );
+  }
+}
+
+export const BASE_URL = apiBaseUrl || '';
 
 // 3. Create nested API_ROUTES object organized by feature
 const API_ROUTES = {
