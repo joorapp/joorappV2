@@ -9,16 +9,27 @@ import {
 //i18n
 import { withTranslation } from "react-i18next";
 
-import {  useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 import user1 from "../../../assets/images/users/avatar-1.jpg";
 import LoginService from "../../../core/service/LoginService";
+import { useAuth } from "../../../context/AuthContext";
 
 const ProfileMenu = (props: { t: (key: string) => string }) => {
   // Declare a new state variable, which we'll call "menu"
   const [menu, setMenu] = useState(false);
   const username = "Admin";
   const navigate = useNavigate();
+  const { user, hasRole } = useAuth();
+  
+  // Determine profile route based on user role
+  const getProfileRoute = () => {
+    if (hasRole('superadmin')) {
+      return '/superadmin/Profile';
+    }
+    return '/company/profile'; // Default to company profile
+  };
+
   const handleLogout = async () => {
     try {
      const response = await LoginService.logout();
@@ -51,7 +62,7 @@ const ProfileMenu = (props: { t: (key: string) => string }) => {
           <i className="mdi mdi-chevron-down d-none d-xl-inline-block" />
         </DropdownToggle>
         <DropdownMenu className="dropdown-menu-end">
-          <DropdownItem tag="a" href="/profile">
+          <DropdownItem tag={Link} to={getProfileRoute()}>
             <i className="bx bx-user font-size-16 align-middle me-1" />
             {props.t('Navigation.profile')}
           </DropdownItem>

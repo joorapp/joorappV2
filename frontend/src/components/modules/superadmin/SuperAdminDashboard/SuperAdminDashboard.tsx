@@ -339,5 +339,13 @@ const SuperAdminDashboard: React.FC = () => {
 
 export { default as NewClients } from '../NewClients/NewClients';
 export { default as ActiveClients } from '../ActiveClients/ActiveClients';
+export { default as Roles } from '../Roles/Roles';
+export { default as EmployeeLists } from '../EmployeeLists/EmployeeLists';
+export { default as LogLists } from '../LogLists/LogLists';
+export { default as RolePermissions } from '../RolePermissions/RolePermissions';
+export { default as Tickets } from '../Tickets/Tickets';
+export { default as SubscriptionPlans } from '../SubscriptionPlans/SubscriptionPlans';
+export { default as Profile } from '../Profile/Profile';
+export { default as NotificationList } from '../NotificationList/NotificationList';
 
 export default SuperAdminDashboard;
