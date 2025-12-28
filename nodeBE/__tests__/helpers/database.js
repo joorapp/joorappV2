@@ -39,6 +39,7 @@ export const cleanDatabase = async () => {
     `);
     
     // Delete companies created by non-test users (uses created_user_id column)
+    // Must delete companies before plans because companies reference plans (plan_id FK)
     await sequelize.query(`
       DELETE FROM companies 
       WHERE created_user_id NOT IN (
@@ -46,7 +47,47 @@ export const cleanDatabase = async () => {
       )
     `);
     
-    // Delete non-test users
+    // Delete all plans except BASIC (master data - no user FK constraints)
+    // Plans are master data and don't have created_user_id or updated_user_id
+    await sequelize.query(`
+      DELETE FROM plans 
+      WHERE code != 'BASIC'
+    `);
+    
+    // Restore BASIC plan if it's soft-deleted (master data requirement)
+    await sequelize.query(`
+      UPDATE plans 
+      SET is_deleted = false,
+          deleted_user_id = NULL,
+          updated_date = CURRENT_TIMESTAMP
+      WHERE code = 'BASIC'
+      AND is_deleted = true
+    `);
+    
+    // Recreate BASIC plan if it doesn't exist (system requirement)
+    // Master data - no user dependency required
+    await sequelize.query(`
+      INSERT INTO plans (
+        id, name, code, description, price, is_active,
+        created_date, updated_date, is_deleted, version
+      )
+      SELECT 
+        gen_random_uuid(),
+        'Basic',
+        'BASIC',
+        'Basic subscription plan - default plan for new companies',
+        0.00,
+        true,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP,
+        false,
+        1
+      WHERE NOT EXISTS (
+        SELECT 1 FROM plans WHERE code = 'BASIC'
+      )
+    `);
+    
+    // Now safe to delete non-test users (no FK constraints from plans)
     await sequelize.query(`
       DELETE FROM users 
       WHERE email NOT LIKE 'test.%@example.com'
@@ -131,6 +172,7 @@ export const isDatabaseClean = async () => {
     'company_users',
     'company_roles',
     'companies',
+    'plans',
     'users',
     'demo_auditable_models'
   ];

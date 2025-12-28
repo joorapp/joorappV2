@@ -67,7 +67,25 @@ if (!NODE_ENV) {
     initializeModels();
     logInfo('✅ Models initialized successfully');
     
-    // Step 3: Create Express app (after models are initialized)
+    // Step 2.5: Seed master data (after models are initialized)
+    try {
+      const { checkAndSeedMasterData } = await import('./src/services/masterDataService.js');
+      const seedingResults = await checkAndSeedMasterData();
+      
+      if (seedingResults.errors.length > 0) {
+        logWarn('⚠️  Master data seeding completed with some errors', {
+          errors: seedingResults.errors.map(e => ({ type: e.type, error: e.error }))
+        });
+      } else {
+        logInfo('✅ Master data seeding completed successfully');
+      }
+    } catch (error) {
+      logError('❌ Master data seeding failed', error);
+      // Don't exit - app can still run, but log the error
+      logWarn('⚠️  Continuing application startup despite master data seeding failure');
+    }
+    
+    // Step 3: Create Express app (after models and master data are ready)
     const app = await createApp();
     logInfo('✅ Express app created with routes');
     

@@ -163,6 +163,12 @@ User.associate = (models) => {
     foreignKey: 'deletedUserId', 
     as: 'deletedCompanyUsers' 
   });
+
+  // Plan audit associations (master data - only deletedUserId)
+  User.hasMany(models.Plan, { 
+    foreignKey: 'deletedUserId', 
+    as: 'deletedPlans' 
+  });
 };
 
 export default User;

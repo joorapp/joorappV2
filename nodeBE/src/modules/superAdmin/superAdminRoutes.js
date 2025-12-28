@@ -20,6 +20,12 @@ import {
   getRoleById,
   updateRole,
   deleteRole,
+  // Plan Management
+  createPlan,
+  getPlans,
+  getPlanById,
+  updatePlan,
+  deletePlan,
   // User Management
   createUserWithCompany,
   getUsers,
@@ -177,6 +183,25 @@ router.get('/dashboard', authMiddleware, asyncHandler(getDashboard));
  *                 name: "Acme Corporation"
  *                 description: "Leading provider of innovative solutions"
  *                 isActive: true
+ *                 status: "NEW"
+ *                 email: "contact@acme.com"
+ *                 phone: "+1 234-567-8900"
+ *                 buildingAddress: "Suite 100"
+ *                 streetAddress: "123 Main Street"
+ *                 city: "New York"
+ *                 state: "NY"
+ *                 postalCode: "10001"
+ *                 country: "United States"
+ *                 plan:
+ *                   id: "550e8400-e29b-41d4-a716-446655440003"
+ *                   name: "Basic"
+ *                   code: "BASIC"
+ *                   description: "Basic subscription plan"
+ *                   price: 0.00
+ *                   isActive: true
+ *                   createdDate: "2024-11-23T12:00:00.000Z"
+ *                   updatedDate: "2024-11-23T12:00:00.000Z"
+ *                   version: 1
  *                 createdDate: "2024-11-23T12:00:00.000Z"
  *                 createdUserId: "550e8400-e29b-41d4-a716-446655440000"
  *               timestamp: "2024-11-23T12:00:00.000Z"
@@ -270,6 +295,25 @@ router.post('/companies', authMiddleware, asyncHandler(createCompany));
  *                   name: "Acme Corporation"
  *                   description: "Leading provider"
  *                   isActive: true
+ *                   status: "ACTIVE"
+ *                   email: "contact@acme.com"
+ *                   phone: "+1 234-567-8900"
+ *                   buildingAddress: "Suite 100"
+ *                   streetAddress: "123 Main Street"
+ *                   city: "New York"
+ *                   state: "NY"
+ *                   postalCode: "10001"
+ *                   country: "United States"
+ *                   plan:
+ *                     id: "550e8400-e29b-41d4-a716-446655440003"
+ *                     name: "Basic"
+ *                     code: "BASIC"
+ *                     description: "Basic subscription plan"
+ *                     price: 0.00
+ *                     isActive: true
+ *                     createdDate: "2024-11-23T12:00:00.000Z"
+ *                     updatedDate: "2024-11-23T12:00:00.000Z"
+ *                     version: 1
  *                   createdDate: "2024-11-23T12:00:00.000Z"
  *               timestamp: "2024-11-23T12:00:00.000Z"
  *               meta:
@@ -300,11 +344,18 @@ router.get('/companies', authMiddleware, asyncHandler(getCompanies));
  *     tags:
  *       - SuperAdmin
  *     summary: Get company by ID
- *     description: Returns detailed information about a specific company
+ *     description: Returns detailed information about a specific company. Logo is only included when includeLogo query parameter is set to true (lazy loading).
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - $ref: '#/components/parameters/UuidPathParam'
+ *       - in: query
+ *         name: includeLogo
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Whether to include logo in response (lazy loading)
+ *         example: true
  *     responses:
  *       200:
  *         description: Company retrieved successfully
@@ -325,8 +376,29 @@ router.get('/companies', authMiddleware, asyncHandler(getCompanies));
  *                 name: "Acme Corporation"
  *                 description: "Leading provider"
  *                 isActive: true
+ *                 status: "ACTIVE"
+ *                 email: "contact@acme.com"
+ *                 phone: "+1 234-567-8900"
+ *                 buildingAddress: "Suite 100"
+ *                 streetAddress: "123 Main Street"
+ *                 city: "New York"
+ *                 state: "NY"
+ *                 postalCode: "10001"
+ *                 country: "United States"
+ *                 plan:
+ *                   id: "550e8400-e29b-41d4-a716-446655440003"
+ *                   name: "Basic"
+ *                   code: "BASIC"
+ *                   description: "Basic subscription plan"
+ *                   price: 0.00
+ *                   isActive: true
+ *                   createdDate: "2024-11-23T12:00:00.000Z"
+ *                   updatedDate: "2024-11-23T12:00:00.000Z"
+ *                   version: 1
  *                 createdDate: "2024-11-23T12:00:00.000Z"
  *                 createdUserId: "550e8400-e29b-41d4-a716-446655440000"
+ *                 updatedDate: "2024-11-23T12:05:00.000Z"
+ *                 updatedUserId: "550e8400-e29b-41d4-a716-446655440000"
  *               timestamp: "2024-11-23T12:00:00.000Z"
  *               meta:
  *                 requestId: "req-1234567890"
@@ -363,22 +435,7 @@ router.get('/companies/:id', authMiddleware, asyncHandler(getCompanyById));
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 minLength: 1
- *                 maxLength: 100
- *                 description: Company name
- *                 example: "Updated Acme Corp"
- *               description:
- *                 type: string
- *                 description: Company description
- *                 example: "Updated description"
- *               isActive:
- *                 type: boolean
- *                 description: Active status
- *                 example: true
+ *             $ref: '#/components/schemas/CompanyUpdateRequest'
  *     responses:
  *       200:
  *         description: Company updated successfully
@@ -399,6 +456,25 @@ router.get('/companies/:id', authMiddleware, asyncHandler(getCompanyById));
  *                 name: "Updated Acme Corp"
  *                 description: "Updated description"
  *                 isActive: true
+ *                 status: "ACTIVE"
+ *                 email: "contact@acme.com"
+ *                 phone: "+1 234-567-8900"
+ *                 buildingAddress: "Suite 200"
+ *                 streetAddress: "456 Oak Avenue"
+ *                 city: "Los Angeles"
+ *                 state: "CA"
+ *                 postalCode: "90001"
+ *                 country: "United States"
+ *                 plan:
+ *                   id: "550e8400-e29b-41d4-a716-446655440003"
+ *                   name: "Basic"
+ *                   code: "BASIC"
+ *                   description: "Basic subscription plan"
+ *                   price: 0.00
+ *                   isActive: true
+ *                   createdDate: "2024-11-23T12:00:00.000Z"
+ *                   updatedDate: "2024-11-23T12:00:00.000Z"
+ *                   version: 1
  *                 createdDate: "2024-11-23T12:00:00.000Z"
  *                 createdUserId: "550e8400-e29b-41d4-a716-446655440000"
  *                 updatedDate: "2024-11-23T12:05:00.000Z"
@@ -802,6 +878,216 @@ router.put('/roles/:id', authMiddleware, asyncHandler(updateRole));
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.delete('/roles/:id', authMiddleware, asyncHandler(deleteRole));
+
+// =====================================================
+// Plan Management Routes
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/plans:
+ *   post:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Create new plan
+ *     description: Allows super admins to create a new subscription/license plan
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PlanCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Plan created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Plan'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/plans', authMiddleware, asyncHandler(createPlan));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/plans:
+ *   get:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Get all plans with pagination
+ *     description: Returns a paginated list of plans with optional filtering and sorting
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Plans retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Plan'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/plans', authMiddleware, asyncHandler(getPlans));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/plans/{id}:
+ *   get:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Get plan by ID
+ *     description: Returns plan details by UUID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Plan retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Plan'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/plans/:id', authMiddleware, asyncHandler(getPlanById));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/plans/{id}:
+ *   put:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Update plan by ID
+ *     description: Updates plan details by UUID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PlanUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Plan updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Plan'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put('/plans/:id', authMiddleware, asyncHandler(updatePlan));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/plans/{id}:
+ *   delete:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Delete plan by ID
+ *     description: Soft deletes a plan by UUID (cannot delete BASIC plan)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Plan deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       nullable: true
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/plans/:id', authMiddleware, asyncHandler(deletePlan));
 
 // =====================================================
 // User Management Routes

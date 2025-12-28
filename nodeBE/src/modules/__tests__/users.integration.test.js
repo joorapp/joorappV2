@@ -19,6 +19,7 @@ import { cleanDatabase } from '../../../__tests__/helpers/database.js';
 import { User } from '../../../src/models/index.js';
 import { createUserData } from '../../../__tests__/helpers/factories.js';
 import { v4 as uuidv4 } from 'uuid';
+import { sequelize } from '../../../src/config/database.js';
 
 describe('Users API Integration', () => {
   let app;
@@ -63,14 +64,75 @@ describe('Users API Integration', () => {
   });
 
   beforeEach(async () => {
-    // Clean users table before each test (except test user)
+    // CRITICAL: Plan uses MasterDataEntity - doesn't have created_user_id or updated_user_id
+    // We can safely delete plans without FK constraint issues (except companies reference plans)
+    
     if (testUser) {
+      // Step 1: Set all companies' planId to null to break FK constraints
+      await sequelize.query(`
+        UPDATE companies 
+        SET plan_id = NULL
+      `);
+      
+      // Step 2: Soft delete all plans except BASIC (preserve BASIC for system)
+      await sequelize.query(`
+        UPDATE plans 
+        SET is_deleted = true,
+            deleted_user_id = :testUserId,
+            updated_date = CURRENT_TIMESTAMP
+        WHERE code != 'BASIC'
+        AND is_deleted = false
+      `, {
+        replacements: { testUserId: testUser.id },
+        type: sequelize.QueryTypes.UPDATE
+      });
+      
+      // Step 3: Now safe to delete users (no FK constraints from plans)
       await User.destroy({
         where: {
           id: { [Op.ne]: testUser.id }
         }
       });
+      
+      // Step 4: Ensure BASIC plan exists and is active (not soft-deleted)
+      // First, restore if soft-deleted
+      await sequelize.query(`
+        UPDATE plans 
+        SET is_deleted = false,
+            deleted_user_id = NULL,
+            updated_date = CURRENT_TIMESTAMP
+        WHERE code = 'BASIC'
+        AND is_deleted = true
+      `);
+      
+      // Then, create BASIC plan if it doesn't exist (including soft-deleted)
+      // Plan uses MasterDataEntity - no created_user_id or updated_user_id
+      await sequelize.query(`
+        INSERT INTO plans (
+          id, name, code, description, price, is_active,
+          created_date, updated_date, is_deleted, version
+        )
+        SELECT 
+          gen_random_uuid(),
+          'Basic',
+          'BASIC',
+          'Basic subscription plan - default plan for new companies',
+          0.00,
+          true,
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP,
+          false,
+          1
+        WHERE NOT EXISTS (
+          SELECT 1 FROM plans WHERE code = 'BASIC'
+        )
+      `);
     } else {
+      // No test user - just delete all plans except BASIC, then all users
+      await sequelize.query(`
+        DELETE FROM plans 
+        WHERE code != 'BASIC'
+      `);
       await User.destroy({ where: {} });
     }
   });

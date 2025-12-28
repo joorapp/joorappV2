@@ -8,10 +8,13 @@ import { createModuleLogger, logPerformance, logBusiness, logSecurity } from '..
 import { isSuperAdmin } from '../../constants/keycloakRoles.js';
 import { successResponse, paginatedResponse } from '../../utils/responseHelpers.js';
 import { UnauthorizedError, ForbiddenError } from '../../utils/errors.js';
-import { validateUUID, validateRequired, validateString, validateEnum, validateEmail } from '../../utils/validators.js';
+import { validateUUID, validateRequired, validateString, validateEnum, validateEmail, validateNumber } from '../../utils/validators.js';
+import { ValidationError } from '../../utils/errors.js';
+import { COMPANY_STATUS_VALUES } from '../../constants/companyStatus.js';
 import { buildPaginationQuery, buildSortQuery } from '../../utils/businessHelpers.js';
 import * as companyService from '../../services/companyService.js';
 import * as roleService from '../../services/roleService.js';
+import * as planService from '../../services/planService.js';
 import * as userService from '../../services/userService.js';
 import * as companyUserService from '../../services/companyUserService.js';
 import { KEYCLOAK_GLOBAL_ROLE_VALUES } from '../../constants/keycloakRoles.js';
@@ -176,17 +179,77 @@ export const createCompany = async (req, res) => {
     }
 
     // Validate required fields
-    const { name, description, isActive } = req.body;
-    validateRequired({ name }, req.id);
-    validateString(name, 'name', { minLength: 1, maxLength: 100 }, req.id);
+    const {
+      name,
+      description,
+      isActive,
+      email,
+      phone,
+      buildingAddress,
+      streetAddress,
+      city,
+      state,
+      postalCode,
+      country,
+      logo,
+      status
+    } = req.body;
     
+    validateRequired({ name }, req.id);
+    validateString(name, 'name', { minLength: 1, maxLength: 255 }, req.id);
+    
+    // Validate optional fields
     if (description !== undefined) {
       validateString(description, 'description', { required: false }, req.id);
+    }
+    if (email !== undefined) {
+      validateEmail(email, 'email', req.id);
+    }
+    if (phone !== undefined) {
+      validateString(phone, 'phone', { maxLength: 50, required: false }, req.id);
+    }
+    if (buildingAddress !== undefined) {
+      validateString(buildingAddress, 'buildingAddress', { maxLength: 255, required: false }, req.id);
+    }
+    if (streetAddress !== undefined) {
+      validateString(streetAddress, 'streetAddress', { maxLength: 255, required: false }, req.id);
+    }
+    if (city !== undefined) {
+      validateString(city, 'city', { maxLength: 100, required: false }, req.id);
+    }
+    if (state !== undefined) {
+      validateString(state, 'state', { maxLength: 100, required: false }, req.id);
+    }
+    if (postalCode !== undefined) {
+      validateString(postalCode, 'postalCode', { maxLength: 20, required: false }, req.id);
+    }
+    if (country !== undefined) {
+      validateString(country, 'country', { maxLength: 100, required: false }, req.id);
+    }
+    if (logo !== undefined) {
+      validateString(logo, 'logo', { required: false }, req.id);
+    }
+    if (status !== undefined) {
+      validateEnum(status, COMPANY_STATUS_VALUES, 'status', req.id);
     }
 
     // Create company via service
     const company = await companyService.createCompany(
-      { name, description, isActive },
+      {
+        name,
+        description,
+        isActive,
+        email,
+        phone,
+        buildingAddress,
+        streetAddress,
+        city,
+        state,
+        postalCode,
+        country,
+        logo,
+        status
+      },
       { userId: req.user.id }
     );
 
@@ -338,8 +401,11 @@ export const getCompanyById = async (req, res) => {
       throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
     }
 
+    // Check if logo should be included (lazy loading)
+    const includeLogo = req.query.includeLogo === 'true';
+
     // Get company via service
-    const company = await companyService.getCompanyById(id);
+    const company = await companyService.getCompanyById(id, { includeLogo });
 
     const duration = Date.now() - startTime;
     
@@ -381,7 +447,21 @@ export const updateCompany = async (req, res) => {
   
   try {
     const { id } = req.params;
-    const { name, description, isActive } = req.body;
+    const {
+      name,
+      description,
+      isActive,
+      email,
+      phone,
+      buildingAddress,
+      streetAddress,
+      city,
+      state,
+      postalCode,
+      country,
+      logo,
+      status
+    } = req.body;
 
     // Validate UUID
     validateUUID(id, 'id', req.id);
@@ -400,16 +480,60 @@ export const updateCompany = async (req, res) => {
 
     // Validate fields if provided
     if (name !== undefined) {
-      validateString(name, 'name', { minLength: 1, maxLength: 100 }, req.id);
+      validateString(name, 'name', { minLength: 1, maxLength: 255 }, req.id);
     }
     if (description !== undefined) {
       validateString(description, 'description', { required: false }, req.id);
+    }
+    if (email !== undefined) {
+      validateEmail(email, 'email', req.id);
+    }
+    if (phone !== undefined) {
+      validateString(phone, 'phone', { maxLength: 50, required: false }, req.id);
+    }
+    if (buildingAddress !== undefined) {
+      validateString(buildingAddress, 'buildingAddress', { maxLength: 255, required: false }, req.id);
+    }
+    if (streetAddress !== undefined) {
+      validateString(streetAddress, 'streetAddress', { maxLength: 255, required: false }, req.id);
+    }
+    if (city !== undefined) {
+      validateString(city, 'city', { maxLength: 100, required: false }, req.id);
+    }
+    if (state !== undefined) {
+      validateString(state, 'state', { maxLength: 100, required: false }, req.id);
+    }
+    if (postalCode !== undefined) {
+      validateString(postalCode, 'postalCode', { maxLength: 20, required: false }, req.id);
+    }
+    if (country !== undefined) {
+      validateString(country, 'country', { maxLength: 100, required: false }, req.id);
+    }
+    if (logo !== undefined) {
+      validateString(logo, 'logo', { required: false }, req.id);
+    }
+    if (status !== undefined) {
+      validateEnum(status, COMPANY_STATUS_VALUES, 'status', req.id);
     }
 
     // Update company via service
     const company = await companyService.updateCompany(
       id,
-      { name, description, isActive },
+      {
+        name,
+        description,
+        isActive,
+        email,
+        phone,
+        buildingAddress,
+        streetAddress,
+        city,
+        state,
+        postalCode,
+        country,
+        logo,
+        status
+      },
       { userId: req.user.id }
     );
 
@@ -867,6 +991,371 @@ export const deleteRole = async (req, res) => {
     const duration = Date.now() - startTime;
     
     logger.error('Delete role failed', {
+      requestId: req.id,
+      userId: req.user?.id,
+      error: {
+        message: error.message,
+        stack: error.stack
+      },
+      duration: `${duration}ms`
+    });
+    
+    throw error;
+  }
+};
+
+// =====================================================
+// Plan Management Functions
+// =====================================================
+
+/**
+ * Create new plan
+ * Requires SUPER_ADMIN role
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const createPlan = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    logger.info('Create plan requested', {
+      requestId: req.id,
+      userId: req.user?.id,
+      ip: req.ip || req.socket?.remoteAddress
+    });
+
+    // Verify user is SUPER_ADMIN
+    if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+      throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+    }
+
+    // Validate required fields
+    const { name, code, description, isActive, price } = req.body;
+    validateRequired({ name, code }, req.id);
+    validateString(name, 'name', { minLength: 1, maxLength: 100 }, req.id);
+    validateString(code, 'code', { minLength: 1, maxLength: 50 }, req.id);
+    
+    if (description !== undefined) {
+      validateString(description, 'description', { required: false }, req.id);
+    }
+    
+    // Validate price if provided
+    if (price !== undefined) {
+      validateNumber(price, 'price', { min: 0, required: false }, req.id);
+    }
+
+    // Create plan via service (no context required for master data)
+    const plan = await planService.createPlan({
+      name,
+      code,
+      description,
+      isActive,
+      price
+    });
+
+    const duration = Date.now() - startTime;
+    
+    logger.info('Plan created successfully', {
+      requestId: req.id,
+      userId: req.user.id,
+      planId: plan.id,
+      duration: `${duration}ms`
+    });
+
+    logBusiness('Plan created', {
+      requestId: req.id,
+      userId: req.user.id,
+      planId: plan.id,
+      planName: plan.name,
+      planCode: plan.code
+    });
+
+    res.status(201).json(
+      successResponse('Plan created successfully', plan, {}, req, startTime)
+    );
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    logger.error('Create plan failed', {
+      requestId: req.id,
+      userId: req.user?.id,
+      error: {
+        message: error.message,
+        stack: error.stack
+      },
+      duration: `${duration}ms`
+    });
+    
+    throw error;
+  }
+};
+
+/**
+ * Get all plans with pagination
+ * Requires SUPER_ADMIN role
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const getPlans = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    logger.info('Get plans requested', {
+      requestId: req.id,
+      userId: req.user?.id,
+      ip: req.ip || req.socket?.remoteAddress
+    });
+
+    // Verify user is SUPER_ADMIN
+    if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+      throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+    }
+
+    // Build pagination query
+    const { page, limit, offset } = buildPaginationQuery(req.query, { defaultLimit: 10, maxLimit: 100 }, req.id);
+    
+    // Build sort query
+    const sort = buildSortQuery(req.query, ['name', 'code', 'createdDate'], 'name', req.id);
+    
+    // Build filters
+    const filters = {};
+    if (req.query.isActive !== undefined) {
+      filters.isActive = req.query.isActive === 'true';
+    }
+
+    // Get plans via service
+    const result = await planService.listPlans(filters, { page, limit, offset }, sort);
+
+    const duration = Date.now() - startTime;
+    
+    logger.info('Plans retrieved successfully', {
+      requestId: req.id,
+      userId: req.user.id,
+      count: result.plans.length,
+      total: result.total,
+      duration: `${duration}ms`
+    });
+
+    res.status(200).json(
+      paginatedResponse('Plans retrieved successfully', result.plans, { page, limit, total: result.total }, {}, req, startTime)
+    );
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    logger.error('Get plans failed', {
+      requestId: req.id,
+      userId: req.user?.id,
+      error: {
+        message: error.message,
+        stack: error.stack
+      },
+      duration: `${duration}ms`
+    });
+    
+    throw error;
+  }
+};
+
+/**
+ * Get plan by ID
+ * Requires SUPER_ADMIN role
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const getPlanById = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const { id } = req.params;
+
+    // Validate UUID
+    validateUUID(id, 'id', req.id);
+
+    logger.info('Get plan requested', {
+      requestId: req.id,
+      userId: req.user?.id,
+      planId: id,
+      ip: req.ip || req.socket?.remoteAddress
+    });
+
+    // Verify user is SUPER_ADMIN
+    if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+      throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+    }
+
+    // Get plan via service
+    const plan = await planService.getPlanById(id);
+
+    const duration = Date.now() - startTime;
+    
+    logger.info('Plan retrieved successfully', {
+      requestId: req.id,
+      userId: req.user.id,
+      planId: id,
+      duration: `${duration}ms`
+    });
+
+    res.status(200).json(
+      successResponse('Plan retrieved successfully', plan, {}, req, startTime)
+    );
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    logger.error('Get plan failed', {
+      requestId: req.id,
+      userId: req.user?.id,
+      error: {
+        message: error.message,
+        stack: error.stack
+      },
+      duration: `${duration}ms`
+    });
+    
+    throw error;
+  }
+};
+
+/**
+ * Update plan by ID
+ * Requires SUPER_ADMIN role
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const updatePlan = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const { id } = req.params;
+    const { name, code, description, price, isActive } = req.body;
+
+    // Validate UUID
+    validateUUID(id, 'id', req.id);
+
+    logger.info('Update plan requested', {
+      requestId: req.id,
+      userId: req.user?.id,
+      planId: id,
+      ip: req.ip || req.socket?.remoteAddress
+    });
+
+    // Verify user is SUPER_ADMIN
+    if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+      throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+    }
+
+    // Validate fields if provided
+    if (name !== undefined) {
+      validateString(name, 'name', { minLength: 1, maxLength: 100 }, req.id);
+    }
+    if (code !== undefined) {
+      validateString(code, 'code', { minLength: 1, maxLength: 50 }, req.id);
+    }
+    if (description !== undefined) {
+      validateString(description, 'description', { required: false }, req.id);
+    }
+    
+    // Validate price if provided
+    if (price !== undefined) {
+      validateNumber(price, 'price', { min: 0, required: false }, req.id);
+    }
+
+    // Update plan via service (no context required for master data)
+    const plan = await planService.updatePlan(id, {
+      name,
+      code,
+      description,
+      price,
+      isActive
+    });
+
+    const duration = Date.now() - startTime;
+    
+    logger.info('Plan updated successfully', {
+      requestId: req.id,
+      userId: req.user.id,
+      planId: id,
+      duration: `${duration}ms`
+    });
+
+    logBusiness('Plan updated', {
+      requestId: req.id,
+      userId: req.user.id,
+      planId: id,
+      updates: Object.keys({ name, code, description, isActive }).filter(k => req.body[k] !== undefined)
+    });
+
+    res.status(200).json(
+      successResponse('Plan updated successfully', plan, {}, req, startTime)
+    );
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    logger.error('Update plan failed', {
+      requestId: req.id,
+      userId: req.user?.id,
+      error: {
+        message: error.message,
+        stack: error.stack
+      },
+      duration: `${duration}ms`
+    });
+    
+    throw error;
+  }
+};
+
+/**
+ * Delete (soft delete) plan by ID
+ * Requires SUPER_ADMIN role
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const deletePlan = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const { id } = req.params;
+
+    // Validate UUID
+    validateUUID(id, 'id', req.id);
+
+    logger.info('Delete plan requested', {
+      requestId: req.id,
+      userId: req.user?.id,
+      planId: id,
+      ip: req.ip || req.socket?.remoteAddress
+    });
+
+    // Verify user is SUPER_ADMIN
+    if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+      throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+    }
+
+    // Delete plan via service (deletedUserId optional for master data)
+    await planService.deletePlan(id, { deletedUserId: req.user.id });
+
+    const duration = Date.now() - startTime;
+    
+    logger.info('Plan deleted successfully', {
+      requestId: req.id,
+      userId: req.user.id,
+      planId: id,
+      duration: `${duration}ms`
+    });
+
+    logBusiness('Plan deleted', {
+      requestId: req.id,
+      userId: req.user.id,
+      planId: id
+    });
+
+    res.status(200).json(
+      successResponse('Plan deleted successfully', null, {}, req, startTime)
+    );
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    logger.error('Delete plan failed', {
       requestId: req.id,
       userId: req.user?.id,
       error: {

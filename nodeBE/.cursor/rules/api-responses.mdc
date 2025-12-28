@@ -465,17 +465,22 @@ When testing endpoints, verify:
 
 ## Documentation Updates
 
-**CRITICAL**: When implementing standardized responses, you MUST update API documentation:
+**CRITICAL**: When implementing standardized responses, you MUST update Swagger annotations in `{module}Routes.js`:
 
-1. **Update `{module}Docs.js`** - All response examples must include `meta` field
-2. **Update error examples** - Include `meta` field in all error response examples
-3. **Verify structure** - Ensure documentation examples match actual controller responses
-4. **Test consistency** - Documentation should be accurate reflection of API behavior
+1. **Update Swagger annotations** - All response examples must include `meta` field
+2. **Update error examples** - Include `meta` field in all error response examples in Swagger
+3. **Verify structure** - Ensure Swagger examples match actual controller responses
+4. **Test consistency** - Swagger documentation should be accurate reflection of API behavior
 
-**See module-structure.mdc for complete documentation update requirements.**
+**See swagger.mdc for complete Swagger documentation requirements, including:**
+- Swagger annotation format and structure
+- Available reusable components (schemas, responses, parameters)
+- When to use `$ref` vs inline definitions
+- Consistency requirements and examples
 
 ## Related Rules
 
+- **swagger.mdc** - Swagger/OpenAPI documentation standards (Swagger annotation format, reusable components)
 - **coding-standards.mdc** - General coding standards
 - **error-handling.mdc** - Error handling patterns
-- **module-structure.mdc** - Module creation guidelines and **documentation update requirements**
+- **module-structure.mdc** - Module creation guidelines

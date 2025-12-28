@@ -5,6 +5,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import { COMPANY_STATUS_DEFAULT } from '../../src/constants/companyStatus.js';
 
 /**
  * Generate unique email for testing
@@ -60,6 +61,17 @@ export const createCompanyData = (overrides = {}) => {
     name: generateUniqueName('Company'),
     description: 'Test company description',
     isActive: true,
+    status: COMPANY_STATUS_DEFAULT,
+    email: null,
+    phone: null,
+    buildingAddress: null,
+    streetAddress: null,
+    city: null,
+    state: null,
+    postalCode: null,
+    country: null,
+    logo: null,
+    planId: null,
     ...overrides
   };
 };
@@ -112,6 +124,23 @@ export const createContextData = (keycloakSessionId = null, companyId = null, ov
   return {
     keycloakSessionId: keycloakSessionId || uuidv4(), // Required unique field
     companyId, // Nullable - active company for this session
+    ...overrides
+  };
+};
+
+/**
+ * Create Plan test data
+ * Note: Plan is a master table created by Super Admin only
+ * @param {Object} overrides - Fields to override
+ * @returns {Object} Plan data ready for Plan.create()
+ */
+export const createPlanData = (overrides = {}) => {
+  return {
+    name: generateUniqueName('Plan'),
+    code: generateUniqueCode('PLAN'),
+    description: 'Test plan description',
+    isActive: true,
+    price: 0.00,
     ...overrides
   };
 };

@@ -13,6 +13,14 @@
 export const SUPER_ADMIN_COMPANY_NAME = 'JOOR APP';
 
 /**
+ * Super Admin Company Description
+ * The system company name for SUPER_ADMIN users
+ * This is used instead of hardcoding "JOOR APP company" throughout the codebase
+ * @type {readonly string}
+ */
+export const SUPER_ADMIN_COMPANY_DESCRIPTION = 'JoorApp application owner and manging company';
+
+/**
  * Super Admin Default Company Role Name
  * Default company role name for SUPER_ADMIN users in the system company
  * @type {readonly string}

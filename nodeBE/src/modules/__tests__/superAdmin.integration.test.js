@@ -12,11 +12,12 @@
 import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import { Op } from 'sequelize';
+import { sequelize } from '../../../src/config/database.js';
 import { createTestApp, closeTestApp } from '../../../__tests__/helpers/integration.js';
 import { getAuthToken } from '../../../__tests__/helpers/auth.js';
 import { cleanDatabase } from '../../../__tests__/helpers/database.js';
-import { User, Company, CompanyRole, CompanyUser } from '../../../src/models/index.js';
-import { createUserData, createCompanyData, createRoleData, createCompanyUserData } from '../../../__tests__/helpers/factories.js';
+import { User, Company, CompanyRole, CompanyUser, Plan } from '../../../src/models/index.js';
+import { createUserData, createCompanyData, createRoleData, createCompanyUserData, createPlanData } from '../../../__tests__/helpers/factories.js';
 import { v4 as uuidv4 } from 'uuid';
 
 describe('Super Admin API Integration', () => {
@@ -77,6 +78,19 @@ describe('Super Admin API Integration', () => {
         where: {
           createdUserId: { [Op.ne]: testUser.id }
         }
+      });
+      // Plan uses MasterDataEntity - doesn't have createdUserId
+      // Soft delete all plans except BASIC (preserve BASIC for system)
+      await sequelize.query(`
+        UPDATE plans 
+        SET is_deleted = true,
+            deleted_user_id = :testUserId,
+            updated_date = CURRENT_TIMESTAMP
+        WHERE code != 'BASIC'
+        AND is_deleted = false
+      `, {
+        replacements: { testUserId: testUser.id },
+        type: sequelize.QueryTypes.UPDATE
       });
       await User.destroy({
         where: {
@@ -154,6 +168,73 @@ describe('Super Admin API Integration', () => {
       expect(response.body.meta).toBeDefined();
     });
 
+    it('should create company with all new fields', async () => {
+      const companyData = {
+        name: `Test Company ${Date.now()}`,
+        description: 'Test company description',
+        email: 'contact@example.com',
+        phone: '+1 234-567-8900',
+        buildingAddress: 'Suite 100',
+        streetAddress: '123 Main Street',
+        city: 'New York',
+        state: 'NY',
+        postalCode: '10001',
+        country: 'United States',
+        logo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        status: 'ACTIVE'
+      };
+
+      const response = await request(app)
+        .post('/api/v2/superAdmin/companies')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(companyData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.name).toBe(companyData.name);
+      expect(response.body.data.email).toBe(companyData.email);
+      expect(response.body.data.phone).toBe(companyData.phone);
+      expect(response.body.data.buildingAddress).toBe(companyData.buildingAddress);
+      expect(response.body.data.streetAddress).toBe(companyData.streetAddress);
+      expect(response.body.data.city).toBe(companyData.city);
+      expect(response.body.data.state).toBe(companyData.state);
+      expect(response.body.data.postalCode).toBe(companyData.postalCode);
+      expect(response.body.data.country).toBe(companyData.country);
+      expect(response.body.data.status).toBe(companyData.status);
+      expect(response.body.data).not.toHaveProperty('logo'); // Logo excluded from create response
+      expect(response.body.meta).toBeDefined();
+    });
+
+    it('should use default status NEW when status not provided', async () => {
+      const companyData = {
+        name: `Test Company ${Date.now()}`
+      };
+
+      const response = await request(app)
+        .post('/api/v2/superAdmin/companies')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(companyData)
+        .expect(201);
+
+      expect(response.body.data.status).toBe('NEW');
+    });
+
+    it('should return 400 when status is invalid', async () => {
+      const companyData = {
+        name: `Test Company ${Date.now()}`,
+        status: 'INVALID_STATUS'
+      };
+
+      const response = await request(app)
+        .post('/api/v2/superAdmin/companies')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(companyData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('VALIDATION_ERROR');
+    });
+
     it('should return 400 when name is missing', async () => {
       const response = await request(app)
         .post('/api/v2/superAdmin/companies')
@@ -202,6 +283,64 @@ describe('Super Admin API Integration', () => {
       expect(response.body.pagination).toBeDefined(); // pagination at root level per cursor rules
     });
 
+    it('should exclude logo from list response (lazy loading)', async () => {
+      // Create test company with logo
+      if (testUser) {
+        await Company.create(
+          createCompanyData({
+            name: `Company With Logo ${Date.now()}`,
+            logo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+          }),
+          { context: { userId: testUser.id } }
+        );
+      }
+
+      const response = await request(app)
+        .get('/api/v2/superAdmin/companies')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      // Verify logo is excluded from all companies in list
+      response.body.data.forEach(company => {
+        expect(company).not.toHaveProperty('logo');
+      });
+    });
+
+    it('should include new fields in list response', async () => {
+      // Create test company with new fields
+      if (testUser) {
+        await Company.create(
+          createCompanyData({
+            name: `Company With Fields ${Date.now()}`,
+            email: 'list@example.com',
+            phone: '+1 234-567-8900',
+            city: 'New York',
+            state: 'NY',
+            country: 'United States',
+            status: 'ACTIVE'
+          }),
+          { context: { userId: testUser.id } }
+        );
+      }
+
+      const response = await request(app)
+        .get('/api/v2/superAdmin/companies')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      const companyWithFields = response.body.data.find(c => c.email === 'list@example.com');
+      expect(companyWithFields).toBeDefined();
+      expect(companyWithFields.email).toBe('list@example.com');
+      expect(companyWithFields.phone).toBe('+1 234-567-8900');
+      expect(companyWithFields.city).toBe('New York');
+      expect(companyWithFields.state).toBe('NY');
+      expect(companyWithFields.country).toBe('United States');
+      expect(companyWithFields.status).toBe('ACTIVE');
+    });
+
     it('should support pagination', async () => {
       const response = await request(app)
         .get('/api/v2/superAdmin/companies')
@@ -238,6 +377,73 @@ describe('Super Admin API Integration', () => {
       expect(response.body.data).toBeDefined();
       expect(response.body.data.id).toBe(testCompany.id);
       expect(response.body.meta).toBeDefined();
+    });
+
+    it('should exclude logo by default (lazy loading)', async () => {
+      const base64Logo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const testCompany = await Company.create(
+        createCompanyData({ logo: base64Logo }),
+        { context: { userId: testUser.id } }
+      );
+
+      const response = await request(app)
+        .get(`/api/v2/superAdmin/companies/${testCompany.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).not.toHaveProperty('logo');
+    });
+
+    it('should include logo when includeLogo=true', async () => {
+      const base64Logo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const testCompany = await Company.create(
+        createCompanyData({ logo: base64Logo }),
+        { context: { userId: testUser.id } }
+      );
+
+      const response = await request(app)
+        .get(`/api/v2/superAdmin/companies/${testCompany.id}`)
+        .query({ includeLogo: 'true' })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('logo');
+      expect(response.body.data.logo).toBe(base64Logo);
+    });
+
+    it('should include all new fields in response', async () => {
+      const testCompany = await Company.create(
+        createCompanyData({
+          email: 'get@example.com',
+          phone: '+1 234-567-8900',
+          buildingAddress: 'Suite 100',
+          streetAddress: '123 Main Street',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10001',
+          country: 'United States',
+          status: 'ACTIVE'
+        }),
+        { context: { userId: testUser.id } }
+      );
+
+      const response = await request(app)
+        .get(`/api/v2/superAdmin/companies/${testCompany.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.email).toBe('get@example.com');
+      expect(response.body.data.phone).toBe('+1 234-567-8900');
+      expect(response.body.data.buildingAddress).toBe('Suite 100');
+      expect(response.body.data.streetAddress).toBe('123 Main Street');
+      expect(response.body.data.city).toBe('New York');
+      expect(response.body.data.state).toBe('NY');
+      expect(response.body.data.postalCode).toBe('10001');
+      expect(response.body.data.country).toBe('United States');
+      expect(response.body.data.status).toBe('ACTIVE');
     });
 
     it('should return 404 when company not found', async () => {
@@ -281,6 +487,77 @@ describe('Super Admin API Integration', () => {
       expect(response.body.message).toBeDefined();
       expect(response.body.data).toBeDefined();
       expect(response.body.meta).toBeDefined();
+    });
+
+    it('should update company with all new fields', async () => {
+      const testCompany = await Company.create(createCompanyData(), { context: { userId: testUser.id } });
+
+      const updateData = {
+        email: 'updated@example.com',
+        phone: '+1 555-123-4567',
+        buildingAddress: 'Suite 200',
+        streetAddress: '456 Oak Avenue',
+        city: 'Los Angeles',
+        state: 'CA',
+        postalCode: '90001',
+        country: 'United States',
+        status: 'ACTIVE'
+      };
+
+      const response = await request(app)
+        .put(`/api/v2/superAdmin/companies/${testCompany.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(updateData)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.email).toBe(updateData.email);
+      expect(response.body.data.phone).toBe(updateData.phone);
+      expect(response.body.data.buildingAddress).toBe(updateData.buildingAddress);
+      expect(response.body.data.streetAddress).toBe(updateData.streetAddress);
+      expect(response.body.data.city).toBe(updateData.city);
+      expect(response.body.data.state).toBe(updateData.state);
+      expect(response.body.data.postalCode).toBe(updateData.postalCode);
+      expect(response.body.data.country).toBe(updateData.country);
+      expect(response.body.data.status).toBe(updateData.status);
+    });
+
+    it('should update status to different enum values', async () => {
+      const testCompany = await Company.create(
+        createCompanyData({ status: 'NEW' }),
+        { context: { userId: testUser.id } }
+      );
+
+      // Update to ACTIVE
+      let response = await request(app)
+        .put(`/api/v2/superAdmin/companies/${testCompany.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ status: 'ACTIVE' })
+        .expect(200);
+
+      expect(response.body.data.status).toBe('ACTIVE');
+
+      // Update to LICENSE_EXPIRED
+      response = await request(app)
+        .put(`/api/v2/superAdmin/companies/${testCompany.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ status: 'LICENSE_EXPIRED' })
+        .expect(200);
+
+      expect(response.body.data.status).toBe('LICENSE_EXPIRED');
+    });
+
+    it('should return 400 when status is invalid', async () => {
+      const testCompany = await Company.create(createCompanyData(), { context: { userId: testUser.id } });
+
+      const response = await request(app)
+        .put(`/api/v2/superAdmin/companies/${testCompany.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ status: 'INVALID_STATUS' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('VALIDATION_ERROR');
     });
 
     it('should return 401 when not authenticated', async () => {
@@ -857,6 +1134,202 @@ describe('Super Admin API Integration', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBeDefined();
+    });
+  });
+
+  describe('POST /api/v2/superAdmin/plans', () => {
+    it('should create plan successfully', async () => {
+      const planData = {
+        name: `Test Plan ${Date.now()}`,
+        code: `PLAN-${Date.now()}`,
+        description: 'Test plan description',
+        price: 99.99,
+        isActive: true
+      };
+
+      const response = await request(app)
+        .post('/api/v2/superAdmin/plans')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(planData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.name).toBe(planData.name);
+      expect(response.body.data.code).toBe(planData.code);
+      expect(response.body.data.price).toBe(99.99);
+    });
+
+    it('should return 400 when name is missing', async () => {
+      const response = await request(app)
+        .post('/api/v2/superAdmin/plans')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ code: 'TEST' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('VALIDATION_ERROR');
+    });
+
+    it('should return 400 when price is negative', async () => {
+      const response = await request(app)
+        .post('/api/v2/superAdmin/plans')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: 'Test Plan',
+          code: 'TEST',
+          price: -10.00
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('GET /api/v2/superAdmin/plans', () => {
+    it('should return paginated list of plans', async () => {
+      const response = await request(app)
+        .get('/api/v2/superAdmin/plans')
+        .set('Authorization', `Bearer ${authToken}`)
+        .query({ page: 1, limit: 10 })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeInstanceOf(Array);
+      expect(response.body.pagination).toBeDefined();
+    });
+  });
+
+  describe('GET /api/v2/superAdmin/plans/:id', () => {
+    it('should return plan by ID', async () => {
+      // First create a plan
+      const createResponse = await request(app)
+        .post('/api/v2/superAdmin/plans')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: `Test Plan ${Date.now()}`,
+          code: `PLAN-${Date.now()}`,
+          price: 49.99
+        })
+        .expect(201);
+
+      const planId = createResponse.body.data.id;
+
+      // Then get it
+      const response = await request(app)
+        .get(`/api/v2/superAdmin/plans/${planId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.id).toBe(planId);
+      expect(response.body.data.price).toBe(49.99);
+    });
+  });
+
+  describe('PUT /api/v2/superAdmin/plans/:id', () => {
+    it('should update plan successfully', async () => {
+      // First create a plan
+      const createResponse = await request(app)
+        .post('/api/v2/superAdmin/plans')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: `Test Plan ${Date.now()}`,
+          code: `PLAN-${Date.now()}`,
+          price: 10.00
+        })
+        .expect(201);
+
+      const planId = createResponse.body.data.id;
+
+      // Then update it
+      const response = await request(app)
+        .put(`/api/v2/superAdmin/plans/${planId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: 'Updated Plan',
+          price: 149.99
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.name).toBe('Updated Plan');
+      expect(response.body.data.price).toBe(149.99);
+    });
+  });
+
+  describe('DELETE /api/v2/superAdmin/plans/:id', () => {
+    it('should delete plan successfully', async () => {
+      // First create a plan
+      const createResponse = await request(app)
+        .post('/api/v2/superAdmin/plans')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          name: `Test Plan ${Date.now()}`,
+          code: `PLAN-${Date.now()}`,
+          price: 10.00
+        })
+        .expect(201);
+
+      const planId = createResponse.body.data.id;
+
+      // Then delete it
+      const response = await request(app)
+        .delete(`/api/v2/superAdmin/plans/${planId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+    });
+
+    it('should prevent deletion of BASIC plan', async () => {
+      // Get BASIC plan (should exist from migration)
+      const listResponse = await request(app)
+        .get('/api/v2/superAdmin/plans')
+        .set('Authorization', `Bearer ${authToken}`)
+        .query({ limit: 100 })
+        .expect(200);
+
+      const basicPlan = listResponse.body.data.find(p => p.code === 'BASIC');
+      if (basicPlan) {
+        const response = await request(app)
+          .delete(`/api/v2/superAdmin/plans/${basicPlan.id}`)
+          .set('Authorization', `Bearer ${authToken}`)
+          .expect(400);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.error).toBe('BAD_REQUEST');
+      }
+    });
+  });
+
+  describe('Plan Assignment in Company Creation', () => {
+    it('should assign BASIC plan to new company by default', async () => {
+      // Get BASIC plan ID
+      const listResponse = await request(app)
+        .get('/api/v2/superAdmin/plans')
+        .set('Authorization', `Bearer ${authToken}`)
+        .query({ limit: 100 })
+        .expect(200);
+
+      const basicPlan = listResponse.body.data.find(p => p.code === 'BASIC');
+      expect(basicPlan).toBeDefined();
+
+      // Create company
+      const companyData = {
+        name: `Test Company ${Date.now()}`,
+        description: 'Test company'
+      };
+
+      const response = await request(app)
+        .post('/api/v2/superAdmin/companies')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(companyData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.plan).toBeDefined();
+      expect(response.body.data.plan.id).toBe(basicPlan.id);
+      expect(response.body.data.plan.code).toBe('BASIC');
     });
   });
 });

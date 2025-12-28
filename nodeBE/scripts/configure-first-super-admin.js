@@ -2,6 +2,16 @@
  * @author Bhavesh Venugopal
  * Configure First Super Admin Script
  * Creates initial super admin user in Keycloak and database, sets up system company and roles
+ * 
+ * Company Setup:
+ * - Creates "JOOR APP" company with all contact and address fields
+ * - Assigns BASIC plan to the company (required foreign key)
+ * - Uses super admin email for company email
+ * 
+ * Prerequisites:
+ * - BASIC plan must exist (seeded via master data service)
+ * - Keycloak must be running and accessible
+ * - Database must be initialized
  */
 
 // IMPORTANT: Load environment variables FIRST before any other imports
@@ -30,13 +40,20 @@ if (existsSync(envPath)) {
 import { initializeDatabase, closeDatabase } from '../src/config/database.js';
 import { getAdminClient } from '../src/services/keycloakService.js';
 import { createModuleLogger, logInfo, logError, logWarn } from '../src/utils/logger.js';
-import { SUPER_ADMIN_COMPANY_NAME, SUPER_ADMIN_DEFAULT_ROLE_NAME, SUPER_ADMIN_DEFAULT_ROLE_CODE } from '../src/constants/superAdmin.js';
+import { SUPER_ADMIN_COMPANY_NAME,SUPER_ADMIN_COMPANY_DESCRIPTION, SUPER_ADMIN_DEFAULT_ROLE_NAME, SUPER_ADMIN_DEFAULT_ROLE_CODE } from '../src/constants/superAdmin.js';
 
 const logger = createModuleLogger('configure-super-admin');
 
 // Super Admin Configuration
 const SUPER_ADMIN_CONFIG = {
   email: 'joorapp.admin@yopmail.com',
+  companyPhone: `8888899999`,
+  buildingAddress: `JoorApp Tower`,
+  streetAddress: `JoorApp Street`,
+  city: `JoorApp City`,
+  state: `JoorAPP State`,
+  postalCode: `695013`,
+  country: `India`,
   firstName: 'Joorapp',
   lastName: 'Admin',
   password: process.env.SUPER_ADMIN_PASSWORD || 'admin',
@@ -259,9 +276,29 @@ const createDatabaseUser = async (keycloakUser) => {
 const createJoorAppCompany = async (superAdminUser) => {
   try {
     // Dynamically import models to avoid import-time database access
-    const { Company } = await import('../src/models/index.js');
+    const { Company, Plan } = await import('../src/models/index.js');
+    const { BASIC_PLAN_MASTER_DATA } = await import('../src/constants/masterData.js');
 
     logger.info('Checking if JOOR APP company exists...', { name: SUPER_ADMIN_COMPANY_NAME });
+
+    // Get BASIC plan (required for company)
+    logger.info('Fetching BASIC plan...');
+    const basicPlan = await Plan.findOne({
+      where: {
+        code: BASIC_PLAN_MASTER_DATA.code,
+        isDeleted: false
+      }
+    });
+
+    if (!basicPlan) {
+      throw new Error(`BASIC plan not found. Please ensure master data seeding has run. Expected plan code: ${BASIC_PLAN_MASTER_DATA.code}`);
+    }
+
+    logger.info('BASIC plan found', {
+      planId: basicPlan.id,
+      planCode: basicPlan.code,
+      planName: basicPlan.name
+    });
 
     // Check if company already exists
     let company = await Company.findOne({
@@ -276,6 +313,20 @@ const createJoorAppCompany = async (superAdminUser) => {
         companyId: company.id,
         name: company.name
       });
+
+      // Update planId if not set
+      if (!company.planId) {
+        logger.info('Updating company with BASIC plan...');
+        company.planId = basicPlan.id;
+        await company.save({
+          context: {
+            userId: superAdminUser.id,
+            companyId: company.id
+          }
+        });
+        logger.info('Company plan updated', { planId: basicPlan.id });
+      }
+
       return company;
     }
 
@@ -284,6 +335,16 @@ const createJoorAppCompany = async (superAdminUser) => {
 
     company = await Company.create({
       name: SUPER_ADMIN_COMPANY_NAME,
+      description: SUPER_ADMIN_COMPANY_DESCRIPTION,
+      email: SUPER_ADMIN_CONFIG.email,
+      phone: SUPER_ADMIN_CONFIG.companyPhone,
+      buildingAddress: SUPER_ADMIN_CONFIG.buildingAddress,
+      streetAddress: SUPER_ADMIN_CONFIG.streetAddress,
+      city: SUPER_ADMIN_CONFIG.city,
+      state: SUPER_ADMIN_CONFIG.state,
+      postalCode: SUPER_ADMIN_CONFIG.postalCode,
+      country: SUPER_ADMIN_CONFIG.country,
+      planId: basicPlan.id, // Assign BASIC plan
       isActive: true
     }, {
       context: {
@@ -294,7 +355,8 @@ const createJoorAppCompany = async (superAdminUser) => {
 
     logger.info('JOOR APP company created successfully', {
       companyId: company.id,
-      name: company.name
+      name: company.name,
+      planId: company.planId
     });
 
     return company;
@@ -485,6 +547,7 @@ const configureFirstSuperAdmin = async () => {
     logger.info(`  Keycloak User: ${keycloakUser.email} (${keycloakUser.id})`);
     logger.info(`  Database User: ${dbUser.email} (${dbUser.id})`);
     logger.info(`  Company: ${joorAppCompany.name} (${joorAppCompany.id})`);
+    logger.info(`  Company Plan: ${joorAppCompany.planId ? 'BASIC' : 'Not assigned'} (${joorAppCompany.planId || 'N/A'})`);
     logger.info(`  Role: ${companyAdminRole.name} (${companyAdminRole.id})`);
     logger.info(`  CompanyUser Link: ${companyUserLink.id}`);
     logger.info('============================================================\n');

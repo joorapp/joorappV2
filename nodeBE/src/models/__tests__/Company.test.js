@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { createCompanyData, createUserData, createAuditContext } from '../../../__tests__/helpers/factories.js';
 import { cleanCompanies, cleanUsers, cleanDatabase } from '../../../__tests__/helpers/database.js';
 import { sequelize } from '../../config/database.js';
+import { COMPANY_STATUS_DEFAULT, COMPANY_STATUSES, isValidCompanyStatus } from '../../constants/companyStatus.js';
 
 describe('Company Model', () => {
   let testContext;
@@ -242,6 +243,89 @@ describe('Company Model', () => {
       expect(company).toBeDefined();
       expect(company.description).toBeNull();
     });
+
+    it('should validate status enum values', async () => {
+      // Arrange - try to create with invalid status
+      const invalidData = createCompanyData({ status: 'INVALID_STATUS' });
+
+      // Act & Assert
+      await expect(
+        Company.create(invalidData, { context: testContext })
+      ).rejects.toThrow();
+    });
+
+    it('should accept valid status enum values', async () => {
+      // Arrange & Act - test each valid status
+      for (const status of COMPANY_STATUSES) {
+        const companyData = createCompanyData({ status });
+        const company = await Company.create(companyData, { context: testContext });
+        
+        // Assert
+        expect(company.status).toBe(status);
+        // Clean up for next iteration
+        await company.destroy({ context: testContext });
+      }
+    });
+
+    it('should allow null email', async () => {
+      // Arrange
+      const companyData = createCompanyData({ email: null });
+
+      // Act
+      const company = await Company.create(companyData, { context: testContext });
+
+      // Assert
+      expect(company).toBeDefined();
+      expect(company.email).toBeNull();
+    });
+
+    it('should allow null phone', async () => {
+      // Arrange
+      const companyData = createCompanyData({ phone: null });
+
+      // Act
+      const company = await Company.create(companyData, { context: testContext });
+
+      // Assert
+      expect(company).toBeDefined();
+      expect(company.phone).toBeNull();
+    });
+
+    it('should allow null address fields', async () => {
+      // Arrange
+      const companyData = createCompanyData({
+        buildingAddress: null,
+        streetAddress: null,
+        city: null,
+        state: null,
+        postalCode: null,
+        country: null
+      });
+
+      // Act
+      const company = await Company.create(companyData, { context: testContext });
+
+      // Assert
+      expect(company).toBeDefined();
+      expect(company.buildingAddress).toBeNull();
+      expect(company.streetAddress).toBeNull();
+      expect(company.city).toBeNull();
+      expect(company.state).toBeNull();
+      expect(company.postalCode).toBeNull();
+      expect(company.country).toBeNull();
+    });
+
+    it('should allow null logo', async () => {
+      // Arrange
+      const companyData = createCompanyData({ logo: null });
+
+      // Act
+      const company = await Company.create(companyData, { context: testContext });
+
+      // Assert
+      expect(company).toBeDefined();
+      expect(company.logo).toBeNull();
+    });
   });
 
   describe('Default Values', () => {
@@ -277,6 +361,109 @@ describe('Company Model', () => {
 
       // Assert
       expect(company.version).toBe(1);
+    });
+
+    it('should have status=NEW by default', async () => {
+      // Arrange
+      const companyData = createCompanyData();
+      delete companyData.status;
+
+      // Act
+      const company = await Company.create(companyData, { context: testContext });
+
+      // Assert
+      expect(company.status).toBe(COMPANY_STATUS_DEFAULT);
+      expect(company.status).toBe('NEW');
+    });
+  });
+
+  describe('New Fields', () => {
+    it('should create company with all new contact fields', async () => {
+      // Arrange
+      const companyData = createCompanyData({
+        email: 'contact@example.com',
+        phone: '+1 234-567-8900'
+      });
+
+      // Act
+      const company = await Company.create(companyData, { context: testContext });
+
+      // Assert
+      expect(company.email).toBe('contact@example.com');
+      expect(company.phone).toBe('+1 234-567-8900');
+    });
+
+    it('should create company with all address fields', async () => {
+      // Arrange
+      const companyData = createCompanyData({
+        buildingAddress: 'Suite 100',
+        streetAddress: '123 Main Street',
+        city: 'New York',
+        state: 'NY',
+        postalCode: '10001',
+        country: 'United States'
+      });
+
+      // Act
+      const company = await Company.create(companyData, { context: testContext });
+
+      // Assert
+      expect(company.buildingAddress).toBe('Suite 100');
+      expect(company.streetAddress).toBe('123 Main Street');
+      expect(company.city).toBe('New York');
+      expect(company.state).toBe('NY');
+      expect(company.postalCode).toBe('10001');
+      expect(company.country).toBe('United States');
+    });
+
+    it('should create company with logo (base64)', async () => {
+      // Arrange
+      const base64Logo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const companyData = createCompanyData({ logo: base64Logo });
+
+      // Act
+      const company = await Company.create(companyData, { context: testContext });
+
+      // Assert
+      expect(company.logo).toBe(base64Logo);
+    });
+
+    it('should update company with new fields', async () => {
+      // Arrange
+      const company = await Company.create(
+        createCompanyData({ name: 'Original Name' }),
+        { context: testContext }
+      );
+
+      // Act
+      await company.update({
+        email: 'newemail@example.com',
+        phone: '+1 555-123-4567',
+        city: 'Los Angeles',
+        status: 'ACTIVE'
+      }, { context: testContext });
+
+      // Assert
+      expect(company.email).toBe('newemail@example.com');
+      expect(company.phone).toBe('+1 555-123-4567');
+      expect(company.city).toBe('Los Angeles');
+      expect(company.status).toBe('ACTIVE');
+    });
+
+    it('should update status to different enum values', async () => {
+      // Arrange
+      const company = await Company.create(
+        createCompanyData({ status: 'NEW' }),
+        { context: testContext }
+      );
+
+      // Act - update to ACTIVE
+      await company.update({ status: 'ACTIVE' }, { context: testContext });
+      expect(company.status).toBe('ACTIVE');
+
+      // Act - update to LICENSE_EXPIRED
+      await company.update({ status: 'LICENSE_EXPIRED' }, { context: testContext });
+      expect(company.status).toBe('LICENSE_EXPIRED');
     });
   });
 

@@ -13,6 +13,9 @@ import { createMockCompanyUser } from '../../../__tests__/mocks/models/CompanyUs
 import { createMockRole } from '../../../__tests__/mocks/models/CompanyRoleMock.js';
 import { createMockUser } from '../../../__tests__/mocks/models/UserMock.js';
 import { createMockContext } from '../../../__tests__/mocks/contextMock.js';
+import { createMockPlan } from '../../../__tests__/mocks/models/PlanMock.js';
+import { Plan } from '../../models/index.js';
+import { COMPANY_STATUS_DEFAULT, COMPANY_STATUSES } from '../../constants/companyStatus.js';
 
 // Mock the repositories using unstable_mockModule for ES modules
 jest.unstable_mockModule('../../repositories/companyRepository.js', () => ({
@@ -54,6 +57,7 @@ describe('Company Service', () => {
   let mockCreatedCompany;
   let mockUpdatedCompany;
   let mockDeletedCompany;
+  let mockPlan;
 
   beforeEach(() => {
     // Reset all mocks
@@ -66,23 +70,39 @@ describe('Company Service', () => {
 
     // Setup test data using shared mocks
     mockContext = createMockContext();
+    mockPlan = createMockPlan({
+      name: 'Basic',
+      code: 'BASIC',
+      description: 'Basic subscription plan',
+      price: 0.00,
+      isActive: true
+    });
+    
     mockCompany = createMockCompany({
       name: 'Acme Corp',
       description: 'Leading technology company',
+      status: COMPANY_STATUS_DEFAULT,
+      email: 'contact@acme.com',
+      phone: '+1 234-567-8900',
       createdUserId: mockContext.userId,
-      updatedUserId: mockContext.userId
+      updatedUserId: mockContext.userId,
+      planId: mockPlan.id,
+      plan: mockPlan
     });
 
     mockCreatedCompany = createMockCompany({
       name: 'Acme Corp',
       description: 'Leading technology company',
-      createdUserId: mockContext.userId
+      createdUserId: mockContext.userId,
+      planId: mockPlan.id,
+      plan: mockPlan
     });
 
     mockUpdatedCompany = createMockCompany({
       ...mockCompany,
       name: 'Updated Acme Corp',
-      version: 2
+      version: 2,
+      plan: mockPlan
     });
 
     mockDeletedCompany = createMockCompany({
@@ -104,6 +124,11 @@ describe('Company Service', () => {
       
       companyRepository.findOne.mockResolvedValue(null);
       companyRepository.create.mockResolvedValue(mockCreatedCompany);
+      // Mock the reload with Plan association
+      companyRepository.findByIdOrFail.mockResolvedValue({
+        ...mockCreatedCompany,
+        plan: mockPlan
+      });
 
       // Act
       const result = await companyService.createCompany(companyData, mockContext);
@@ -111,25 +136,57 @@ describe('Company Service', () => {
       // Assert
       expect(companyRepository.findOne).toHaveBeenCalledWith({ name: 'New Company' });
       expect(companyRepository.create).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           name: 'New Company',
           description: 'New company description',
-          isActive: true
-        },
+          isActive: true,
+          status: COMPANY_STATUS_DEFAULT,
+          email: null,
+          phone: null,
+          buildingAddress: null,
+          streetAddress: null,
+          city: null,
+          state: null,
+          postalCode: null,
+          country: null,
+          logo: null
+        }),
         mockContext
       );
       
-      // Verify DTO transformation
+      // Verify DTO transformation with plan object
       expect(result).toEqual({
         id: mockCreatedCompany.id,
         name: mockCreatedCompany.name,
         description: mockCreatedCompany.description,
         isActive: mockCreatedCompany.isActive,
+        status: mockCreatedCompany.status,
+        email: mockCreatedCompany.email,
+        phone: mockCreatedCompany.phone,
+        buildingAddress: mockCreatedCompany.buildingAddress,
+        streetAddress: mockCreatedCompany.streetAddress,
+        city: mockCreatedCompany.city,
+        state: mockCreatedCompany.state,
+        postalCode: mockCreatedCompany.postalCode,
+        country: mockCreatedCompany.country,
+        plan: {
+          id: mockPlan.id,
+          name: mockPlan.name,
+          code: mockPlan.code,
+          description: mockPlan.description,
+          price: parseFloat(mockPlan.price) || 0.00,
+          isActive: mockPlan.isActive,
+          createdDate: mockPlan.createdDate,
+          updatedDate: mockPlan.updatedDate,
+          version: mockPlan.version
+        },
         createdDate: mockCreatedCompany.createdDate,
         createdUserId: mockCreatedCompany.createdUserId
       });
       expect(result).not.toHaveProperty('updatedDate');
       expect(result).not.toHaveProperty('version');
+      expect(result).not.toHaveProperty('logo'); // Logo excluded by default
+      expect(result).not.toHaveProperty('planId'); // planId replaced with plan object
     });
 
     it('should throw ConflictError when company name already exists', async () => {
@@ -187,29 +244,191 @@ describe('Company Service', () => {
         mockContext
       );
     });
+
+    it('should create company with all new fields', async () => {
+      // Arrange
+      const companyData = {
+        name: 'New Company',
+        email: 'contact@example.com',
+        phone: '+1 234-567-8900',
+        buildingAddress: 'Suite 100',
+        streetAddress: '123 Main Street',
+        city: 'New York',
+        state: 'NY',
+        postalCode: '10001',
+        country: 'United States',
+        status: 'ACTIVE'
+      };
+      
+      companyRepository.findOne.mockResolvedValue(null);
+      companyRepository.create.mockResolvedValue(mockCreatedCompany);
+
+      // Act
+      await companyService.createCompany(companyData, mockContext);
+
+      // Assert
+      expect(companyRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: 'contact@example.com',
+          phone: '+1 234-567-8900',
+          buildingAddress: 'Suite 100',
+          streetAddress: '123 Main Street',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10001',
+          country: 'United States',
+          status: 'ACTIVE'
+        }),
+        mockContext
+      );
+    });
+
+    it('should use default status when not provided', async () => {
+      // Arrange
+      const companyData = {
+        name: 'New Company'
+      };
+      
+      companyRepository.findOne.mockResolvedValue(null);
+      companyRepository.create.mockResolvedValue(mockCreatedCompany);
+
+      // Act
+      await companyService.createCompany(companyData, mockContext);
+
+      // Assert
+      expect(companyRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ status: COMPANY_STATUS_DEFAULT }),
+        mockContext
+      );
+    });
+
+    it('should throw ConflictError for invalid status', async () => {
+      // Arrange
+      const companyData = {
+        name: 'New Company',
+        status: 'INVALID_STATUS'
+      };
+      
+      companyRepository.findOne.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        companyService.createCompany(companyData, mockContext)
+      ).rejects.toThrow(ConflictError);
+      
+      expect(companyRepository.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('getCompanyById', () => {
     it('should return company DTO when company exists', async () => {
       // Arrange
       const companyId = uuidv4();
-      companyRepository.findByIdOrFail.mockResolvedValue(mockCompany);
+      companyRepository.findByIdOrFail.mockResolvedValue({
+        ...mockCompany,
+        plan: mockPlan
+      });
 
       // Act
       const result = await companyService.getCompanyById(companyId);
 
       // Assert
-      expect(companyRepository.findByIdOrFail).toHaveBeenCalledWith(companyId);
+      expect(companyRepository.findByIdOrFail).toHaveBeenCalledWith(companyId, {
+        include: [
+          {
+            model: expect.anything(),
+            as: 'plan',
+            required: false
+          }
+        ]
+      });
       expect(result).toEqual({
         id: mockCompany.id,
         name: mockCompany.name,
         description: mockCompany.description,
         isActive: mockCompany.isActive,
+        status: mockCompany.status,
+        email: mockCompany.email,
+        phone: mockCompany.phone,
+        buildingAddress: mockCompany.buildingAddress,
+        streetAddress: mockCompany.streetAddress,
+        city: mockCompany.city,
+        state: mockCompany.state,
+        postalCode: mockCompany.postalCode,
+        country: mockCompany.country,
+        plan: {
+          id: mockPlan.id,
+          name: mockPlan.name,
+          code: mockPlan.code,
+          description: mockPlan.description,
+          price: parseFloat(mockPlan.price) || 0.00,
+          isActive: mockPlan.isActive,
+          createdDate: mockPlan.createdDate,
+          updatedDate: mockPlan.updatedDate,
+          version: mockPlan.version
+        },
         createdDate: mockCompany.createdDate,
         createdUserId: mockCompany.createdUserId,
         updatedDate: mockCompany.updatedDate,
         updatedUserId: mockCompany.updatedUserId
       });
+      expect(result).not.toHaveProperty('logo'); // Logo excluded by default
+      expect(result).not.toHaveProperty('planId'); // planId replaced with plan object
+    });
+
+    it('should include logo when includeLogo=true', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      const companyWithLogo = createMockCompany({
+        ...mockCompany,
+        logo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        plan: mockPlan
+      });
+      companyRepository.findByIdOrFail.mockResolvedValue(companyWithLogo);
+
+      // Act
+      const result = await companyService.getCompanyById(companyId, { includeLogo: true });
+
+      // Assert
+      expect(result).toHaveProperty('logo');
+      expect(result.logo).toBe(companyWithLogo.logo);
+      expect(result).toHaveProperty('plan');
+    });
+
+    it('should exclude logo when includeLogo=false', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      const companyWithLogo = createMockCompany({
+        ...mockCompany,
+        logo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        plan: mockPlan
+      });
+      companyRepository.findByIdOrFail.mockResolvedValue(companyWithLogo);
+
+      // Act
+      const result = await companyService.getCompanyById(companyId, { includeLogo: false });
+
+      // Assert
+      expect(result).not.toHaveProperty('logo');
+      expect(result).toHaveProperty('plan');
+    });
+
+    it('should exclude logo by default (includeLogo not specified)', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      const companyWithLogo = createMockCompany({
+        ...mockCompany,
+        logo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        plan: mockPlan
+      });
+      companyRepository.findByIdOrFail.mockResolvedValue(companyWithLogo);
+
+      // Act
+      const result = await companyService.getCompanyById(companyId);
+
+      // Assert
+      expect(result).not.toHaveProperty('logo');
+      expect(result).toHaveProperty('plan');
     });
 
     it('should throw NotFoundError when company does not exist', async () => {
@@ -275,7 +494,10 @@ describe('Company Service', () => {
         description: 'Updated description'
       };
       
-      companyRepository.findByIdOrFail.mockResolvedValue(mockCompany);
+      // Mock the reload with Plan association after update
+      companyRepository.findByIdOrFail
+        .mockResolvedValueOnce(mockCompany) // First call for validation
+        .mockResolvedValueOnce({ ...mockUpdatedCompany, plan: mockPlan }); // Second call after update
       companyRepository.findOne.mockResolvedValue(null);
       companyRepository.update.mockResolvedValue(mockUpdatedCompany);
 
@@ -283,7 +505,7 @@ describe('Company Service', () => {
       const result = await companyService.updateCompany(companyId, updateData, mockContext);
 
       // Assert
-      expect(companyRepository.findByIdOrFail).toHaveBeenCalledWith(companyId);
+      expect(companyRepository.findByIdOrFail).toHaveBeenCalledTimes(2);
       expect(companyRepository.findOne).toHaveBeenCalledWith({ name: 'Updated Company' });
       expect(companyRepository.update).toHaveBeenCalledWith(
         companyId,
@@ -299,11 +521,33 @@ describe('Company Service', () => {
         name: mockUpdatedCompany.name,
         description: mockUpdatedCompany.description,
         isActive: mockUpdatedCompany.isActive,
+        status: mockUpdatedCompany.status,
+        email: mockUpdatedCompany.email,
+        phone: mockUpdatedCompany.phone,
+        buildingAddress: mockUpdatedCompany.buildingAddress,
+        streetAddress: mockUpdatedCompany.streetAddress,
+        city: mockUpdatedCompany.city,
+        state: mockUpdatedCompany.state,
+        postalCode: mockUpdatedCompany.postalCode,
+        country: mockUpdatedCompany.country,
+        plan: {
+          id: mockPlan.id,
+          name: mockPlan.name,
+          code: mockPlan.code,
+          description: mockPlan.description,
+          price: parseFloat(mockPlan.price) || 0.00,
+          isActive: mockPlan.isActive,
+          createdDate: mockPlan.createdDate,
+          updatedDate: mockPlan.updatedDate,
+          version: mockPlan.version
+        },
         createdDate: mockUpdatedCompany.createdDate,
         createdUserId: mockUpdatedCompany.createdUserId,
         updatedDate: mockUpdatedCompany.updatedDate,
         updatedUserId: mockUpdatedCompany.updatedUserId
       });
+      expect(result).not.toHaveProperty('logo'); // Logo excluded
+      expect(result).not.toHaveProperty('planId'); // planId replaced with plan object
     });
 
     it('should throw NotFoundError when company does not exist', async () => {
@@ -352,12 +596,91 @@ describe('Company Service', () => {
       expect(companyRepository.findOne).not.toHaveBeenCalled();
       expect(companyRepository.update).toHaveBeenCalled();
     });
+
+    it('should update company with new fields', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      const updateData = {
+        email: 'newemail@example.com',
+        phone: '+1 555-123-4567',
+        buildingAddress: 'Suite 200',
+        streetAddress: '456 Oak Avenue',
+        city: 'Los Angeles',
+        state: 'CA',
+        postalCode: '90001',
+        country: 'United States',
+        status: 'ACTIVE'
+      };
+      
+      companyRepository.findByIdOrFail.mockResolvedValue(mockCompany);
+      companyRepository.update.mockResolvedValue(mockUpdatedCompany);
+
+      // Act
+      await companyService.updateCompany(companyId, updateData, mockContext);
+
+      // Assert
+      expect(companyRepository.update).toHaveBeenCalledWith(
+        companyId,
+        expect.objectContaining({
+          email: 'newemail@example.com',
+          phone: '+1 555-123-4567',
+          buildingAddress: 'Suite 200',
+          streetAddress: '456 Oak Avenue',
+          city: 'Los Angeles',
+          state: 'CA',
+          postalCode: '90001',
+          country: 'United States',
+          status: 'ACTIVE'
+        }),
+        mockContext
+      );
+    });
+
+    it('should throw ConflictError for invalid status', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      const updateData = { status: 'INVALID_STATUS' };
+      
+      companyRepository.findByIdOrFail.mockResolvedValue(mockCompany);
+
+      // Act & Assert
+      await expect(
+        companyService.updateCompany(companyId, updateData, mockContext)
+      ).rejects.toThrow(ConflictError);
+      
+      expect(companyRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should update status to valid enum values', async () => {
+      // Arrange
+      const companyId = uuidv4();
+      
+      companyRepository.findByIdOrFail.mockResolvedValue(mockCompany);
+      companyRepository.update.mockResolvedValue(mockUpdatedCompany);
+
+      // Act & Assert - test each valid status
+      for (const status of COMPANY_STATUSES) {
+        jest.clearAllMocks();
+        const updateData = { status };
+        
+        await companyService.updateCompany(companyId, updateData, mockContext);
+        
+        expect(companyRepository.update).toHaveBeenCalledWith(
+          companyId,
+          expect.objectContaining({ status }),
+          mockContext
+        );
+      }
+    });
   });
 
   describe('listCompanies', () => {
     it('should return paginated companies with search', async () => {
       // Arrange
-      const companies = [mockCompany, { ...mockCompany, id: uuidv4(), name: 'Beta Corp' }];
+      const companies = [
+        { ...mockCompany, plan: mockPlan },
+        { ...mockCompany, id: uuidv4(), name: 'Beta Corp', plan: mockPlan }
+      ];
       const mockSearchResult = {
         rows: companies,
         count: 2
@@ -376,7 +699,16 @@ describe('Company Service', () => {
       expect(companyRepository.searchCompanies).toHaveBeenCalledWith(
         'acme',
         { limit: 10, offset: 0 },
-        [['name', 'ASC']]
+        [['name', 'ASC']],
+        {
+          include: [
+            {
+              model: Plan,
+              as: 'plan',
+              required: false
+            }
+          ]
+        }
       );
       
       expect(result.companies).toHaveLength(2);
@@ -386,15 +718,37 @@ describe('Company Service', () => {
         name: mockCompany.name,
         description: mockCompany.description,
         isActive: mockCompany.isActive,
+        status: mockCompany.status,
+        email: mockCompany.email,
+        phone: mockCompany.phone,
+        buildingAddress: mockCompany.buildingAddress,
+        streetAddress: mockCompany.streetAddress,
+        city: mockCompany.city,
+        state: mockCompany.state,
+        postalCode: mockCompany.postalCode,
+        country: mockCompany.country,
+        plan: {
+          id: mockPlan.id,
+          name: mockPlan.name,
+          code: mockPlan.code,
+          description: mockPlan.description,
+          price: parseFloat(mockPlan.price) || 0.00,
+          isActive: mockPlan.isActive,
+          createdDate: mockPlan.createdDate,
+          updatedDate: mockPlan.updatedDate,
+          version: mockPlan.version
+        },
         createdDate: mockCompany.createdDate
       });
+      expect(result.companies[0]).not.toHaveProperty('logo'); // Logo excluded from list
+      expect(result.companies[0]).not.toHaveProperty('planId'); // planId replaced with plan object
     });
 
     it('should filter by isActive when search is provided', async () => {
       // Arrange
       const companies = [
-        mockCompany,
-        { ...mockCompany, id: uuidv4(), name: 'Beta Corp', isActive: false }
+        { ...mockCompany, plan: mockPlan },
+        { ...mockCompany, id: uuidv4(), name: 'Beta Corp', isActive: false, plan: mockPlan }
       ];
       const mockSearchResult = {
         rows: companies,
@@ -418,7 +772,7 @@ describe('Company Service', () => {
 
     it('should use standard findAndCountAll when search is not provided', async () => {
       // Arrange
-      const mockResult = { rows: [mockCompany], count: 1 };
+      const mockResult = { rows: [{ ...mockCompany, plan: mockPlan }], count: 1 };
       companyRepository.findAndCountAll.mockResolvedValue(mockResult);
 
       // Act
@@ -434,7 +788,14 @@ describe('Company Service', () => {
         {
           limit: 10,
           offset: 0,
-          order: [['name', 'ASC']]
+          order: [['name', 'ASC']],
+          include: [
+            {
+              model: Plan,
+              as: 'plan',
+              required: false
+            }
+          ]
         }
       );
       
@@ -444,7 +805,7 @@ describe('Company Service', () => {
 
     it('should use default sort when not provided', async () => {
       // Arrange
-      const mockResult = { rows: [mockCompany], count: 1 };
+      const mockResult = { rows: [{ ...mockCompany, plan: mockPlan }], count: 1 };
       companyRepository.findAndCountAll.mockResolvedValue(mockResult);
 
       // Act
