@@ -49,12 +49,12 @@ const ActiveClients = () => {
     },
     {
       id: '3',
-      name: 'Tata Sons',
-      email: 'contact@tata.com',
+      name: 'YI Ventures',
+      email: 'contact@yiventures.com',
       phone: '+91 22-6665-8282',
-      address: 'Bombay House, Homi Mody Street, Mumbai, Maharashtra',
+      address: 'YI Ventures, Erankulam, Kerala',
       plan: 'Diamond',
-      startDate: '2024-03-15T12:30:00Z',
+      startDate: '2025-02-15T12:30:00Z',
       totalAmount: '$180,000',
     },
     {

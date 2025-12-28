@@ -196,7 +196,7 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = () => {
         <SimpleBar className="h-100 venu" ref={ref}>
           <div id="sidebar-menu">
             <ul className="metismenu list-unstyled" id="side-menu">
-              <li className="menu-title">Admin</li>
+              <li className="menu-title">{t('Navigation.admin')}</li>
               <li>
                 <Link to="/superadmin/dashboard" className=" ">
                   <i className="bx bx-home-circle"></i>
@@ -207,37 +207,68 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = () => {
               <li>
                 <Link to="/#" className="has-arrow" onClick={handleDropdownClick}>
                   <i className="bx bx-buildings"></i>
-                  <span>Clients</span>
+                  <span>{t('Navigation.clients')}</span>
                 </Link>
                 <ul className="sub-menu mm-collapse" aria-expanded="false">
                   <li>
-                    <Link to="/superadmin/NewClient">New Clients</Link>
+                    <Link to="/superadmin/NewClient">{t('Navigation.newClients')}</Link>
                   </li>
                   <li>
                     <Link to="/superadmin/ActiveClients">
-                      Active Clients
+                      {t('Navigation.activeClients')}
                     </Link>
                   </li>
                 </ul>
               </li>
-              
-
               <li>
                 <Link to="/AdminReports">
                   <i className="bx bx-file"></i>
-                  <span>Report</span>
+                  <span>{t('Navigation.report')}</span>
                 </Link>
               </li>
               <li>
                 <Link to="/superadmin/UserList">
                   <i className="bx bx-user"></i>
-                  <span>User Lists</span>
+                  <span>{t('Navigation.employeeLists')}</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/#" className="has-arrow" onClick={handleDropdownClick}>
+                  <i className='bx bx-user-plus'></i>
+                  <span>{t('Navigation.roles')}</span>
+                </Link>
+                <ul className="sub-menu mm-collapse" aria-expanded="false">
+                  <li>
+                    <Link to="/superadmin/RolesList">{t('Navigation.rolesList')}</Link>
+                  </li>
+                  <li>
+                    <Link to="/superadmin/RolePermissions">{t('Navigation.rolePermissions')}</Link>
+                  </li>
+                </ul>
+              </li>
+
+              <li>
+                <Link to="/superadmin/SubscriptionPlans">
+                  <i className='bx bx-calendar'></i>
+                  <span>{t('Navigation.subscriptions')}</span>
                 </Link>
               </li>
               <li>
                 <Link to="/superadmin/Loglist">
-                  <i className='bx bx-layer'    ></i>
-                  <span>Log</span>
+                  <i className='bx bx-layer'></i>
+                  <span>{t('Navigation.log')}</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/superadmin/Tickets">
+                  <i className='bx bx-support'></i>
+                  <span>{t('Tickets.title')}</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/superadmin/Notifications">
+                  <i className='bx bx-bell'></i>
+                  <span>{t('Navigation.notifications')}</span>
                 </Link>
               </li>
 
