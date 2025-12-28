@@ -38,6 +38,7 @@ const NewClients = () => {
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [clientForPlan, setClientForPlan] = useState<Client | null>(null);
   const [selectedPlan, setSelectedPlan] = useState('');
+  const [currentClientPlan, setCurrentClientPlan] = useState('Essential');
   const [isCreatingClient, setIsCreatingClient] = useState(false);
   const [newClient, setNewClient] = useState({
     name: '',
@@ -45,6 +46,10 @@ const NewClients = () => {
     phone: '',
     address: '',
     description: '',
+    country: '',
+    state: '',
+    city: '',
+    zipCode: '',
     logo: null as { file: File; preview: string | ArrayBuffer | null } | null,
   });
   const [editClient, setEditClient] = useState({
@@ -199,6 +204,10 @@ const NewClients = () => {
       phone: '',
       address: '',
       description: '',
+      country: '',
+      state: '',
+      city: '',
+      zipCode: '',
       logo: null,
     });
     setCreateFormErrors({});
@@ -391,6 +400,15 @@ const NewClients = () => {
   const handleAddPlan = (client: Client) => {
     setClientForPlan(client);
     setSelectedPlan('');
+    // Map client plan to display plan names
+    const planDisplayMap: { [key: string]: string } = {
+      'Basic': 'Essential',
+      'Premium': 'Standard',
+      'Diamond': 'Professional',
+      'Enterprise': 'Enterprise',
+      'Plan': 'Essential'
+    };
+    setCurrentClientPlan(planDisplayMap[client.plan] || 'Essential');
     setPlanModalOpen(true);
   };
 
@@ -404,16 +422,26 @@ const NewClients = () => {
       return;
     }
 
+    // Map display plan names to stored plan names: Essential -> Basic, Standard -> Premium, Professional -> Diamond, Enterprise -> Enterprise
+    const planMap: { [key: string]: string } = {
+      'Essential': 'Basic',
+      'Standard': 'Premium',
+      'Professional': 'Diamond',
+      'Enterprise': 'Enterprise'
+    };
+    const mappedPlan = planMap[selectedPlan] || selectedPlan;
+
     // Update the client's plan
     setClients(clients.map(client =>
       client.id === clientForPlan.id
-        ? { ...client, plan: selectedPlan }
+        ? { ...client, plan: mappedPlan }
         : client
     ));
 
     setPlanModalOpen(false);
     setClientForPlan(null);
     setSelectedPlan('');
+    setCurrentClientPlan('Essential');
   };
 
   const filteredClients = clients.filter(client =>
@@ -620,7 +648,7 @@ const NewClients = () => {
       </Modal>
 
       {/* Create New Client Modal */}
-      <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="md" centered>
+      <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="lg" centered>
         <ModalHeader toggle={handleCloseCreateModal}>
           {t('NewClients.createClient')}
         </ModalHeader>
@@ -685,7 +713,7 @@ const NewClients = () => {
                 </FormFeedback>
               )}
             </div>
-            <div className="col-md-12 mb-3">
+            <div className="col-md-6 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.email')} <span className="text-danger">*</span></Label>
               <Input
                 type="email"
@@ -700,7 +728,7 @@ const NewClients = () => {
                 </FormFeedback>
               )}
             </div>
-            <div className="col-md-12 mb-3">
+            <div className="col-md-6 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.phone')} <span className="text-danger">*</span></Label>
               <Input
                 type="tel"
@@ -715,6 +743,7 @@ const NewClients = () => {
                 </FormFeedback>
               )}
             </div>
+            
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.address')} <span className="text-danger">*</span></Label>
               <Input
@@ -729,6 +758,42 @@ const NewClients = () => {
                   {t(createFormErrors.address)}
                 </FormFeedback>
               )}
+            </div>
+            <div className="col-md-6 mb-3">
+                <Label className='form-label fw-semibold'>{t('NewClients.labels.country')}</Label>
+                <Input
+                  type="text"
+                  value={newClient.country}
+                  onChange={(e) => handleInputChange('country', e.target.value)}
+                  placeholder={t('NewClients.placeholders.enterCountry')}
+                />
+            </div>
+            <div className="col-md-6 mb-3">
+                <Label className='form-label fw-semibold'>{t('NewClients.labels.state')}</Label>
+                <Input
+                  type="text"
+                  value={newClient.state}
+                  onChange={(e) => handleInputChange('state', e.target.value)}
+                  placeholder={t('NewClients.placeholders.enterState')}
+                />
+            </div>
+            <div className="col-md-6 mb-3">
+                <Label className='form-label fw-semibold'>{t('NewClients.labels.city')}</Label>
+                <Input
+                  type="text"
+                  value={newClient.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  placeholder={t('NewClients.placeholders.enterCity')}
+                />
+            </div>
+            <div className="col-md-6 mb-3">
+                <Label className='form-label fw-semibold'>{t('NewClients.labels.zipCode')}</Label>
+                <Input
+                  type="text"
+                  value={newClient.zipCode}
+                  onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                  placeholder={t('NewClients.placeholders.enterZipCode')}
+                />
             </div>
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">{t('NewClients.labels.description')}</Label>
@@ -917,170 +982,162 @@ const NewClients = () => {
         centered
         className="pricing-modal"
       >
-        <ModalHeader toggle={() => setPlanModalOpen(!planModalOpen)}>
-          <div>
-            <h5 className="mb-1">{t('NewClients.selectPlanFor')} {clientForPlan?.name}</h5>
+        <ModalHeader toggle={() => setPlanModalOpen(!planModalOpen)} className="border-0 pb-2">
+          <div className="text-center w-100">
+            <h4 className="mb-2 fw-bold">{t('NewClients.planForEveryTeam')}</h4>
+            <p className="text-muted mb-0">{t('NewClients.getStartedFree')}</p>
           </div>
         </ModalHeader>
-        <ModalBody className="p-3 p-md-4">
-          <div className="row m-0 g-3">
-            {/* Basic Plan Card */}
-            <div className="col-12 col-sm-6 col-md-4">
+        <ModalBody className="p-4">
+          <div className="row g-4">
+            {/* Essential Plan */}
+            <div className="col-12 col-sm-6 col-lg-3">
               <div
-                className={`card h-100 pricing-card ${selectedPlan === 'Basic' ? 'selected border-primary shadow-sm' : ''}`}
-                onClick={() => handlePlanSelect('Basic')}
+                className={`pricing-plan-card ${selectedPlan === 'Essential' ? 'selected' : ''}`}
+                onClick={() => handlePlanSelect('Essential')}
               >
-                <div className="card-body p-3 p-md-4">
-                  <div className="text-center mb-3 mb-md-4">
-                    <div className="avatar-lg mx-auto mb-2 mb-md-3 plan-icon-container basic">
-                      <i className="mdi mdi-diamond-stone plan-icon basic"></i>
-                    </div>
-                    <h2 className="mb-1 fw-bold plan-title">{t('NewClients.planBasic') || "Basic"}</h2>
-                    <p className="text-muted mb-2 mb-md-3 small">{t('NewClients.planBasicDescription')}</p>
-                    <div className="mb-2 mb-md-3">
-                      <h3 className="mb-1 plan-price">$0</h3>
-                      <span className="text-muted small">{t('NewClients.free')}</span>
-                    </div>
+                <div className="plan-border essential"></div>
+                <div className="plan-content">
+                  <div className="plan-visual essential-visual">
+                    <svg className="plan-line" viewBox="0 0 120 90" preserveAspectRatio="none">
+                      <path d="M 10 45 Q 30 35, 50 40 T 90 45" stroke="#ddd" strokeWidth="1.5" strokeDasharray="3,3" fill="none"/>
+                    </svg>
+                    <div className="shape-circle"></div>
                   </div>
-                  <ul className="list-unstyled mb-3 mb-md-4 plan-features-list">
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-success me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.accessToAllBasic')}</span>
-                    </li>
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-success me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.basicReporting')}</span>
-                    </li>
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-success me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.upTo10Users')}</span>
-                    </li>
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-success me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.10GBData')}</span>
-                    </li>
-                  </ul>
+                  <h5 className="plan-name">{t('NewClients.planBasic')}</h5>
+                  <div className="plan-price-section">
+                    <div className="plan-price-main">USD $0</div>
+                  </div>
+                  <p className="plan-description">{t('NewClients.planBasicDescription')}</p>
                   <Button
-                    color={selectedPlan === 'Basic' ? 'primary' : 'secondary'}
-                    className="w-100"
-                    outline={selectedPlan !== 'Basic'}
-                    size="sm"
+                    color="secondary"
+                    className="w-100 plan-button"
+                    outline
+                    disabled={currentClientPlan === 'Essential' || currentClientPlan === 'Basic'}
                   >
-                    {selectedPlan === 'Basic' ? t('NewClients.selected') : t('NewClients.selectPlan')}
+                    {currentClientPlan === 'Essential' || currentClientPlan === 'Basic' ? t('NewClients.currentPlan') : t('NewClients.selectPlan')}
                   </Button>
                 </div>
               </div>
             </div>
 
-            {/* Premium Plan Card */}
-            <div className="col-12 col-sm-6 col-md-4">
+            {/* Standard Plan (Most Popular) */}
+            <div className="col-12 col-sm-6 col-lg-3">
               <div
-                className={`card h-100 pricing-card position-relative ${selectedPlan === 'Premium' ? 'selected border-primary shadow-sm' : ''}`}
-                onClick={() => handlePlanSelect('Premium')}
+                className={`pricing-plan-card ${selectedPlan === 'Standard' ? 'selected' : ''}`}
+                onClick={() => handlePlanSelect('Standard')}
               >
-                <div className="position-absolute top-0 end-0 m-2">
-                  <Badge color="primary" className="px-2 py-1 small">{t('NewClients.mostPopular')}</Badge>
-                </div>
-                <div className="card-body p-3 p-md-4">
-                  <div className="text-center mb-3 mb-md-4">
-                    <div className="avatar-lg mx-auto mb-2 mb-md-3 plan-icon-container premium">
-                      <i className="mdi mdi-star plan-icon premium"></i>
-                    </div>
-                    <h2 className="mb-1 fw-bold plan-title">{t('NewClients.planPremium') || "Premium"}</h2>
-                    <p className="text-muted mb-2 mb-md-3 small">{t('NewClients.planPremiumDescription')}</p>
-                    <div className="mb-2 mb-md-3">
-                      <h3 className="mb-1 plan-price">$9.9</h3>
-                      <span className="text-muted small">{t('NewClients.perUserMonth')}</span>
-                    </div>
+                <div className="plan-border standard"></div>
+                <div className="plan-popular-badge">{t('NewClients.mostPopular')}</div>
+                <div className="plan-content">
+                  <div className="plan-visual standard-visual">
+                    <svg className="plan-line" viewBox="0 0 120 90" preserveAspectRatio="none" style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 }}>
+                      <path d="M 10 45 Q 30 35, 50 40 T 90 45" stroke="#ddd" strokeWidth="1.5" strokeDasharray="3,3" fill="none"/>
+                    </svg>
+                    <div className="shape-circle"></div>
+                    <div className="shape-square"></div>
                   </div>
-                  <ul className="list-unstyled mb-3 mb-md-4 plan-features-list">
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-primary me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.100Integrations')}</span>
-                    </li>
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-primary me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.advancedReporting')}</span>
-                    </li>
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-primary me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.upTo20Users')}</span>
-                    </li>
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-primary me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.30GBData')}</span>
-                    </li>
-                  </ul>
+                  <h5 className="plan-name">{t('NewClients.planPremium')}</h5>
+                  <div className="plan-price-section">
+                    <div className="plan-price-main">USD $4.95</div>
+                    <div className="plan-price-detail">{t('NewClients.perUserMonthBilledAnnually')}</div>
+                    <div className="plan-price-monthly">$7.95 {t('NewClients.billedMonthly')}</div>
+                  </div>
+                  <p className="plan-description">{t('NewClients.planPremiumDescription')}</p>
                   <Button
-                    color={selectedPlan === 'Premium' ? 'primary' : 'outline-primary'}
-                    className="w-100"
-                    size="sm"
+                    color="success"
+                    className="w-100 plan-button"
                   >
-                    {selectedPlan === 'Premium' ? t('NewClients.selected') : t('NewClients.upgradeToPremium')}
+                    {t('NewClients.upgrade')}
                   </Button>
                 </div>
               </div>
             </div>
 
-            {/* Diamond Plan Card */}
-            <div className="col-12 col-sm-6 col-md-4">
+            {/* Professional Plan */}
+            <div className="col-12 col-sm-6 col-lg-3">
               <div
-                className={`card h-100 pricing-card ${selectedPlan === 'Diamond' ? 'selected border-primary shadow-sm' : ''}`}
-                onClick={() => handlePlanSelect('Diamond')}
+                className={`pricing-plan-card ${selectedPlan === 'Professional' ? 'selected' : ''}`}
+                onClick={() => handlePlanSelect('Professional')}
               >
-                <div className="card-body p-3 p-md-4">
-                  <div className="text-center mb-3 mb-md-4">
-                    <div className="avatar-lg mx-auto mb-2 mb-md-3 plan-icon-container diamond">
-                      <i className="mdi mdi-hexagon plan-icon diamond"></i>
-                    </div>
-                    <h2 className="mb-1 fw-bold plan-title">{t('NewClients.planDiamond') || "Diamond"}</h2>
-                    <p className="text-muted mb-2 mb-md-3 small">{t('NewClients.planDiamondDescription')}</p>
-                    <div className="mb-2 mb-md-3">
-                      <h3 className="mb-1 plan-price">$19.9</h3>
-                      <span className="text-muted small">{t('NewClients.perUserMonth')}</span>
-                    </div>
+                <div className="plan-border professional"></div>
+                <div className="plan-content">
+                  <div className="plan-visual professional-visual">
+                    <svg className="plan-line" viewBox="0 0 120 90" preserveAspectRatio="none" style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 }}>
+                      <path d="M 10 45 Q 30 35, 50 40 T 90 45" stroke="#ddd" strokeWidth="1.5" strokeDasharray="3,3" fill="none"/>
+                    </svg>
+                    <div className="shape-circle"></div>
+                    <div className="shape-square"></div>
+                    <div className="shape-triangle"></div>
                   </div>
-                  <ul className="list-unstyled mb-3 mb-md-4 plan-features-list">
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-primary me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.advancedCustomFields')}</span>
-                    </li>
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-primary me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.auditLog')}</span>
-                    </li>
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-primary me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.unlimitedUsers')}</span>
-                    </li>
-                    <li className="mb-2">
-                      <i className="mdi mdi-check fs-6 text-primary me-2"></i>
-                      <span className="small">{t('NewClients.planFeatures.unlimitedData')}</span>
-                    </li>
-                  </ul>
+                  <h5 className="plan-name">{t('NewClients.planDiamond')}</h5>
+                  <div className="plan-price-section">
+                    <div className="plan-price-main">USD $9.95</div>
+                    <div className="plan-price-detail">{t('NewClients.perUserMonthBilledAnnually')}</div>
+                    <div className="plan-price-monthly">$14.95 {t('NewClients.billedMonthly')}</div>
+                  </div>
+                  <p className="plan-description">{t('NewClients.planDiamondDescription')}</p>
                   <Button
-                    color={selectedPlan === 'Diamond' ? 'primary' : 'outline-primary'}
-                    className="w-100"
-                    size="sm"
+                    color="warning"
+                    className="w-100 plan-button"
                   >
-                    {selectedPlan === 'Diamond' ? t('NewClients.selected') : t('NewClients.upgradeToDiamond')}
+                    {t('NewClients.upgrade')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Enterprise Plan */}
+            <div className="col-12 col-sm-6 col-lg-3">
+              <div
+                className={`pricing-plan-card ${selectedPlan === 'Enterprise' ? 'selected' : ''}`}
+                onClick={() => handlePlanSelect('Enterprise')}
+              >
+                <div className="plan-border enterprise"></div>
+                <div className="plan-content">
+                  <div className="plan-visual enterprise-visual">
+                    <svg className="plan-line" viewBox="0 0 120 90" preserveAspectRatio="none" style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 }}>
+                      <path d="M 10 45 Q 30 35, 50 40 T 90 45" stroke="#ddd" strokeWidth="1.5" strokeDasharray="3,3" fill="none"/>
+                    </svg>
+                    <div className="shape-triangle red"></div>
+                    <div className="shape-circle orange"></div>
+                    <div className="shape-square blue"></div>
+                  </div>
+                  <h5 className="plan-name">{t('NewClients.enterprise')}</h5>
+                  <div className="plan-price-section">
+                    <div className="plan-price-main">{t('NewClients.customPricing')}</div>
+                  </div>
+                  <p className="plan-description">{t('NewClients.enterpriseDescription')}</p>
+                  <Button
+                    color="primary"
+                    className="w-100 plan-button"
+                    outline
+                  >
+                    <i className="mdi mdi-account-group me-1"></i>
+                    {t('NewClients.contactUs')}
                   </Button>
                 </div>
               </div>
             </div>
           </div>
         </ModalBody>
-        <ModalFooter >
+        <ModalFooter className="justify-content-center">
           <Button color="secondary" onClick={() => {
             setPlanModalOpen(false);
             setClientForPlan(null);
             setSelectedPlan('');
-          }} className="">
+            setCurrentClientPlan('Essential');
+          }}>
             {t('Common.cancel')}
           </Button>
-          <Button color="primary" onClick={handleAssignPlan} disabled={!selectedPlan} className="">
-            {t('NewClients.assignPlan')}
-          </Button>
+          {selectedPlan && selectedPlan !== currentClientPlan && (
+            <Button 
+              color="primary" 
+              onClick={handleAssignPlan}
+            >
+              {selectedPlan === 'Enterprise' ? t('NewClients.contactUs') : t('NewClients.assignPlan')}
+            </Button>
+          )}
         </ModalFooter>
       </Modal>
     </>

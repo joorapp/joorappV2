@@ -9,7 +9,7 @@ interface CompanyHeaderProps {
 }
 
 const CompanyHeader = ({ 
-  title = 'Company Dashboard',
+  title,
   onMenuClick 
 }: CompanyHeaderProps) => {
   const { t } = useTranslation();
@@ -22,13 +22,13 @@ const CompanyHeader = ({
           <button 
             className="company-header__menu-btn"
             onClick={onMenuClick}
-            aria-label="Toggle menu"
+            aria-label={t('CompanyHeader.toggleMenu')}
           >
             ☰
           </button>
           <div className="company-header__logo">
             <span className="company-header__logo-icon">🏢</span>
-            <h1 className="company-header__title">{title}</h1>
+            <h1 className="company-header__title">{title || t('CompanyHeader.companyDashboard')}</h1>
           </div>
         </div>
         
@@ -44,10 +44,10 @@ const CompanyHeader = ({
           </div>
           
           <div className="company-header__actions">
-            <button className="company-header__notification-btn" title="Notifications">
+            <button className="company-header__notification-btn" title={t('CompanyHeader.notifications')}>
               🔔
             </button>
-            <button className="company-header__settings-btn" title="Settings">
+            <button className="company-header__settings-btn" title={t('CompanyHeader.settings')}>
               ⚙️
             </button>
           </div>
