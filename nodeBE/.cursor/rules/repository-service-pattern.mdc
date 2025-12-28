@@ -39,7 +39,7 @@ Repositories provide **data access abstraction**:
 
 **Location**: `src/repositories/base/BaseRepository.js`
 
-All repositories MUST extend `BaseRepository`:
+**Use `BaseRepository` for repositories of models that use `AuditableEntity`** (business data):
 
 ```javascript
 import { BaseRepository } from './base/BaseRepository.js';
@@ -55,6 +55,34 @@ export class ModelNameRepository extends BaseRepository {
 
 export const modelNameRepository = new ModelNameRepository();
 ```
+
+### MasterBaseRepository
+
+**Location**: `src/repositories/base/MasterBaseRepository.js`
+
+**Use `MasterBaseRepository` for repositories of models that use `MasterDataEntity`** (master data):
+
+```javascript
+import { MasterBaseRepository } from './base/MasterBaseRepository.js';
+import { ModelName } from '../models/index.js';
+
+export class ModelNameRepository extends MasterBaseRepository {
+  constructor() {
+    super(ModelName, 'ModelName');
+  }
+  
+  // Only add complex queries here
+}
+
+export const modelNameRepository = new ModelNameRepository();
+```
+
+**Key Difference**: `MasterBaseRepository` methods don't require `context` parameter:
+- `create(data, options)` - No context required
+- `update(id, data, options)` - No context required
+- `delete(id, options)` - No context required (deletedUserId optional in options)
+
+**See master-data-entity.mdc for complete MasterBaseRepository guidelines.**
 
 ### BaseRepository Provides
 

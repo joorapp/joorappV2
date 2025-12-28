@@ -51,168 +51,18 @@ export const handler = async (req, res) => {
 
 ## API Documentation
 
-### Documentation Requirements
-- Every module MUST have `{module}Docs.js`
-- Documentation endpoint: `GET /api/v2/{module}` returns docs
-- **MUST follow standardized format** (authDocs style - see Docs File section below)
-- Include: path, method, description, access, request details, responses with full examples
-- **Documentation MUST be complete and up-to-date**
+**CRITICAL**: All routes MUST have Swagger annotations. See **swagger.mdc** for complete Swagger documentation requirements, including:
+- Swagger annotation format and structure
+- Available reusable components (schemas, responses, parameters)
+- When to use `$ref` vs inline definitions
+- How to add new reusable components
+- Consistency requirements and examples
 
-### When to Update Documentation
-
-**CRITICAL**: Documentation examples MUST match actual API responses. Update `{module}Docs.js` whenever:
-
-1. **Adding new endpoints** - Add complete endpoint documentation with:
-   - Request/response examples
-   - Error response examples with `meta` field
-   - All status codes
-
-2. **Changing response format** - Update all affected examples:
-   - When using new response helpers (`successResponse`, `errorResponse`, `paginatedResponse`)
-   - When adding/removing fields from responses
-   - When changing error codes or messages
-   - **MUST include `meta` field** in all standard response examples (except health/docs endpoints)
-
-3. **Modifying endpoint behavior** - Update:
-   - Description if functionality changes
-   - Request/response examples if structure changes
-   - Error responses if new error codes are added
-
-4. **Response standardization changes** - When implementing standardized responses:
-   - Update ALL response examples to include `meta` field
-   - Update error response examples to match `errorResponse()` format
-   - Ensure paginated responses show correct structure (data as array, pagination at root)
-
-### Documentation Checklist
-
-When creating or updating endpoints, verify:
-- ✅ All response examples include `meta` field (except health/docs)
-- ✅ `meta` includes: `requestId`, `endpoint`, `method`, `duration` (if applicable)
-- ✅ Error response examples match `errorResponse()` format
-- ✅ Paginated responses show correct structure with `hasNext`/`hasPrev`
-- ✅ All status codes have example responses
-- ✅ Request examples match actual request format
-- ✅ Response examples match actual controller responses
-
-### Standard Documentation Format (authDocs Style)
-
-**CRITICAL**: All module documentation MUST follow this standardized format. See `authDocs.js` as the reference implementation.
-
-**Structure:**
-```javascript
-export const {module}Docs = {
-  module: 'Module Name',
-  description: 'Module description',
-  version: '2.0.0',
-  endpoints: [
-    {
-      method: 'GET|POST|PUT|DELETE',
-      path: '/api/v2/{module}/endpoint',
-      description: 'Endpoint description',
-      access: 'Public|Protected (requires Bearer token)',
-      
-      // Request details (if applicable)
-      requestBody: {
-        required: true|false,
-        contentType: 'application/json',
-        schema: { ... },
-        example: { ... }
-      },
-      headers: {
-        Authorization: {
-          type: 'string',
-          required: true,
-          description: 'Bearer token',
-          example: 'Bearer ...'
-        }
-      },
-      queryParameters: {
-        paramName: {
-          type: 'string|number|boolean',
-          required: true|false,
-          description: '...',
-          example: '...'
-        }
-      },
-      
-      // Responses - ALL in one object
-      responses: {
-        200: {
-          description: 'Success description',
-          example: {
-            success: true,
-            message: '...',
-            data: { ... },
-            timestamp: '...',
-            meta: { ... }  // Always include
-          }
-        },
-        400: {
-          description: 'Error description',
-          example: {
-            success: false,
-            error: 'ERROR_CODE',
-            message: '...',
-            timestamp: '...',
-            meta: { ... }  // Always include
-          }
-        }
-        // ... other status codes
-      }
-    }
-  ]
-};
-```
-
-**Key Requirements:**
-- ✅ Use `responses` object with status codes as keys
-- ✅ Each status code has `description` and `example` (full JSON)
-- ✅ All examples include `meta` field (except health/docs)
-- ❌ DO NOT use `responseExample` (single success example)
-- ❌ DO NOT use `errorResponses` array
-- ❌ DO NOT use `statusCodes` object
-- ❌ DO NOT use `requestExample` (use `requestBody`, `headers`, `queryParameters`)
-
-### Example: Converting to Standard Format
-
-```javascript
-// BEFORE (inconsistent format)
-{
-  path: "/api/v2/admin/users",
-  method: "GET",
-  responseExample: { /* success only */ },
-  errorResponses: [
-    { code: 401, message: "...", description: "..." }
-  ],
-  statusCodes: { 200: "...", 401: "..." }
-}
-
-// AFTER (standardized format)
-{
-  method: 'GET',
-  path: '/api/v2/admin/users',
-  description: 'Get all users',
-  access: 'Protected (requires Bearer token)',
-  responses: {
-    200: {
-      description: 'Users retrieved successfully',
-      example: { /* full JSON with meta */ }
-    },
-    401: {
-      description: 'Authentication required',
-      example: { /* full JSON error with meta */ }
-    }
-  }
-}
-```
-
-### Anti-Patterns (DO NOT DO)
-
-- ❌ Documentation examples that don't match actual API responses
-- ❌ Missing `meta` field in response examples (except health/docs)
-- ❌ Outdated error response formats
-- ❌ Paginated responses with wrong structure (data as object instead of array)
-- ❌ Missing error response examples for common status codes
+**Quick Reference:**
+- Swagger UI: `/api/v2/docs`
+- OpenAPI JSON: `/api/v2/docs/json`
+- OpenAPI YAML: `/api/v2/docs/yaml`
+- All routes must have `@swagger` JSDoc annotations in `{module}Routes.js`
 
 ## Module Exports Pattern
 
@@ -269,6 +119,8 @@ router.get('/action2', authMiddleware, asyncHandler(handler2));
 
 export default router;  // Default export
 ```
+
+**Note**: See **swagger.mdc** for complete Swagger annotation format, available reusable components, and examples.
 
 ### Controller File ({module}Controller.js)
 ```javascript

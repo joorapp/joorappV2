@@ -1,0 +1,930 @@
+---
+description: Swagger/OpenAPI documentation standards and reusable component guidelines
+globs: ["nodeBE/src/modules/**/*Routes.js", "nodeBE/src/config/swagger.js"]
+alwaysApply: true
+priority: 2
+---
+# Swagger Documentation Rules
+
+## Overview
+
+This project uses **Swagger/OpenAPI 3.0** for API documentation. All API documentation is generated from JSDoc `@swagger` annotations in route files. Swagger UI is available at `/api/v2/docs`.
+
+**CRITICAL**: Swagger annotations are the **single source of truth** for API documentation. All documentation must be kept up-to-date and match actual API responses.
+
+## Related Rules
+
+**MUST READ** these rules before creating Swagger annotations:
+- **module-structure.mdc** - Module creation guidelines
+- **api-responses.mdc** - API response standardization (response format, meta field)
+- **error-handling.mdc** - Error handling patterns (error codes, error types)
+- **authentication.mdc** - Authentication requirements (when to use `security: bearerAuth`)
+
+## Documentation Requirements
+
+### Basic Requirements
+- **All routes MUST have Swagger annotations** using JSDoc `@swagger` tags in `{module}Routes.js`
+- Swagger UI is available at `/api/v2/docs`
+- OpenAPI JSON/YAML specifications available at `/api/v2/docs/json` and `/api/v2/docs/yaml`
+- **Documentation MUST be complete and up-to-date** - Swagger annotations are the single source of truth
+
+### When to Update Documentation
+
+**CRITICAL**: Swagger annotation examples MUST match actual API responses. Update Swagger annotations in `{module}Routes.js` whenever:
+
+1. **Adding new endpoints** - Add complete Swagger annotation with:
+   - Request/response schemas and examples
+   - Error response examples with `meta` field
+   - All status codes (200, 400, 401, 403, 404, 409, 500, etc.)
+
+2. **Changing response format** - Update all affected Swagger examples:
+   - When using new response helpers (`successResponse`, `errorResponse`, `paginatedResponse`)
+   - When adding/removing fields from responses
+   - When changing error codes or messages
+   - **MUST include `meta` field** in all standard response examples (except health/docs endpoints)
+
+3. **Modifying endpoint behavior** - Update Swagger annotations:
+   - Description if functionality changes
+   - Request/response examples if structure changes
+   - Error responses if new error codes are added
+
+4. **Response standardization changes** - When implementing standardized responses:
+   - Update ALL Swagger response examples to include `meta` field
+   - Update error response examples to match `errorResponse()` format
+   - Ensure paginated responses show correct structure (data as array, pagination at root)
+
+## Swagger Annotation Format
+
+**CRITICAL**: All Swagger annotations MUST follow OpenAPI 3.0 format. See `authRoutes.js` as the reference implementation.
+
+### Basic Structure
+
+```javascript
+/**
+ * @swagger
+ * /api/v2/{module}/endpoint:
+ *   {method}:
+ *     tags:
+ *       - {Module}
+ *     summary: Brief description
+ *     description: Detailed description
+ *     security:
+ *       - bearerAuth: []  # If protected
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'  # If path param
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RequestSchema'
+ *           example:
+ *             field1: "value1"
+ *             field2: "value2"
+ *     responses:
+ *       200:
+ *         description: Success description
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *             example:
+ *               success: true
+ *               message: "Success message"
+ *               data: { ... }
+ *               timestamp: "2024-01-01T00:00:00.000Z"
+ *               meta:
+ *                 requestId: "req-1234567890"
+ *                 endpoint: "/api/v2/{module}/endpoint"
+ *                 method: "{METHOD}"
+ *                 duration: 145
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.{method}('/endpoint', authMiddleware, asyncHandler(handler));
+```
+
+### Key Requirements
+
+- ✅ Use `@swagger` JSDoc tag before route definition
+- ✅ Include full path: `/api/v2/{module}/endpoint`
+- ✅ Set appropriate tags for grouping (e.g., `tags: ['Auth']`, `tags: ['Users']`)
+- ✅ Include `example` objects with full JSON (not just schema)
+- ✅ All examples include `meta` field (except health/docs)
+- ✅ **ALWAYS use `$ref` for reusable components** (schemas, responses, parameters)
+- ✅ Document all status codes the endpoint can return
+
+## Reusable Components
+
+**CRITICAL**: Always use `$ref` to reference reusable components instead of defining schemas/responses inline. This ensures consistency and makes maintenance easier.
+
+### Available Schemas
+
+All schemas are defined in `src/config/swagger.js` under `components.schemas`:
+
+#### Response Schemas (ALWAYS USE THESE)
+- **`SuccessResponse`** - Standard success response (includes `meta` field)
+  - Use: `$ref: '#/components/schemas/SuccessResponse'`
+  - Use with `allOf` to extend with specific `data` structure
+- **`ErrorResponse`** - Standard error response (includes `meta` field)
+  - Use: `$ref: '#/components/schemas/ErrorResponse'`
+- **`PaginatedResponse`** - Paginated response (includes `pagination` and `meta` fields)
+  - Use: `$ref: '#/components/schemas/PaginatedResponse'`
+- **`MetaField`** - Meta field structure (used by response schemas)
+  - Use: `$ref: '#/components/schemas/MetaField'` (usually referenced automatically)
+
+#### Entity Schemas
+- **`User`** - User entity
+- **`Company`** - Company entity
+- **`CompanyRole`** - Company role entity
+- **`CompanyUser`** - Company user assignment entity
+- **Note**: New entity schemas should follow the same pattern as existing ones
+
+#### Model-Based Request Schemas (PATTERN)
+
+**CRITICAL**: When creating new models, you MUST create corresponding request schemas following this pattern:
+
+**Pattern for `{Model}CreateRequest`:**
+- Name: `{Model}CreateRequest` (e.g., `ProductCreateRequest`, `OrderCreateRequest`)
+- Include all required fields for creation
+- Include optional fields that can be set during creation
+- Use appropriate validation constraints (minLength, maxLength, format, enum, etc.)
+- Mark required fields in `required` array
+
+**Pattern for `{Model}UpdateRequest`:**
+- Name: `{Model}UpdateRequest` (e.g., `ProductUpdateRequest`, `OrderUpdateRequest`)
+- Include only fields that can be updated (typically all fields are optional)
+- Use same validation constraints as CreateRequest
+- Usually no `required` array (all fields optional for updates)
+
+**Example Pattern (from CompanyRole):**
+```javascript
+// Create Request - Required fields must be provided
+CompanyRoleCreateRequest: {
+  type: 'object',
+  required: ['name', 'code'],  // Required fields
+  properties: {
+    name: { type: 'string', maxLength: 100 },
+    code: { type: 'string', maxLength: 50 },
+    description: { type: 'string' },  // Optional
+    isActive: { type: 'boolean' }      // Optional
+  }
+}
+
+// Update Request - All fields optional
+CompanyRoleUpdateRequest: {
+  type: 'object',
+  // No required array - all fields optional
+  properties: {
+    name: { type: 'string', maxLength: 100 },
+    code: { type: 'string', maxLength: 50 },
+    description: { type: 'string' },
+    isActive: { type: 'boolean' }
+  }
+}
+```
+
+**Existing Model Request Schemas** (for reference):
+- `UserCreateRequest`, `UserUpdateRequest`
+- `CompanyCreateRequest`, `CompanyUpdateRequest`
+- `CompanyRoleCreateRequest`, `CompanyRoleUpdateRequest`
+- `CompanyUserCreateRequest`, `CompanyUserRoleUpdateRequest`
+
+**When creating new models:**
+1. Create `{Model}CreateRequest` schema in `swagger.js`
+2. Create `{Model}UpdateRequest` schema in `swagger.js`
+3. Follow the pattern above for required vs optional fields
+4. Use appropriate validation constraints
+5. Reference in route annotations: `$ref: '#/components/schemas/{Model}CreateRequest'`
+
+#### Generic/Reusable Schemas (ALWAYS USE THESE)
+
+These schemas are cross-cutting concerns and should be used consistently across all Swagger documentation:
+
+- **`TokenResponse`** - Authentication token response (for login/refresh endpoints)
+  - Use: `$ref: '#/components/schemas/TokenResponse'`
+  - Contains: `access_token`, `refresh_token`, `expires_in`, `refresh_expires_in`, `token_type`
+  
+- **`LoginRequest`** - Login request body
+  - Use: `$ref: '#/components/schemas/LoginRequest'`
+  - Contains: `email`, `password` (both required)
+  
+- **`RefreshRequest`** - Token refresh request body
+  - Use: `$ref: '#/components/schemas/RefreshRequest'`
+  - Contains: `refresh_token` (required)
+
+- **`PaginationQueryParams`** - Query parameter schema for pagination
+  - Use: `$ref: '#/components/schemas/PaginationQueryParams'` (if defining query params as schema)
+  - Contains: `page`, `limit`
+  - **Note**: Usually use `PageQueryParam` and `LimitQueryParam` parameters instead
+
+- **`SearchQueryParams`** - Query parameter schema for search
+  - Use: `$ref: '#/components/schemas/SearchQueryParams'` (if defining query params as schema)
+  - Contains: `search` (search term)
+  - **Note**: Usually use `SearchQueryParam` parameter instead
+
+- **`SortQueryParams`** - Query parameter schema for sorting
+  - Use: `$ref: '#/components/schemas/SortQueryParams'` (if defining query params as schema)
+  - Contains: `sortBy`, `sortOrder`
+  - **Note**: Usually use `SortByQueryParam` and `SortOrderQueryParam` parameters instead
+
+- **`FilterQueryParams`** - Query parameter schema for filtering
+  - Use: `$ref: '#/components/schemas/FilterQueryParams'` (if defining query params as schema)
+  - Contains: `isActive` (and other filter fields as needed)
+
+**Note**: For query parameters, prefer using individual parameter references (`PageQueryParam`, `LimitQueryParam`, etc.) over schema references unless you need to group multiple query params together.
+
+#### Error Detail Schemas
+- **`ValidationError`** - Validation error details
+- **`NotFoundError`** - Not found error details
+- **`ConflictError`** - Conflict error details
+
+### Available Responses (ALWAYS USE THESE)
+
+All responses are defined in `src/config/swagger.js` under `components.responses`:
+
+- **`ValidationError`** (400) - Validation error response
+  - Use: `$ref: '#/components/responses/ValidationError'`
+- **`AuthenticationRequired`** (401) - Authentication required
+  - Use: `$ref: '#/components/responses/AuthenticationRequired'`
+- **`AuthenticationFailed`** (401) - Authentication failed (invalid credentials)
+  - Use: `$ref: '#/components/responses/AuthenticationFailed'`
+- **`Forbidden`** (403) - Insufficient permissions
+  - Use: `$ref: '#/components/responses/Forbidden'`
+- **`NotFound`** (404) - Resource not found
+  - Use: `$ref: '#/components/responses/NotFound'`
+- **`Conflict`** (409) - Resource conflict (e.g., duplicate)
+  - Use: `$ref: '#/components/responses/Conflict'`
+- **`InternalServerError`** (500) - Server error
+  - Use: `$ref: '#/components/responses/InternalServerError'`
+
+### Available Parameters (ALWAYS USE THESE)
+
+All parameters are defined in `src/config/swagger.js` under `components.parameters`:
+
+- **`UuidPathParam`** - UUID path parameter (e.g., `:id`)
+  - Use: `$ref: '#/components/parameters/UuidPathParam'`
+  - Example: `parameters: [ { $ref: '#/components/parameters/UuidPathParam' } ]`
+  
+- **`PageQueryParam`** - Page number query parameter
+  - Use: `$ref: '#/components/parameters/PageQueryParam'`
+  - Default: 1, Minimum: 1
+  
+- **`LimitQueryParam`** - Limit query parameter (items per page)
+  - Use: `$ref: '#/components/parameters/LimitQueryParam'`
+  - Default: 10, Minimum: 1, Maximum: 100
+  
+- **`SearchQueryParam`** - Search term query parameter
+  - Use: `$ref: '#/components/parameters/SearchQueryParam'`
+  - Optional: Yes
+  
+- **`SortByQueryParam`** - Sort field query parameter
+  - Use: `$ref: '#/components/parameters/SortByQueryParam'`
+  - Optional: Yes
+  - Example: `sortBy=email`
+  
+- **`SortOrderQueryParam`** - Sort order query parameter (ASC/DESC)
+  - Use: `$ref: '#/components/parameters/SortOrderQueryParam'`
+  - Optional: Yes
+  - Enum: `['ASC', 'DESC']`
+  - Default: `'ASC'`
+
+## When to Use `$ref` vs Inline Definitions
+
+### ✅ ALWAYS Use `$ref` For:
+
+1. **Response Schemas** - Always use `SuccessResponse`, `ErrorResponse`, `PaginatedResponse`
+   ```javascript
+   // ✅ CORRECT
+   schema:
+     allOf:
+       - $ref: '#/components/schemas/SuccessResponse'
+       - type: object
+         properties:
+           data:
+             type: object
+   
+   // ❌ WRONG - Don't define inline
+   schema:
+     type: object
+     properties:
+       success: { type: 'boolean' }
+       message: { type: 'string' }
+       # ... etc
+   ```
+
+2. **Error Responses** - Always use predefined error responses
+   ```javascript
+   // ✅ CORRECT
+   400:
+     $ref: '#/components/responses/ValidationError'
+   
+   // ❌ WRONG - Don't define inline
+   400:
+     description: 'Validation error'
+     content:
+       application/json:
+         schema: { ... }
+   ```
+
+3. **Entity Schemas** - Always use predefined entity schemas
+   ```javascript
+   // ✅ CORRECT
+   data:
+     $ref: '#/components/schemas/User'
+   
+   // ❌ WRONG - Don't define inline
+   data:
+     type: object
+     properties:
+       id: { type: 'string', format: 'uuid' }
+       email: { type: 'string' }
+       # ... etc
+   ```
+
+4. **Parameters** - Always use predefined parameters
+   ```javascript
+   // ✅ CORRECT
+   parameters:
+     - $ref: '#/components/parameters/UuidPathParam'
+   
+   // ❌ WRONG - Don't define inline
+   parameters:
+     - name: id
+       in: path
+       schema:
+         type: string
+         format: uuid
+   ```
+
+### ✅ Use Inline Definitions For:
+
+1. **Request Body Schemas** - If no reusable schema exists, define inline
+   
+   **CRITICAL**: Before defining inline, check if a model request schema should be created:
+   - If this is a `{Model}CreateRequest` or `{Model}UpdateRequest`, create it in `swagger.js` following the pattern in "Model-Based Request Schemas" section
+   - Only use inline for truly endpoint-specific request bodies that don't follow a model pattern
+   
+   ```javascript
+   // ✅ CORRECT - Endpoint-specific request (not a model CRUD operation)
+   requestBody:
+     content:
+       application/json:
+         schema:
+           type: object
+           required: ['action', 'targetId']
+           properties:
+             action: { type: 'string', enum: ['activate', 'deactivate'] }
+             targetId: { type: 'string', format: 'uuid' }
+   
+   // ❌ WRONG - Should create ModelCreateRequest schema instead
+   requestBody:
+     content:
+       application/json:
+         schema:
+           type: object
+           required: ['name', 'code']
+           properties:
+             name: { type: 'string' }
+             code: { type: 'string' }
+   ```
+
+2. **Custom Data Structures** - For endpoint-specific data structures
+   ```javascript
+   // ✅ CORRECT - Endpoint-specific structure
+   data:
+     type: object
+     properties:
+       customField: { type: 'string' }
+       nestedData:
+         type: object
+         properties:
+           nestedField: { type: 'string' }
+   ```
+
+3. **Query Parameters** - For endpoint-specific query parameters (if not in reusable list)
+   
+   **CRITICAL**: Before defining inline, check if a reusable parameter exists:
+   - Use `SearchQueryParam` for search terms (not inline)
+   - Use `PageQueryParam`, `LimitQueryParam` for pagination (not inline)
+   - Use `SortByQueryParam`, `SortOrderQueryParam` for sorting (not inline)
+   - Only use inline for truly endpoint-specific parameters
+   
+   ```javascript
+   // ✅ CORRECT - Endpoint-specific query param (not in reusable list)
+   parameters:
+     - name: statusFilter
+       in: query
+       schema:
+         type: string
+         enum: ['pending', 'approved', 'rejected']
+       description: 'Filter by approval status'
+   
+   // ❌ WRONG - Should use SearchQueryParam instead
+   parameters:
+     - name: search
+       in: query
+       schema:
+         type: string
+       description: 'Search term'
+   ```
+
+## How to Add New Reusable Components
+
+**CRITICAL**: Before adding a new reusable component, check if a similar one already exists.
+
+### Adding New Schema
+
+1. **Add to `src/config/swagger.js`** under `components.schemas`:
+   ```javascript
+   schemas: {
+     // ... existing schemas ...
+     NewSchema: {
+       type: 'object',
+       properties: {
+         field1: {
+           type: 'string',
+           description: 'Field description',
+           example: 'example value'
+         }
+       },
+       required: ['field1']
+     }
+   }
+   ```
+
+2. **Document in this rule file** - Add to "Available Schemas" section above
+
+3. **Use in route annotations** - Reference with `$ref: '#/components/schemas/NewSchema'`
+
+### Adding New Response
+
+1. **Add to `src/config/swagger.js`** under `components.responses`:
+   ```javascript
+   responses: {
+     // ... existing responses ...
+     NewErrorResponse: {
+       description: 'Error description',
+       content: {
+         'application/json': {
+           schema: {
+             allOf: [
+               { $ref: '#/components/schemas/ErrorResponse' },
+               {
+                 type: 'object',
+                 properties: {
+                   error: {
+                     type: 'string',
+                     example: 'ERROR_CODE'
+                   }
+                 }
+               }
+             ]
+           },
+           example: {
+             success: false,
+             error: 'ERROR_CODE',
+             message: 'Error message',
+             timestamp: '2024-01-01T00:00:00.000Z',
+             meta: {
+               requestId: 'req-1234567890',
+               endpoint: '/api/v2/endpoint',
+               method: 'GET'
+             }
+           }
+         }
+       }
+     }
+   }
+   ```
+
+2. **Document in this rule file** - Add to "Available Responses" section above
+
+3. **Use in route annotations** - Reference with `$ref: '#/components/responses/NewErrorResponse'`
+
+### Adding New Parameter
+
+1. **Add to `src/config/swagger.js`** under `components.parameters`:
+   ```javascript
+   parameters: {
+     // ... existing parameters ...
+     NewParam: {
+       name: 'paramName',
+       in: 'path|query|header',
+       required: true|false,
+       schema: {
+         type: 'string|integer|boolean',
+         format: 'uuid|email|date-time' // if applicable
+       },
+       description: 'Parameter description',
+       example: 'example value'
+     }
+   }
+   ```
+
+2. **Document in this rule file** - Add to "Available Parameters" section above
+
+3. **Use in route annotations** - Reference with `$ref: '#/components/parameters/NewParam'`
+
+## Consistency Requirements
+
+### Response Schema Pattern
+
+**ALWAYS** use this pattern for success responses:
+
+```javascript
+responses:
+  200:
+    description: Success description
+    content:
+      application/json:
+        schema:
+          allOf:
+            - $ref: '#/components/schemas/SuccessResponse'  # Base schema
+            - type: object
+              properties:
+                data:
+                  type: object  # or array, or specific schema
+                  # Define specific data structure here
+        example:
+          success: true
+          message: "Success message"
+          data: { ... }  # Full example matching schema
+          timestamp: "2024-01-01T00:00:00.000Z"
+          meta:
+            requestId: "req-1234567890"
+            endpoint: "/api/v2/endpoint"
+            method: "GET"
+            duration: 145
+```
+
+### Error Response Pattern
+
+**ALWAYS** use `$ref` for error responses:
+
+```javascript
+responses:
+  400:
+    $ref: '#/components/responses/ValidationError'
+  401:
+    $ref: '#/components/responses/AuthenticationRequired'
+  403:
+    $ref: '#/components/responses/Forbidden'
+  404:
+    $ref: '#/components/responses/NotFound'
+  409:
+    $ref: '#/components/responses/Conflict'
+  500:
+    $ref: '#/components/responses/InternalServerError'
+```
+
+### Paginated Response Pattern
+
+**ALWAYS** use this pattern for paginated responses:
+
+```javascript
+responses:
+  200:
+    description: Paginated list retrieved successfully
+    content:
+      application/json:
+        schema:
+          allOf:
+            - $ref: '#/components/schemas/PaginatedResponse'
+            - type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/EntitySchema'  # e.g., User, Company
+        example:
+          success: true
+          message: "Items retrieved successfully"
+          data: [ ... ]  # Array of items
+          pagination:
+            page: 1
+            limit: 10
+            total: 100
+            pages: 10
+            hasNext: true
+            hasPrev: false
+          timestamp: "2024-01-01T00:00:00.000Z"
+          meta:
+            requestId: "req-1234567890"
+            endpoint: "/api/v2/endpoint"
+            method: "GET"
+            duration: 145
+```
+
+## Swagger Annotation Checklist
+
+When creating or updating endpoints, verify Swagger annotations include:
+
+- ✅ All response examples include `meta` field (except health/docs)
+- ✅ `meta` includes: `requestId`, `endpoint`, `method`, `duration` (if applicable)
+- ✅ Error response examples match `errorResponse()` format
+- ✅ Paginated responses show correct structure with `hasNext`/`hasPrev`
+- ✅ All status codes have example responses
+- ✅ Request examples match actual request format
+- ✅ Response examples match actual controller responses
+- ✅ `@swagger` JSDoc tags are properly formatted
+- ✅ Tags are set correctly (e.g., `tags: ['Auth']`, `tags: ['Users']`)
+- ✅ **Using `$ref` for all reusable components** (schemas, responses, parameters)
+- ✅ **Not defining inline what should use `$ref`**
+
+## Examples
+
+### Example 1: Simple GET Endpoint
+
+```javascript
+/**
+ * @swagger
+ * /api/v2/users/{id}:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Get user by ID
+ *     description: Returns user details by UUID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: User retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/User'
+ *             example:
+ *               success: true
+ *               message: "User retrieved successfully"
+ *               data:
+ *                 id: "550e8400-e29b-41d4-a716-446655440000"
+ *                 keycloakId: "660e8400-e29b-41d4-a716-446655440001"
+ *                 email: "user@example.com"
+ *                 firstName: "John"
+ *                 lastName: "Doe"
+ *                 keycloakGlobalRole: "COMPANY_USER"
+ *                 isActive: true
+ *               timestamp: "2024-11-23T12:00:00.000Z"
+ *               meta:
+ *                 requestId: "req-1234567890"
+ *                 endpoint: "/api/v2/users/550e8400-e29b-41d4-a716-446655440000"
+ *                 method: "GET"
+ *                 duration: 45
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/:id', authMiddleware, asyncHandler(getUserById));
+```
+
+### Example 2: POST Endpoint with Request Body
+
+```javascript
+/**
+ * @swagger
+ * /api/v2/users/create:
+ *   post:
+ *     tags:
+ *       - Users
+ *     summary: Create new user
+ *     description: Creates user in Keycloak and database
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserCreateRequest'
+ *           example:
+ *             email: "newuser@example.com"
+ *             password: "SecurePassword123!"
+ *             firstName: "Jane"
+ *             lastName: "Smith"
+ *             keycloakGlobalRole: "COMPANY_USER"
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/User'
+ *             example:
+ *               success: true
+ *               message: "User created successfully"
+ *               data:
+ *                 id: "550e8400-e29b-41d4-a716-446655440000"
+ *                 email: "newuser@example.com"
+ *                 firstName: "Jane"
+ *                 lastName: "Smith"
+ *               timestamp: "2024-11-23T12:00:00.000Z"
+ *               meta:
+ *                 requestId: "req-1234567890"
+ *                 endpoint: "/api/v2/users/create"
+ *                 method: "POST"
+ *                 duration: 456
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/create', authMiddleware, asyncHandler(createUser));
+```
+
+### Example 3: Paginated GET Endpoint
+
+```javascript
+/**
+ * @swagger
+ * /api/v2/users/list:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: List users with pagination
+ *     description: Returns paginated list of users
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/User'
+ *             example:
+ *               success: true
+ *               message: "Users retrieved successfully"
+ *               data:
+ *                 - id: "550e8400-e29b-41d4-a716-446655440000"
+ *                   email: "user1@example.com"
+ *                   firstName: "John"
+ *                   lastName: "Doe"
+ *                 - id: "550e8400-e29b-41d4-a716-446655440001"
+ *                   email: "user2@example.com"
+ *                   firstName: "Jane"
+ *                   lastName: "Smith"
+ *               pagination:
+ *                 page: 1
+ *                 limit: 10
+ *                 total: 100
+ *                 pages: 10
+ *                 hasNext: true
+ *                 hasPrev: false
+ *               timestamp: "2024-11-23T12:00:00.000Z"
+ *               meta:
+ *                 requestId: "req-1234567890"
+ *                 endpoint: "/api/v2/users/list"
+ *                 method: "GET"
+ *                 duration: 145
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/list', authMiddleware, asyncHandler(getUsers));
+```
+
+## Anti-Patterns (DO NOT DO)
+
+### ❌ Defining Inline What Should Use `$ref`
+
+```javascript
+// ❌ WRONG - Defining SuccessResponse inline
+responses:
+  200:
+    description: Success
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            success: { type: 'boolean' }
+            message: { type: 'string' }
+            # ... etc
+
+// ✅ CORRECT - Use $ref
+responses:
+  200:
+    description: Success
+    content:
+      application/json:
+        schema:
+          allOf:
+            - $ref: '#/components/schemas/SuccessResponse'
+```
+
+### ❌ Defining Error Responses Inline
+
+```javascript
+// ❌ WRONG - Defining error response inline
+400:
+  description: Validation error
+  content:
+    application/json:
+      schema: { ... }
+
+// ✅ CORRECT - Use $ref
+400:
+  $ref: '#/components/responses/ValidationError'
+```
+
+### ❌ Missing `meta` Field in Examples
+
+```javascript
+// ❌ WRONG - Missing meta field
+example:
+  success: true
+  message: "Success"
+  data: { ... }
+
+// ✅ CORRECT - Include meta field
+example:
+  success: true
+  message: "Success"
+  data: { ... }
+  timestamp: "2024-01-01T00:00:00.000Z"
+  meta:
+    requestId: "req-1234567890"
+    endpoint: "/api/v2/endpoint"
+    method: "GET"
+```
+
+### ❌ Inconsistent Schema References
+
+```javascript
+// ❌ WRONG - Using different patterns for same entity
+data:
+  type: object
+  properties:
+    id: { type: 'string', format: 'uuid' }
+    email: { type: 'string' }
+
+// ✅ CORRECT - Use reusable schema
+data:
+  $ref: '#/components/schemas/User'
+```
+
+### ❌ Swagger Examples That Don't Match Actual Responses
+
+```javascript
+// ❌ WRONG - Example doesn't match controller response
+example:
+  success: true
+  data: { id: 1 }  # Controller returns UUID string, not number
+
+// ✅ CORRECT - Example matches actual response
+example:
+  success: true
+  data:
+    id: "550e8400-e29b-41d4-a716-446655440000"  # UUID string
+```
+
+## Related Rules
+
+- **module-structure.mdc** - Module creation guidelines (references Swagger requirements)
+- **api-responses.mdc** - API response standardization (response format, meta field)
+- **error-handling.mdc** - Error handling patterns (error codes, error types)
+- **authentication.mdc** - Authentication requirements (when to use `security: bearerAuth`)

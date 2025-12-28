@@ -10,6 +10,7 @@ import Company from './Company.js';
 import CompanyRole from './CompanyRole.js';
 import CompanyUser from './CompanyUser.js';
 import UserCompanyContext from './UserCompanyContext.js';
+import Plan from './Plan.js';
 
 /**
  * Initialize model associations
@@ -24,7 +25,8 @@ const initializeAssociations = () => {
     CompanyRole,
     CompanyUser,
     UserCompanyContext,
-    DemoAuditableModel
+    DemoAuditableModel,
+    Plan
   };
 
   // Call each model's associate method if it exists
@@ -47,6 +49,9 @@ const initializeAssociations = () => {
   if (DemoAuditableModel.associate) {
     DemoAuditableModel.associate(models);
   }
+  if (Plan.associate) {
+    Plan.associate(models);
+  }
 };
 
 /**
@@ -59,7 +64,7 @@ export const initializeModels = () => {
 };
 
 // Export all models
-export { User, DemoAuditableModel, Company, CompanyRole, CompanyUser, UserCompanyContext };
+export { User, DemoAuditableModel, Company, CompanyRole, CompanyUser, UserCompanyContext, Plan };
 
 // Export default object with all models
 export default {
@@ -69,6 +74,7 @@ export default {
   CompanyRole,
   CompanyUser,
   UserCompanyContext,
+  Plan,
   initializeModels
 };
 

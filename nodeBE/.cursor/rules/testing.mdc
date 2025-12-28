@@ -11,6 +11,7 @@ priority: 2
 This document defines the testing standards, file locations, and requirements for the JoorApp V2 Backend. All tests MUST follow these rules to ensure consistency and maintainability.
 
 **⚠️ IMPORTANT**: Before creating any test file, read the relevant testing rule:
+- **test-entity-patterns.mdc** - **CRITICAL: MasterDataEntity vs AuditableEntity test patterns** (determine entity type first!)
 - **test-file-locations.mdc** - Where to place test files
 - **test-creation-requirements.mdc** - What must be tested
 - **testing-standards.mdc** - Testing standards and patterns
@@ -200,6 +201,7 @@ This document defines the testing standards, file locations, and requirements fo
 
 ## Related Rules
 
+- **test-entity-patterns.mdc** - **CRITICAL: MasterDataEntity vs AuditableEntity test patterns** (read this first!)
 - **test-file-locations.mdc** - Detailed file location rules
 - **test-creation-requirements.mdc** - Detailed test requirements
 - **testing-standards.mdc** - Testing standards and patterns

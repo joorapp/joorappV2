@@ -2,10 +2,10 @@
  * @author Bhavesh Venugopal
  * User Repository
  * Data access layer for User entity
- * Extends BaseRepository with User-specific complex queries
+ * Extends MasterBaseRepository (master data - no context required)
  */
 
-import { BaseRepository } from './base/BaseRepository.js';
+import { MasterBaseRepository } from './base/MasterBaseRepository.js';
 import { User, Company, CompanyUser, CompanyRole } from '../models/index.js';
 import { Op } from 'sequelize';
 import { NotFoundError } from '../utils/errors.js';
@@ -15,7 +15,7 @@ import { NotFoundError } from '../utils/errors.js';
  * Handles all database operations for User entity
  * Provides complex queries beyond standard CRUD operations
  */
-export class UserRepository extends BaseRepository {
+export class UserRepository extends MasterBaseRepository {
   /**
    * Constructor for UserRepository
    * Initializes repository with User model

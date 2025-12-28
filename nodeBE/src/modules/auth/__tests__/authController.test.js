@@ -197,13 +197,36 @@ describe('Auth Controller', () => {
         save: jest.fn().mockResolvedValue(undefined)
       };
 
+      const mockPlan = {
+        id: uuidv4(),
+        name: 'Basic',
+        code: 'BASIC',
+        description: 'Basic subscription plan',
+        price: 0.00,
+        isActive: true,
+        createdDate: new Date(),
+        updatedDate: new Date(),
+        version: 1
+      };
+
       const mockCompanyUsers = [
         {
           id: uuidv4(),
           company: {
             id: companyId,
             name: 'Test Company',
-            isActive: true
+            description: 'Test company description',
+            isActive: true,
+            status: 'ACTIVE',
+            email: 'contact@test.com',
+            phone: '+1 234-567-8900',
+            buildingAddress: 'Suite 100',
+            streetAddress: '123 Main Street',
+            city: 'New York',
+            state: 'NY',
+            postalCode: '10001',
+            country: 'United States',
+            plan: mockPlan
           },
           role: {
             id: roleId,
@@ -252,7 +275,22 @@ describe('Auth Controller', () => {
             expect.objectContaining({
               id: companyId,
               name: 'Test Company',
-              isActive: true
+              description: 'Test company description',
+              isActive: true,
+              status: 'ACTIVE',
+              email: 'contact@test.com',
+              phone: '+1 234-567-8900',
+              buildingAddress: 'Suite 100',
+              streetAddress: '123 Main Street',
+              city: 'New York',
+              state: 'NY',
+              postalCode: '10001',
+              country: 'United States',
+              plan: expect.objectContaining({
+                id: expect.any(String),
+                name: 'Basic',
+                code: 'BASIC'
+              })
             })
           ])
         }),
@@ -475,12 +513,36 @@ describe('Auth Controller', () => {
       };
       req.params = { companyId: companyId };
 
+      const mockPlan = {
+        id: uuidv4(),
+        name: 'Basic',
+        code: 'BASIC',
+        description: 'Basic subscription plan',
+        price: 0.00,
+        isActive: true,
+        createdDate: new Date(),
+        updatedDate: new Date(),
+        version: 1
+      };
+
       const mockCompanyUserData = {
         id: uuidv4(),
         company: {
           id: companyId,
           name: 'Test Company',
-          isActive: true
+          description: 'Test company description',
+          isActive: true,
+          status: 'ACTIVE',
+          email: 'contact@test.com',
+          phone: '+1 234-567-8900',
+          buildingAddress: 'Suite 100',
+          streetAddress: '123 Main Street',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10001',
+          country: 'United States',
+          logo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...',
+          plan: mockPlan
         },
         role: {
           id: uuidv4(),

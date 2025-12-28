@@ -11,21 +11,24 @@ Before writing any backend code, follow these rules:
 1. **architecture.mdc** - Module structure, patterns, and **IMPORT ORDER RULES** (CRITICAL - prevents server crashes)
 2. **logging.mdc** - Winston logging (NO console.log)
 3. **error-handling.mdc** - Error handling patterns, **MIDDLEWARE VS CONTROLLER ERROR PATTERNS** (CRITICAL - use `next(error)` in middleware, `throw` in controllers)
-4. **module-structure.mdc** - Module creation guidelines, **DOCUMENTATION UPDATE REQUIREMENTS**, and **STANDARD DOCUMENTATION FORMAT** (CRITICAL - when to update docs and standard format)
-5. **authentication.mdc** - **Authentication middleware application rules** (CRITICAL - when to apply authMiddleware)
-6. **api-responses.mdc** - **API response standardization rules** (CRITICAL - standardized response format with meta field)
-7. **validation.mdc** - **Request validation patterns and utilities** (CRITICAL - when to use simple validators vs express-validator)
-8. **repository-service-pattern.mdc** - **Repository and Service layer patterns** (CRITICAL - how to create repositories and services)
-9. **security.mdc** - Security best practices
-10. **coding-standards.mdc** - General coding standards
-11. **database.mdc** - Database connection and Sequelize patterns
-12. **model-creation.mdc** - Model creation guidelines and AuditableEntity integration
-13. **keycloak.mdc** - Keycloak integration patterns
-14. **testing.mdc** - Testing rules and guidelines (test creation, file locations, standards)
+4. **module-structure.mdc** - Module creation guidelines (CRITICAL - module structure and organization)
+5. **swagger.mdc** - **Swagger/OpenAPI documentation standards** (CRITICAL - Swagger annotation format, reusable components, consistency requirements)
+6. **authentication.mdc** - **Authentication middleware application rules** (CRITICAL - when to apply authMiddleware)
+7. **api-responses.mdc** - **API response standardization rules** (CRITICAL - standardized response format with meta field)
+8. **validation.mdc** - **Request validation patterns and utilities** (CRITICAL - when to use simple validators vs express-validator)
+9. **repository-service-pattern.mdc** - **Repository and Service layer patterns** (CRITICAL - how to create repositories and services)
+10. **security.mdc** - Security best practices
+11. **coding-standards.mdc** - General coding standards
+12. **database.mdc** - Database connection and Sequelize patterns
+13. **model-creation.mdc** - Model creation guidelines and AuditableEntity integration
+14. **master-data-entity.mdc** - **Master data entity and repository patterns** (CRITICAL - when to use MasterDataEntity vs AuditableEntity, MasterBaseRepository vs BaseRepository)
+15. **keycloak.mdc** - Keycloak integration patterns
+16. **testing.mdc** - Testing rules and guidelines (test creation, file locations, standards)
+17. **test-entity-patterns.mdc** - **Test patterns for MasterDataEntity vs AuditableEntity** (CRITICAL - prevents confusion when writing tests, clearly distinguishes context requirements and field assertions)
 
 **⚠️ IMPORTANT**: Before creating middleware or services, read the "Import Order and Database Access" section in `architecture.mdc` to prevent server startup crashes.
 
-**⚠️ TESTING**: When creating new code, ALWAYS create corresponding tests. See **testing.mdc** and related testing rule files (test-file-locations.mdc, test-creation-requirements.mdc, testing-standards.mdc, etc.) for test file locations, requirements, and standards.
+**⚠️ TESTING**: When creating new code, ALWAYS create corresponding tests. See **testing.mdc** and related testing rule files (test-file-locations.mdc, test-creation-requirements.mdc, testing-standards.mdc, test-entity-patterns.mdc, etc.) for test file locations, requirements, and standards. **CRITICAL**: Before writing tests, check **test-entity-patterns.mdc** to determine if the model uses MasterDataEntity (no context) or AuditableEntity (context required).
 
 ## Quick Reference
 - Use ES6 modules: `import/export`

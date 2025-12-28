@@ -91,6 +91,20 @@ fieldName: {
 
 - ✅ **USE for**: All business models that need audit tracking
 - ❌ **DON'T USE for**: Reference tables (like User model - it's the reference for audit foreign keys)
+- ❌ **DON'T USE for**: Master data tables (use `MasterDataEntity` instead)
+
+### When to Use MasterDataEntity
+
+- ✅ **USE for**: Master data/reference tables that don't need user audit tracking
+- ❌ **DON'T USE for**: Business data that needs to track who created/updated records
+
+**See master-data-entity.mdc for complete MasterDataEntity guidelines.**
+
+**Examples:**
+- ✅ Plan model (subscription plans - system configuration)
+- ✅ User model (reference table - no audit fields)
+- ❌ Company model (business data - needs user audit tracking)
+- ❌ Order model (business data - needs user audit tracking)
 
 ### Required Steps for AuditableEntity Models
 

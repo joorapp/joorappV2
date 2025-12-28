@@ -14,6 +14,9 @@ Before writing any backend code, ALWAYS check and follow:
 - `nodeBE/.cursor/rules/logging.mdc` - Winston logging (NO console.log)
 - `nodeBE/.cursor/rules/error-handling.mdc` - Error handling
 - `nodeBE/.cursor/rules/module-structure.mdc` - Module creation
+- `nodeBE/.cursor/rules/model-creation.mdc` - Model creation guidelines (AuditableEntity)
+- `nodeBE/.cursor/rules/master-data-entity.mdc` - Master data patterns (MasterDataEntity vs AuditableEntity)
+- `nodeBE/.cursor/rules/repository-service-pattern.mdc` - Repository and service patterns
 - `nodeBE/.cursor/rules/security.mdc` - Security practices
 - `nodeBE/.cursor/rules/coding-standards.mdc` - Coding standards
 - `nodeBE/.cursor/rules/testing.mdc` - Testing rules (test creation, file locations, standards)
@@ -57,6 +60,11 @@ Before writing any frontend code, ALWAYS check and follow:
 - Architecture: nodeBE/.cursor/rules/architecture.mdc
 - Logging: nodeBE/.cursor/rules/logging.mdc
 - Module Structure: nodeBE/.cursor/rules/module-structure.mdc"
+
+"Create a new model following:
+- Model Creation: nodeBE/.cursor/rules/model-creation.mdc
+- Master Data Entity: nodeBE/.cursor/rules/master-data-entity.mdc (if master data)
+- Repository Pattern: nodeBE/.cursor/rules/repository-service-pattern.mdc"
 ```
 
 ### For Frontend (ReactFE/):

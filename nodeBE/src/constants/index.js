@@ -25,7 +25,24 @@ export {
 // Error Codes
 export { ERROR_CODES } from './errorCodes.js';
 
+// Company Status
+export {
+  COMPANY_STATUSES,
+  COMPANY_STATUS_VALUES,
+  COMPANY_STATUS_DEFAULT,
+  isValidCompanyStatus,
+  isNewStatus,
+  isActiveStatus,
+  isLicenseExpiredStatus
+} from './companyStatus.js';
+
+// Master Data
+export {
+  BASIC_PLAN_MASTER_DATA,
+  MASTER_DATA_TYPES,
+  MASTER_DATA_CONFIG
+} from './masterData.js';
+
 // Future: Add other enum exports here
 // export { ... } from './companyRoles.js';
-// export { ... } from './statusEnums.js';
 

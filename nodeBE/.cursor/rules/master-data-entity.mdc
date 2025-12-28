@@ -1,0 +1,631 @@
+---
+description: Master data entity and repository patterns
+globs: ["nodeBE/src/models/**/*.js", "nodeBE/src/repositories/**/*.js"]
+alwaysApply: true
+priority: 2
+---
+# Master Data Entity and Repository Rules
+
+## Overview
+
+This document defines when and how to use `MasterDataEntity` and `MasterBaseRepository` for master data/reference tables that don't require user audit tracking.
+
+**⚠️ IMPORTANT**: Before creating any model, determine if it's master data or business data. See "When to Use MasterDataEntity vs AuditableEntity" section below.
+
+## What is Master Data?
+
+**Master data** (also called reference data) is:
+- System-level configuration data
+- Not tied to specific users or companies
+- Required for system operation
+- Examples: Plans, User roles, System settings, Lookup tables
+
+**Business data** is:
+- Created/modified by users in the context of their work
+- Tied to specific users/companies
+- Examples: Companies, Orders, Invoices, User-specific settings
+
+## When to Use MasterDataEntity vs AuditableEntity
+
+### ✅ Use MasterDataEntity for:
+
+1. **System Configuration Tables**
+   - Subscription plans (Plan model)
+   - System roles/permissions
+   - Application settings
+   - Lookup/reference tables
+
+2. **Reference Tables Without User Context**
+   - Tables that don't need to track "who created/updated" this record
+   - Tables that are seeded on application startup
+   - Tables that are managed by system administrators only
+
+3. **Tables That Cause Seeding Issues**
+   - When master data seeding requires users to exist first (circular dependency)
+   - When you need to seed data before users are created
+
+### ❌ Use AuditableEntity for:
+
+1. **Business Data Tables**
+   - Company, Order, Invoice, Product (business context)
+   - Any table where you need to track who created/updated records
+   - Tables that belong to specific companies/users
+
+2. **Tables with User/Company Context**
+   - Tables that have `createdUserId`, `updatedUserId`, `createdCompanyId`
+   - Tables that need full audit trail
+
+## MasterDataEntity Pattern
+
+### Required Imports
+
+```javascript
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/database.js';
+import {
+  getMasterDataFields,
+  getMasterDataHooks,
+  getDefaultScope,
+  getScopes,
+  applyOptimisticLocking
+} from './base/MasterDataEntity.js';
+```
+
+### Model Definition
+
+```javascript
+/**
+ * @author Bhavesh Venugopal
+ * ModelName
+ * Brief description of what this model represents
+ * Note: Uses MasterDataEntity mixin for audit tracking (no user audit fields)
+ */
+
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/database.js';
+import {
+  getMasterDataFields,
+  getMasterDataHooks,
+  getDefaultScope,
+  getScopes,
+  applyOptimisticLocking
+} from './base/MasterDataEntity.js';
+
+const ModelName = sequelize.define('ModelName', {
+  // Business fields
+  name: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    field: 'name',
+    comment: 'Name of the record'
+  },
+  code: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    unique: true,
+    field: 'code',
+    comment: 'Unique code identifier'
+  },
+  // Spread master data audit fields (no user FKs)
+  ...getMasterDataFields()
+}, {
+  tableName: 'model_names',
+  timestamps: false, // We use custom audit fields
+  underscored: true,
+  freezeTableName: true,
+  defaultScope: getDefaultScope(),
+  scopes: getScopes(),
+  indexes: [
+    {
+      fields: ['is_deleted'],
+      name: 'model_names_is_deleted_idx'
+    }
+  ]
+});
+
+// Apply master data hooks (no userId requirement)
+const masterDataHooks = getMasterDataHooks();
+ModelName.addHook('beforeValidate', masterDataHooks.beforeValidate);
+ModelName.addHook('beforeCreate', masterDataHooks.beforeCreate);
+ModelName.addHook('beforeUpdate', masterDataHooks.beforeUpdate);
+
+// Apply optimistic locking
+applyOptimisticLocking(ModelName);
+
+// Override destroy method for soft delete (optional deletedUserId)
+ModelName.prototype.destroy = async function(options = {}) {
+  // Optional: Add business logic restrictions (e.g., prevent deletion of system records)
+  if (this.code === 'SYSTEM_CODE') {
+    throw new Error('Cannot delete system record');
+  }
+
+  // Set soft delete fields
+  const deletedUserId = options.deletedUserId || null;
+  this.isDeleted = true;
+  this.deletedUserId = deletedUserId;
+  this.updatedDate = new Date();
+
+  await this.save(options);
+  return this;
+};
+
+/**
+ * Define model associations
+ * @param {Object} models - Object containing all models
+ * @returns {void}
+ */
+ModelName.associate = (models) => {
+  // Optional: BelongsTo User for deletedUserId (soft delete tracking)
+  ModelName.belongsTo(models.User, {
+    foreignKey: 'deletedUserId',
+    as: 'deletedBy'
+  });
+};
+
+export default ModelName;
+```
+
+## MasterDataEntity Fields
+
+Master data entities include these audit fields (NO user FKs for created/updated):
+
+- `id` - UUID primary key
+- `createdDate` - Creation timestamp
+- `updatedDate` - Last update timestamp
+- `isDeleted` - Soft delete flag
+- `deletedUserId` - Optional: User who soft-deleted (nullable FK to users)
+- `version` - Optimistic locking version
+
+**NOT included** (unlike AuditableEntity):
+- `createdUserId` - No FK to users
+- `updatedUserId` - No FK to users
+- `createdCompanyId` - No FK to companies
+
+## MasterDataEntity Hooks
+
+Hooks automatically set audit fields **without requiring userId**:
+
+- `beforeValidate` - Sets `createdDate`, `updatedDate`, `version`, `isDeleted`
+- `beforeCreate` - Ensures all audit fields are set
+- `beforeUpdate` - Updates `updatedDate`, increments `version`
+- `beforeDestroy` - Implements soft delete (allows optional `deletedUserId`)
+
+## CRUD Operations (No Context Required)
+
+### Create
+
+```javascript
+// ✅ CORRECT: No context required
+const plan = await Plan.create({
+  name: 'Premium',
+  code: 'PREMIUM',
+  price: 99.99
+});
+
+// ❌ WRONG: Don't pass context
+const plan = await Plan.create(data, { context: { userId: user.id } });
+```
+
+### Update
+
+```javascript
+// ✅ CORRECT: No context required
+await plan.update({ name: 'Updated Premium' });
+
+// ❌ WRONG: Don't pass context
+await plan.update({ name: 'Updated' }, { context: { userId: user.id } });
+```
+
+### Delete (Soft Delete)
+
+```javascript
+// ✅ CORRECT: deletedUserId optional
+await plan.destroy(); // deletedUserId will be null
+await plan.destroy({ deletedUserId: user.id }); // Optional: track who deleted
+
+// ❌ WRONG: Don't use context
+await plan.destroy({ context: { userId: user.id } });
+```
+
+## MasterBaseRepository Pattern
+
+### When to Use MasterBaseRepository
+
+Use `MasterBaseRepository` for repositories of models that use `MasterDataEntity`:
+- PlanRepository
+- UserRepository (User is reference table)
+- Future: RoleRepository, SettingsRepository, etc.
+
+### Repository Definition
+
+```javascript
+/**
+ * @author Bhavesh Venugopal
+ * ModelName Repository
+ * Data access layer for ModelName entity
+ * Extends MasterBaseRepository (master data - no context required)
+ */
+
+import { MasterBaseRepository } from './base/MasterBaseRepository.js';
+import { ModelName } from '../models/index.js';
+
+export class ModelNameRepository extends MasterBaseRepository {
+  constructor() {
+    super(ModelName, 'ModelName');
+  }
+
+  // Only add complex queries here
+  // Standard CRUD is provided by MasterBaseRepository
+}
+
+export const modelNameRepository = new ModelNameRepository();
+```
+
+## MasterBaseRepository Methods
+
+All methods are identical to `BaseRepository` **except**:
+
+### CRUD Operations (No Context Required)
+
+```javascript
+// Create - no context
+await repository.create(data, options);
+
+// Update - no context
+await repository.update(id, data, options);
+
+// Delete - deletedUserId optional in options
+await repository.delete(id, options); // deletedUserId: null
+await repository.delete(id, { deletedUserId: user.id }); // Optional
+
+// Restore - no context
+await repository.restore(id, options);
+```
+
+### Read Operations (Same as BaseRepository)
+
+All read operations are identical:
+- `findById()`, `findAll()`, `findOne()`, etc.
+- `findByIdIncludingDeleted()`, `findAllIncludingDeleted()`, etc.
+- `findByIdDeleted()`, `findAllDeleted()`, etc.
+
+## Service Layer Pattern
+
+### Service Functions (No Context Required)
+
+```javascript
+/**
+ * Create master data record
+ * @param {Object} data - Record data
+ * @returns {Promise<Object>} Created record
+ */
+export const createRecord = async (data) => {
+  logger.debug('Creating record', { data });
+  
+  // No context required for master data
+  const record = await repository.create(data);
+  
+  return {
+    id: record.id,
+    name: record.name,
+    // ... other fields
+    createdDate: record.createdDate,
+    updatedDate: record.updatedDate,
+    version: record.version
+    // NO createdUserId, updatedUserId, createdCompanyId
+  };
+};
+
+/**
+ * Update master data record
+ * @param {string} id - Record UUID
+ * @param {Object} data - Update data
+ * @returns {Promise<Object>} Updated record
+ */
+export const updateRecord = async (id, data) => {
+  logger.debug('Updating record', { id, data });
+  
+  // No context required for master data
+  const record = await repository.update(id, data);
+  
+  return {
+    id: record.id,
+    // ... other fields
+    updatedDate: record.updatedDate,
+    version: record.version
+  };
+};
+
+/**
+ * Delete master data record
+ * @param {string} id - Record UUID
+ * @param {Object} [options] - Optional options (deletedUserId)
+ * @returns {Promise<void>}
+ */
+export const deleteRecord = async (id, options = {}) => {
+  logger.debug('Deleting record', { id });
+  
+  // deletedUserId optional in options
+  await repository.delete(id, options);
+};
+```
+
+## Controller Pattern
+
+### Controller Handlers (No Context)
+
+```javascript
+export const createRecord = async (req, res) => {
+  const startTime = Date.now();
+  
+  // No context extraction needed
+  const record = await recordService.createRecord(req.body);
+  
+  res.status(201).json(
+    successResponse('Record created', record, {}, req, startTime)
+  );
+};
+
+export const updateRecord = async (req, res) => {
+  const startTime = Date.now();
+  
+  // No context extraction needed
+  const record = await recordService.updateRecord(req.params.id, req.body);
+  
+  res.status(200).json(
+    successResponse('Record updated', record, {}, req, startTime)
+  );
+};
+
+export const deleteRecord = async (req, res) => {
+  const startTime = Date.now();
+  
+  // Optional: Pass deletedUserId for tracking
+  await recordService.deleteRecord(req.params.id, {
+    deletedUserId: req.user.id
+  });
+  
+  res.status(200).json(
+    successResponse('Record deleted', null, {}, req, startTime)
+  );
+};
+```
+
+## Master Data Seeding
+
+Master data can be seeded on application startup without requiring users:
+
+```javascript
+/**
+ * Check and seed master data
+ * Called during application startup
+ */
+export async function checkAndSeedMasterData() {
+  // No user dependency required
+  const existing = await ModelName.unscoped().findOne({
+    where: { code: 'SYSTEM_CODE' }
+  });
+  
+  if (!existing) {
+    // Create directly - no context needed
+    await repository.create({
+      name: 'System Record',
+      code: 'SYSTEM_CODE',
+      isActive: true
+    });
+  }
+}
+```
+
+## Migration Pattern
+
+### Migration for Master Data Tables
+
+**CRITICAL**: Master data tables **MUST** seed required system data in the migration **AND** in the master data service.
+
+**Why Both?**
+- **Migration seeding**: Ensures data exists when table is first created (one-time setup during database migration)
+- **Master data service seeding**: Ensures data exists on every startup (handles deletions, updates, missing data, data drift)
+
+**Migration Seeding Pattern:**
+
+```javascript
+export const up = async (queryInterface, Sequelize) => {
+  await queryInterface.createTable('master_table', {
+    id: {
+      type: Sequelize.UUID,
+      primaryKey: true,
+      defaultValue: Sequelize.literal('gen_random_uuid()'),
+      allowNull: false
+    },
+    name: {
+      type: Sequelize.STRING(255),
+      allowNull: false
+    },
+    code: {
+      type: Sequelize.STRING(50),
+      allowNull: false,
+      unique: true
+    },
+    // Master data audit fields (NO user FKs)
+    created_date: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+    },
+    updated_date: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+    },
+    is_deleted: {
+      type: Sequelize.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+    deleted_user_id: {
+      type: Sequelize.UUID,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'SET NULL'
+    },
+    version: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      defaultValue: 1
+    }
+    // NO created_user_id, updated_user_id, created_company_id
+  });
+  
+  // REQUIRED: Seed critical master data in migration
+  // This ensures data exists when table is first created
+  // Use ON CONFLICT to prevent duplicates if migration runs multiple times
+  await queryInterface.sequelize.query(`
+    INSERT INTO master_table (id, name, code, created_date, updated_date, is_deleted, version)
+    VALUES (
+      gen_random_uuid(),
+      'System Record',
+      'SYSTEM_CODE',
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP,
+      false,
+      1
+    )
+    ON CONFLICT (code) DO NOTHING;
+  `);
+};
+```
+
+**Key Requirements:**
+- ✅ **MUST** seed critical system-required master data in migration
+- ✅ Use `ON CONFLICT (unique_field) DO NOTHING` to prevent duplicates
+- ✅ No user dependency required (master data doesn't need user FKs)
+- ✅ **ALSO** implement master data service seeding (see "Master Data Seeding" section below)
+- ✅ Use constants from `src/constants/masterData.js` for consistency
+
+**Example from Plan Migration:**
+
+```javascript
+// Seed BASIC plan (system-required master data)
+await queryInterface.sequelize.query(`
+  INSERT INTO plans (id, name, code, description, price, is_active, created_date, updated_date, is_deleted, version)
+  VALUES (
+    gen_random_uuid(),
+    'Basic',
+    'BASIC',
+    'Basic subscription plan - default plan for new companies',
+    0.00,
+    true,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP,
+    false,
+    1
+  )
+  ON CONFLICT (code) DO NOTHING;
+`);
+```
+
+## Testing Pattern
+
+### Model Tests
+
+```javascript
+describe('Master Data Model', () => {
+  it('should create without context', async () => {
+    // ✅ CORRECT: No context required
+    const record = await ModelName.create({
+      name: 'Test',
+      code: 'TEST'
+    });
+    
+    expect(record).toBeDefined();
+    expect(record.createdDate).toBeRecentDate();
+    // NO createdUserId assertion
+  });
+  
+  it('should update without context', async () => {
+    const record = await ModelName.create({ name: 'Test', code: 'TEST' });
+    
+    // ✅ CORRECT: No context required
+    await record.update({ name: 'Updated' });
+    
+    expect(record.name).toBe('Updated');
+  });
+  
+  it('should delete without context', async () => {
+    const record = await ModelName.create({ name: 'Test', code: 'TEST' });
+    
+    // ✅ CORRECT: deletedUserId optional
+    await record.destroy();
+    
+    const deleted = await ModelName.scope('onlyDeleted').findByPk(record.id);
+    expect(deleted.isDeleted).toBe(true);
+  });
+});
+```
+
+### Repository Tests
+
+```javascript
+describe('Master Data Repository', () => {
+  it('should create without context', async () => {
+    // ✅ CORRECT: No context required
+    const record = await repository.create({
+      name: 'Test',
+      code: 'TEST'
+    });
+    
+    expect(record).toBeDefined();
+  });
+  
+  it('should update without context', async () => {
+    const record = await repository.create({ name: 'Test', code: 'TEST' });
+    
+    // ✅ CORRECT: No context required
+    const updated = await repository.update(record.id, { name: 'Updated' });
+    
+    expect(updated.name).toBe('Updated');
+  });
+});
+```
+
+## Checklist for Master Data Models
+
+Before considering a master data model complete, verify:
+
+- [ ] Model uses `MasterDataEntity` (not `AuditableEntity`)
+- [ ] Model imports from `./base/MasterDataEntity.js`
+- [ ] Model spreads `...getMasterDataFields()`
+- [ ] Model applies `getMasterDataHooks()`
+- [ ] Model uses `getDefaultScope()` and `getScopes()`
+- [ ] Model applies `applyOptimisticLocking()`
+- [ ] `destroy()` method allows optional `deletedUserId`
+- [ ] Repository extends `MasterBaseRepository` (not `BaseRepository`)
+- [ ] Service functions don't require context parameter
+- [ ] Controller handlers don't extract context
+- [ ] **Migration seeds critical master data** (uses `ON CONFLICT` to prevent duplicates)
+- [ ] **Master data service seeds data on startup** (see "Master Data Seeding" section)
+- [ ] Migration doesn't include `created_user_id`, `updated_user_id`, `created_company_id`
+- [ ] Migration uses constants from `src/constants/masterData.js` for seed data
+- [ ] Tests don't pass context to create/update/delete
+- [ ] Tests don't assert `createdUserId`, `updatedUserId`, `createdCompanyId`
+
+## Common Mistakes to Avoid
+
+❌ **Using AuditableEntity for master data** - Causes seeding issues
+❌ **Passing context to master data operations** - Not required
+❌ **Asserting user audit fields in tests** - Don't exist in master data
+❌ **Adding user FKs in migration** - Master data doesn't track user context
+❌ **Using BaseRepository for master data** - Use MasterBaseRepository
+
+## Related Rules
+
+- **model-creation.mdc** - General model creation guidelines
+- **repository-service-pattern.mdc** - Repository and service patterns
+- **testing.mdc** - Testing requirements
+
+## Examples
+
+- **Plan Model** - Uses `MasterDataEntity` and `MasterBaseRepository`
+- **User Model** - Reference table (no audit fields)
