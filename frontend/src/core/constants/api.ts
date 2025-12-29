@@ -56,6 +56,11 @@ const API_ROUTES = {
     DELETE_COMPANY: API_PATH + "/superAdmin/companies/<companyId>",
     GET_COMPANIES_LIST: API_PATH + "/superAdmin/companies",
     GET_COMPANY_BY_ID: API_PATH + "/superAdmin/companies/<companyId>?includeLogo=true",
+    CREATE_ROLE: API_PATH + "/superAdmin/roles",
+    UPDATE_ROLE: API_PATH + "/superAdmin/roles/<roleId>",
+    DELETE_ROLE: API_PATH + "/superAdmin/roles/<roleId>",
+    GET_ROLES_LIST: API_PATH + "/superAdmin/roles",
+    GET_ROLE_BY_ID: API_PATH + "/superAdmin/roles/<roleId>",
   },
 };
 
