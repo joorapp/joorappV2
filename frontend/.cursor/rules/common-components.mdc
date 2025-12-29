@@ -1,0 +1,382 @@
+---
+description: Common components and constants usage - reusable UI components and shared constants
+globs: ["ReactFE/**/*"]
+alwaysApply: true
+priority: 2
+---
+# Common Components and Constants Rules
+
+## CRITICAL: Use Common Components and Constants
+
+### Absolute Requirements - NO EXCEPTIONS
+
+1. **ALWAYS use ConfirmModal** - For all delete/confirmation dialogs, use the common ConfirmModal component
+2. **ALWAYS use constants from constantValues.ts** - Never hardcode values like status codes, validation limits, etc.
+3. **ALWAYS check for existing common components** - Before creating a new component, check if a reusable one exists
+4. **ALWAYS follow component patterns** - Common components follow consistent patterns for reusability
+
+## Common Components
+
+### 1. ConfirmModal Component
+
+**Location:** `frontend/src/components/common/ConfirmModal/ConfirmModal.tsx`
+
+**Purpose:** Reusable confirmation modal for delete actions and other confirmations across the application.
+
+**MANDATORY Usage Pattern:**
+
+```typescript
+import ConfirmModal from '../../../common/ConfirmModal/ConfirmModal';
+
+// In your component
+const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+const [itemToDelete, setItemToDelete] = useState<ItemType | null>(null);
+const [isDeleting, setIsDeleting] = useState(false);
+
+const handleDeleteClick = (item: ItemType) => {
+  setItemToDelete(item);
+  setDeleteModalOpen(true);
+};
+
+const handleConfirmDelete = async () => {
+  if (!itemToDelete) return;
+
+  setIsDeleting(true);
+  try {
+    await YourService.deleteItem(itemToDelete.id);
+    
+    // Refresh the list after successful delete
+    await fetchItems();
+    showSuccessToast(t('YourModule.itemDeletedSuccessfully'));
+    
+    setDeleteModalOpen(false);
+    setItemToDelete(null);
+  } catch (error: any) {
+    // Error toast is already handled by the interceptor
+    console.error('Error deleting item:', error);
+  } finally {
+    setIsDeleting(false);
+  }
+};
+
+// In JSX
+<ConfirmModal
+  isOpen={deleteModalOpen}
+  toggle={() => {
+    setDeleteModalOpen(false);
+    setItemToDelete(null);
+  }}
+  message={itemToDelete ? `${t('YourModule.deleteConfirmation')} ${itemToDelete.name}?` : ''}
+  onConfirm={handleConfirmDelete}
+  isLoading={isDeleting}
+/>
+```
+
+**Props:**
+- `isOpen: boolean` - Controls modal visibility
+- `toggle: () => void` - Function to close the modal
+- `message: string` - The confirmation message to display (MUST be translated)
+- `onConfirm: () => void | Promise<void>` - Function called when user confirms
+- `confirmButtonText?: string` - Optional custom text for confirm button (defaults to translated "Delete")
+- `cancelButtonText?: string` - Optional custom text for cancel button (defaults to translated "Cancel")
+- `confirmButtonColor?: string` - Optional button color (defaults to 'danger')
+- `isLoading?: boolean` - Shows loading state on confirm button
+
+**Rules:**
+- ✅ **DO**: Use ConfirmModal for all delete/confirmation dialogs
+- ✅ **DO**: Always show loading state during API calls
+- ✅ **DO**: Always refresh data after successful deletion
+- ✅ **DO**: Always show success toast after deletion
+- ✅ **DO**: Always clear state when closing modal
+- ✅ **DO**: Always use translated messages
+- ❌ **DON'T**: Create custom delete modals - use ConfirmModal
+- ❌ **DON'T**: Hardcode confirmation messages - use translations
+- ❌ **DON'T**: Skip loading states
+- ❌ **DON'T**: Forget to refresh data after deletion
+
+**Translation Keys Required:**
+- `Common.confirmToDelete` - "Confirm to delete" (already exists)
+- `Common.delete` - "Delete" (already exists)
+- `Common.cancel` - "Cancel" (already exists)
+- `YourModule.deleteConfirmation` - "Do you really want to delete" (add to your module)
+- `YourModule.itemDeletedSuccessfully` - "Item deleted successfully" (add to your module)
+
+### 2. Other Common Components
+
+**Location:** `frontend/src/components/common/`
+
+**Available Components:**
+- `Breadcrumbs` - Navigation breadcrumbs
+- `Pagination` - Pagination component
+- `ConfirmModal` - Confirmation dialogs (see above)
+- `Header` - Application header
+- `Sidebar` - Application sidebar
+- `Footer` - Application footer
+
+**Rules:**
+- Always check `frontend/src/components/common/` before creating new components
+- If a common component exists, use it instead of creating a duplicate
+- If you need to extend functionality, consider creating a wrapper component
+
+## Constants Usage
+
+### constantValues.ts
+
+**Location:** `frontend/src/core/constants/constantValues.ts`
+
+**Purpose:** Centralized constants for the entire application.
+
+**MANDATORY Usage Pattern:**
+
+```typescript
+import { STATUS, VALIDATION, HTTP_STATUS, PAGINATION, UI } from '../../../../core/constants/constantValues';
+
+// ✅ CORRECT - Use constants
+const status = STATUS.ACTIVE;
+const minPasswordLength = VALIDATION.MIN_PASSWORD_LENGTH;
+const httpOk = HTTP_STATUS.OK;
+const pageSize = PAGINATION.DEFAULT_PAGE_SIZE;
+const debounceDelay = UI.DEBOUNCE_DELAY;
+
+// ❌ WRONG - Hardcoded values
+const status = 'ACTIVE';
+const minPasswordLength = 8;
+const httpOk = 200;
+const pageSize = 10;
+const debounceDelay = 300;
+```
+
+**Available Constant Categories:**
+
+1. **STATUS** - Common status values
+   ```typescript
+   STATUS.NEW
+   STATUS.ACTIVE
+   STATUS.INACTIVE
+   STATUS.PENDING
+   STATUS.APPROVED
+   STATUS.REJECTED
+   STATUS.DELETED
+   STATUS.DRAFT
+   STATUS.PUBLISHED
+   ```
+
+2. **VALIDATION** - Validation limits
+   ```typescript
+   VALIDATION.MIN_PASSWORD_LENGTH
+   VALIDATION.MAX_PASSWORD_LENGTH
+   VALIDATION.MIN_USERNAME_LENGTH
+   VALIDATION.MAX_USERNAME_LENGTH
+   VALIDATION.MAX_EMAIL_LENGTH
+   VALIDATION.MAX_NAME_LENGTH
+   VALIDATION.MIN_PHONE_LENGTH
+   VALIDATION.MAX_PHONE_LENGTH
+   ```
+
+3. **HTTP_STATUS** - HTTP status codes
+   ```typescript
+   HTTP_STATUS.OK
+   HTTP_STATUS.CREATED
+   HTTP_STATUS.BAD_REQUEST
+   HTTP_STATUS.UNAUTHORIZED
+   HTTP_STATUS.NOT_FOUND
+   HTTP_STATUS.INTERNAL_SERVER_ERROR
+   ```
+
+4. **PAGINATION** - Pagination defaults
+   ```typescript
+   PAGINATION.DEFAULT_PAGE_SIZE
+   PAGINATION.DEFAULT_PAGE_NUMBER
+   PAGINATION.PAGE_SIZE_OPTIONS
+   PAGINATION.MAX_PAGE_SIZE
+   PAGINATION.MIN_PAGE_SIZE
+   ```
+
+5. **UI** - UI-related constants
+   ```typescript
+   UI.DEBOUNCE_DELAY
+   UI.TOAST_DURATION
+   UI.MODAL_ANIMATION_DURATION
+   UI.MOBILE_BREAKPOINT
+   UI.TABLET_BREAKPOINT
+   ```
+
+6. **DATE_FORMATS** - Date format strings
+   ```typescript
+   DATE_FORMATS.DISPLAY
+   DATE_FORMATS.API
+   DATE_FORMATS.DISPLAY_WITH_TIME
+   ```
+
+7. **REGEX_PATTERNS** - Common regex patterns
+   ```typescript
+   REGEX_PATTERNS.EMAIL
+   REGEX_PATTERNS.PHONE
+   REGEX_PATTERNS.PASSWORD
+   ```
+
+8. **FILE_UPLOAD** - File upload limits
+   ```typescript
+   FILE_UPLOAD.MAX_FILE_SIZE
+   FILE_UPLOAD.MAX_IMAGE_SIZE
+   FILE_UPLOAD.ALLOWED_IMAGE_TYPES
+   ```
+
+9. **STORAGE_KEYS** - LocalStorage keys
+   ```typescript
+   STORAGE_KEYS.AUTH_TOKEN
+   STORAGE_KEYS.USER_PROFILE
+   STORAGE_KEYS.SELECTED_COMPANY
+   ```
+
+10. **SORT_ORDER** - Sort order values
+    ```typescript
+    SORT_ORDER.ASC
+    SORT_ORDER.DESC
+    ```
+
+**Rules:**
+- ✅ **DO**: Import and use constants from constantValues.ts
+- ✅ **DO**: Use constants for all magic numbers and strings
+- ✅ **DO**: Add new constants to constantValues.ts if needed
+- ✅ **DO**: Group related constants together
+- ❌ **DON'T**: Hardcode status values, validation limits, HTTP codes, etc.
+- ❌ **DON'T**: Create duplicate constant files
+- ❌ **DON'T**: Use magic numbers or strings in components
+
+**Adding New Constants:**
+
+When you need a new constant:
+1. Check if it already exists in constantValues.ts
+2. If not, add it to the appropriate category
+3. Use `as const` for type safety
+4. Export it in the CONSTANTS object
+5. Document the constant with a comment if needed
+
+Example:
+```typescript
+// In constantValues.ts
+export const STATUS = {
+  // ... existing statuses
+  ARCHIVED: 'ARCHIVED', // New constant
+} as const;
+```
+
+## Common Component Patterns
+
+### Loading States
+
+Always show loading states during async operations:
+
+```typescript
+const [isDeleting, setIsDeleting] = useState(false);
+
+const handleDelete = async () => {
+  setIsDeleting(true);
+  try {
+    await deleteItem();
+  } finally {
+    setIsDeleting(false);
+  }
+};
+
+// In JSX
+<Button disabled={isDeleting}>
+  {isDeleting ? t('Common.loading') : t('Common.delete')}
+</Button>
+```
+
+### Error Handling
+
+Error handling is done by the interceptor (see api-architecture.mdc). Components should:
+- Show success toasts after successful operations
+- Let interceptor handle error toasts
+- Only handle local UI state for errors
+
+### State Management
+
+- Use local state for component-specific data
+- Clear state when modals close
+- Reset state after successful operations
+
+## Checklist for Using Common Components
+
+Before creating a new component or using hardcoded values:
+
+- [ ] Checked if a common component exists in `frontend/src/components/common/`
+- [ ] Using ConfirmModal for all confirmation dialogs
+- [ ] Using constants from constantValues.ts instead of hardcoded values
+- [ ] All messages are translated
+- [ ] Loading states are implemented
+- [ ] Error handling follows interceptor pattern
+- [ ] State is properly cleared on modal close
+
+## Examples
+
+### Complete Delete Flow with ConfirmModal
+
+```typescript
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import ConfirmModal from '../../../common/ConfirmModal/ConfirmModal';
+import { showSuccessToast } from '../../../../core/utils/toast';
+import YourService from '../../../../core/service/YourService';
+import { STATUS } from '../../../../core/constants/constantValues';
+
+const YourComponent = () => {
+  const { t } = useTranslation();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<Item | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [items, setItems] = useState<Item[]>([]);
+
+  const handleDeleteClick = (item: Item) => {
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await YourService.deleteItem(itemToDelete.id);
+      await fetchItems(); // Refresh list
+      showSuccessToast(t('YourModule.itemDeletedSuccessfully'));
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
+    } catch (error: any) {
+      // Error handled by interceptor
+      console.error('Error deleting item:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Your component JSX */}
+      <Button onClick={() => handleDeleteClick(item)}>
+        {t('Common.delete')}
+      </Button>
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        toggle={() => {
+          setDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        message={itemToDelete ? `${t('YourModule.deleteConfirmation')} ${itemToDelete.name}?` : ''}
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeleting}
+      />
+    </>
+  );
+};
+```
+
+## Remember
+
+**Every confirmation dialog should use ConfirmModal.**
+**Every magic number or string should come from constantValues.ts.**
+**Every common UI pattern should check for existing common components first.**

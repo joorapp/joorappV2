@@ -118,6 +118,7 @@
     "delete": "Löschen",
     "confirm": "Bestätigen",
     "confirmDelete": "Löschen bestätigen",
+    "confirmToDelete": "Löschen bestätigen",
     "back": "Zurück",
     "next": "Weiter",
     "previous": "Vorherige",
@@ -152,7 +153,11 @@
       "deleted": "Erfolgreich gelöscht",
       "saved": "Erfolgreich gespeichert",
       "updated": "Erfolgreich aktualisiert"
-    }
+    },
+    "showing": "Zeige",
+    "to": "bis",
+    "of": "von",
+    "results": "Ergebnisse"
   },
   "Validation": {
     "emailRequired": "Bitte geben Sie Ihre E-Mail-Adresse ein",
@@ -196,6 +201,9 @@
     "createClient": "Kunde erstellen",
     "editClient": "Kunde bearbeiten",
     "updateClient": "Kunde aktualisieren",
+    "clientCreatedSuccessfully": "Kunde erfolgreich erstellt",
+    "clientUpdatedSuccessfully": "Kunde erfolgreich aktualisiert",
+    "clientDeletedSuccessfully": "Kunde erfolgreich gelöscht",
     "profilePhoto": "Profilfoto",
     "uploadProfilePhoto": "Profilfoto hochladen und ändern",
     "enterClientName": "Kundenname eingeben",
