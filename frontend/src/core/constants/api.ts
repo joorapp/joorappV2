@@ -52,6 +52,10 @@ const API_ROUTES = {
   },
   SUPERADMIN: {
     CREATE_COMPANY: API_PATH + "/superAdmin/companies",
+    UPDATE_COMPANY: API_PATH + "/superAdmin/companies/<companyId>",
+    DELETE_COMPANY: API_PATH + "/superAdmin/companies/<companyId>",
+    GET_COMPANIES_LIST: API_PATH + "/superAdmin/companies",
+    GET_COMPANY_BY_ID: API_PATH + "/superAdmin/companies/<companyId>?includeLogo=true",
   },
 };
 

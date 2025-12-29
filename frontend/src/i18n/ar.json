@@ -118,6 +118,7 @@
     "delete": "حذف",
     "confirm": "تأكيد",
     "confirmDelete": "تأكيد الحذف",
+    "confirmToDelete": "تأكيد الحذف",
     "back": "رجوع",
     "next": "التالي",
     "previous": "السابق",
@@ -152,7 +153,11 @@
       "deleted": "تم الحذف بنجاح",
       "saved": "تم الحفظ بنجاح",
       "updated": "تم التحديث بنجاح"
-    }
+    },
+    "showing": "عرض",
+    "to": "إلى",
+    "of": "من",
+    "results": "نتائج"
   },
   "Validation": {
     "emailRequired": "يرجى إدخال بريدك الإلكتروني",
@@ -196,6 +201,9 @@
     "createClient": "إنشاء عميل",
     "editClient": "تعديل العميل",
     "updateClient": "تحديث العميل",
+    "clientCreatedSuccessfully": "تم إنشاء العميل بنجاح",
+    "clientUpdatedSuccessfully": "تم تحديث العميل بنجاح",
+    "clientDeletedSuccessfully": "تم حذف العميل بنجاح",
     "profilePhoto": "صورة الملف الشخصي",
     "uploadProfilePhoto": "تحميل وتغيير صورة الملف الشخصي",
     "enterClientName": "أدخل اسم العميل",
