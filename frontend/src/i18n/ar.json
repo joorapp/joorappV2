@@ -124,6 +124,7 @@
     "previous": "السابق",
     "search": "بحث...",
     "searchPlaceholder": "بحث...",
+    "select": "اختر",
     "add": "إضافة",
     "refresh": "تحديث",
     "email": "البريد الإلكتروني",
@@ -176,6 +177,10 @@
     "passwordRequired": "يرجى إدخال كلمة مرور",
     "passwordMinLength": "يجب أن تكون كلمة المرور على الأقل 8 أحرف",
     "roleRequired": "يرجى اختيار دور",
+    "companyRequired": "يرجى اختيار شركة",
+    "keycloakGlobalRoleRequired": "يرجى اختيار دور عام في Keycloak",
+    "firstNameRequired": "يرجى إدخال الاسم الأول",
+    "lastNameRequired": "يرجى إدخال اسم العائلة",
     "priceRequired": "يرجى إدخال السعر",
     "priceInvalid": "يرجى إدخال سعر صحيح (يجب أن يكون رقماً موجباً)",
     "titleMaxLength": "يجب ألا يتجاوز العنوان 200 حرف",
@@ -437,7 +442,8 @@
     "enterPassword": "أدخل كلمة المرور",
     "enterPhone": "أدخل رقم الهاتف",
     "passwordHint": "يجب أن تكون كلمة المرور على الأقل 8 أحرف",
-    "selectCompany": "اختر شركة (اختياري)",
+    "passwordOptional": "اتركه فارغًا للاحتفاظ بكلمة المرور الحالية",
+    "selectCompany": "اختر شركة",
     "selectRole": "اختر دوراً",
     "modal": {
       "employeeDetails": "تفاصيل الموظف"
@@ -449,8 +455,13 @@
       "password": "كلمة المرور",
       "phone": "الهاتف",
       "company": "الشركة",
-      "role": "الدور"
+      "role": "الدور",
+      "keycloakGlobalRole": "الدور العام في Keycloak"
     },
+    "createUser": "إنشاء مستخدم",
+    "userCreatedSuccessfully": "تم إنشاء المستخدم بنجاح",
+    "keycloakGlobalRoleCOMPANY_USER": "مستخدم الشركة",
+    "keycloakGlobalRoleCOMPANY_ADMIN": "مسؤول الشركة",
     "showing": "عرض",
     "to": "إلى",
     "of": "من",

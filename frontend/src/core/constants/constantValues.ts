@@ -138,6 +138,14 @@ export const SORT_ORDER = {
 } as const;
 
 // ============================================
+// KEYCLOAK GLOBAL ROLES
+// ============================================
+export const KEYCLOAK_GLOBAL_ROLES = [
+  'COMPANY_USER',
+  'COMPANY_ADMIN',
+] as const;
+
+// ============================================
 // EXPORT ALL CONSTANTS AS A SINGLE OBJECT
 // ============================================
 export const CONSTANTS = {
@@ -151,6 +159,7 @@ export const CONSTANTS = {
   STORAGE_KEYS,
   FILE_UPLOAD,
   SORT_ORDER,
+  KEYCLOAK_GLOBAL_ROLES,
 } as const;
 
 export default CONSTANTS;
