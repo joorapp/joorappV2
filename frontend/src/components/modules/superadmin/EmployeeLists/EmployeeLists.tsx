@@ -5,22 +5,58 @@
  * TEMPORARY: Dummy data for table design preview only
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardBody, Row, Col, Table, Badge, Input, InputGroup, Button, Modal, ModalHeader, ModalBody, ModalFooter, Label, FormFeedback, Pagination, PaginationItem, PaginationLink } from 'reactstrap';
+import { Card, CardBody, Row, Col, Table, Badge, Input, InputGroup, Button, Modal, ModalHeader, ModalBody, ModalFooter, Label, FormFeedback, Spinner } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
+import Pagination from '../../../common/Pagination/Pagination';
 import { showSuccessToast } from '../../../../core/utils/toast';
-import { validateEmail, validatePhone } from '../../../../core/utils/Utils';
+import { validateEmail, validateRequired, validateMinLength } from '../../../../core/utils/Utils';
+import UserService from '../../../../core/service/UserService';
+import SuperAdminService from '../../../../core/service/SuperAdminService';
+import RoleService from '../../../../core/service/RoleService';
+import { KEYCLOAK_GLOBAL_ROLES, VALIDATION } from '../../../../core/constants/constantValues';
 
 interface Employee {
   id: string;
+  keycloakId?: string;
   firstName?: string;
   lastName?: string;
   email: string;
-  phone?: string;
-  keycloakrole?: string;
+  keycloakGlobalRole?: string;
   isActive: boolean;
-  createdAt: string;
+  lastLoginAt?: string;
+}
+
+interface Company {
+  id: string;
+  name: string;
+}
+
+interface Role {
+  id: string;
+  name: string;
+  code: string;
+}
+
+interface CreateUserFormData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  companyId: string;
+  roleId: string;
+  keycloakGlobalRole: string;
+}
+
+interface CreateUserFormErrors {
+  email?: string;
+  password?: string;
+  firstName?: string;
+  lastName?: string;
+  companyId?: string;
+  roleId?: string;
+  keycloakGlobalRole?: string;
 }
 
 const EmployeeLists = () => {
@@ -32,104 +68,51 @@ const EmployeeLists = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
-  // TEMPORARY: Dummy data for table design preview
-  const initialDummyEmployees: Employee[] = [
-    {
-      id: '1',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john.doe@example.com',
-      phone: '+1234567890',
-      keycloakrole: 'Site Manager',
-      isActive: true,
-      createdAt: new Date('2024-01-15').toISOString(),
-    },
-    {
-      id: '2',
-      firstName: 'Jane',
-      lastName: 'Smith',
-      email: 'jane.smith@example.com',
-      phone: '+1234567891',
-      keycloakrole: 'Super Admin',
-      isActive: true,
-      createdAt: new Date('2024-02-20').toISOString(),
-    },
-    {
-      id: '3',
-      firstName: 'Michael',
-      lastName: 'Johnson',
-      email: 'michael.j@example.com',
-      phone: '+1234567892',
-      keycloakrole: 'Site Manager',
-      isActive: false,
-      createdAt: new Date('2024-03-10').toISOString(),
-    },
-    {
-      id: '4',
-      firstName: 'Sarah',
-      lastName: 'Williams',
-      email: 'sarah.williams@example.com',
-      phone: '+1234567893',
-      keycloakrole: 'Account Manager',
-      isActive: true,
-      createdAt: new Date('2024-04-05').toISOString(),
-    },
-    {
-      id: '5',
-      firstName: 'David',
-      lastName: 'Brown',
-      email: 'david.brown@example.com',
-      phone: '+1234567894',
-      keycloakrole: 'Account Manager',
-      isActive: true,
-      createdAt: new Date('2024-05-12').toISOString(),
-    },
-    {
-      id: '6',
-      email: 'admin@example.com',
-      keycloakrole: 'Super Admin',
-      isActive: true,
-      createdAt: new Date('2024-01-01').toISOString(),
-    },
-    {
-      id: '7',
-      firstName: 'Emily',
-      lastName: 'Davis',
-      email: 'emily.davis@example.com',
-      keycloakrole: 'Project Manager',
-      isActive: true,
-      createdAt: new Date('2024-06-18').toISOString(),
-    },
-    {
-      id: '8',
-      firstName: 'Robert',
-      lastName: 'Miller',
-      email: 'robert.miller@example.com',
-      phone: '+1234567895',
-      keycloakrole: 'Project Manager',
-      isActive: false,
-      createdAt: new Date('2024-07-22').toISOString(),
-    },
-  ];
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  interface EditUserFormData {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    companyId: string;
+    roleId: string;
+    keycloakGlobalRole: string;
+    isActive: boolean;
+  }
 
-  const [employees, setEmployees] = useState<Employee[]>(initialDummyEmployees);
-  const [editFormData, setEditFormData] = useState<Employee | null>(null);
-  const [createFormData, setCreateFormData] = useState({
+  const [editFormData, setEditFormData] = useState<EditUserFormData | null>(null);
+  const [createFormData, setCreateFormData] = useState<CreateUserFormData>({
+    email: '',
+    password: '',
     firstName: '',
     lastName: '',
-    email: '',
-    phone: '',
-    keycloakrole: 'COMPANY_USER',
-    isActive: true,
+    companyId: '',
+    roleId: '',
+    keycloakGlobalRole: KEYCLOAK_GLOBAL_ROLES[0],
   });
-  const [createFormErrors, setCreateFormErrors] = useState<{
+  const [createFormErrors, setCreateFormErrors] = useState<CreateUserFormErrors>({});
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [loadingRoles, setLoadingRoles] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [isUpdatingUser, setIsUpdatingUser] = useState(false);
+  const [editFormErrors, setEditFormErrors] = useState<{
+    email?: string;
+    password?: string;
     firstName?: string;
     lastName?: string;
-    email?: string;
-    phone?: string;
+    companyId?: string;
+    roleId?: string;
+    keycloakGlobalRole?: string;
   }>({});
+  const [loadingUserDetails, setLoadingUserDetails] = useState(false);
 
   // Get initials from employee name
   const getInitials = (employee: Employee): string => {
@@ -175,10 +158,10 @@ const EmployeeLists = () => {
   const getRoleBadge = (role?: string) => {
     if (!role) return <Badge className="bg-secondary">-</Badge>;
     switch (role) {
-      case 'Super Admin':
-        return <Badge className="bg-danger">{t('EmployeeLists.roleSuperAdmin')}</Badge>;
-      case 'Project Manager':
-        return <Badge className="bg-primary">{t('EmployeeLists.roleProjectManager')}</Badge>;
+      case 'COMPANY_USER':
+        return <Badge className="bg-primary">{t('EmployeeLists.keycloakGlobalRoleCOMPANY_USER')}</Badge>;
+      case 'COMPANY_ADMIN':
+        return <Badge className="bg-danger">{t('EmployeeLists.keycloakGlobalRoleCOMPANY_ADMIN')}</Badge>;
       default:
         return <Badge className="bg-secondary">{role}</Badge>;
     }
@@ -197,23 +180,90 @@ const EmployeeLists = () => {
     return employee.email;
   };
 
-  const filteredEmployees = employees.filter(employee => {
-    const name = getEmployeeName(employee).toLowerCase();
-    const email = employee.email.toLowerCase();
-    const search = searchTerm.toLowerCase();
-    return name.includes(search) || email.includes(search);
-  });
+  // Fetch users from API
+  const fetchUsers = useCallback(async (page: number, search: string) => {
+    setLoading(true);
+    try {
+      const response = await UserService.getUsersList(page, itemsPerPage, search);
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentEmployees = filteredEmployees.slice(indexOfFirstItem, indexOfLastItem);
+      if (response?.data) {
+        // Map API response to Employee interface
+        const usersData = response.data.data || [];
+        const mappedEmployees: Employee[] = usersData.map((user: {
+          id: string;
+          keycloakId?: string;
+          email: string;
+          firstName?: string;
+          lastName?: string;
+          keycloakGlobalRole?: string;
+          isActive: boolean;
+          lastLoginAt?: string;
+        }) => ({
+          id: user.id,
+          keycloakId: user.keycloakId,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          keycloakGlobalRole: user.keycloakGlobalRole,
+          isActive: user.isActive,
+          lastLoginAt: user.lastLoginAt,
+        }));
 
-  // Reset to first page when search changes
+        setEmployees(mappedEmployees);
+
+        // Extract pagination metadata
+        const pagination = response.data?.pagination || {};
+        setTotalPages(pagination.totalPages || 1);
+        setTotalItems(pagination.total || 0);
+        setCurrentPage(pagination.page || page);
+      }
+    } catch (error) {
+      // Error toast is already handled by the interceptor
+      console.error('Error fetching users:', error);
+      setEmployees([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [itemsPerPage]);
+
+  // Fetch users on component mount and when page/search changes
+  useEffect(() => {
+    fetchUsers(currentPage, searchTerm);
+  }, [currentPage, fetchUsers]);
+
+  // Handle search with debouncing
+  useEffect(() => {
+    // Clear existing timer
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+
+    // Set new timer
+    const timer = setTimeout(() => {
+      setCurrentPage(1); // Reset to first page on search
+      fetchUsers(1, searchTerm);
+    }, 300); // 300ms debounce delay
+
+    setSearchDebounceTimer(timer);
+
+    // Cleanup timer on unmount
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [searchTerm]);
+
+  // Handle search input change
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1);
+  };
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   // View employee handler
@@ -223,10 +273,49 @@ const EmployeeLists = () => {
   };
 
   // Edit employee handler
-  const handleEdit = (employee: Employee) => {
+  const handleEdit = async (employee: Employee) => {
     setSelectedEmployee(employee);
-    setEditFormData({ ...employee });
+    setLoadingUserDetails(true);
     setEditModalOpen(true);
+    
+    try {
+      // Fetch user details to get company/role info
+      const userResponse = await UserService.getUserById(employee.id);
+      const userData = userResponse?.data?.data || {};
+      
+      // Initialize edit form data with user info
+      // Note: companyId and roleId will be fetched separately if needed
+      setEditFormData({
+        email: userData.email || employee.email,
+        password: '', // Password is optional for update
+        firstName: userData.firstName || employee.firstName || '',
+        lastName: userData.lastName || employee.lastName || '',
+        companyId: '', // Will be populated if we have an API to get user's company
+        roleId: '', // Will be populated if we have an API to get user's role
+        keycloakGlobalRole: userData.keycloakGlobalRole || employee.keycloakGlobalRole || '',
+        isActive: userData.isActive !== undefined ? userData.isActive : employee.isActive,
+      });
+      
+      // Fetch companies and roles for dropdowns
+      await Promise.all([fetchCompanies(), fetchRoles()]);
+    } catch (error) {
+      // Error toast is already handled by the interceptor
+      console.error('Error fetching user details:', error);
+      // Fallback to employee data
+      setEditFormData({
+        email: employee.email,
+        password: '',
+        firstName: employee.firstName || '',
+        lastName: employee.lastName || '',
+        companyId: '',
+        roleId: '',
+        keycloakGlobalRole: employee.keycloakGlobalRole || '',
+        isActive: employee.isActive,
+      });
+      await Promise.all([fetchCompanies(), fetchRoles()]);
+    } finally {
+      setLoadingUserDetails(false);
+    }
   };
 
   // Delete employee handler
@@ -246,39 +335,231 @@ const EmployeeLists = () => {
   };
 
   // Save edit
-  const handleSaveEdit = () => {
-    if (editFormData && selectedEmployee) {
-      setEmployees(prev => prev.map(emp => 
-        emp.id === selectedEmployee.id ? editFormData : emp
-      ));
-      showSuccessToast(t('EmployeeLists.employeeUpdatedSuccessfully') || 'Employee updated successfully');
-      setEditModalOpen(false);
-      setEditFormData(null);
-      setSelectedEmployee(null);
+  const handleSaveEdit = async () => {
+    if (!editFormData || !selectedEmployee) return;
+
+    // Validate form
+    const errors = validateEditUserForm(editFormData);
+    if (Object.keys(errors).length > 0) {
+      setEditFormErrors(errors);
+      return;
+    }
+
+    setIsUpdatingUser(true);
+    try {
+      // Prepare user update request body
+      const userUpdateBody: {
+        email?: string;
+        firstName?: string;
+        lastName?: string;
+        keycloakGlobalRole?: string;
+        isActive?: boolean;
+        password?: string;
+      } = {};
+
+      if (editFormData.email && editFormData.email.trim() !== '') {
+        userUpdateBody.email = editFormData.email.trim();
+      }
+      if (editFormData.firstName && editFormData.firstName.trim() !== '') {
+        userUpdateBody.firstName = editFormData.firstName.trim();
+      }
+      if (editFormData.lastName && editFormData.lastName.trim() !== '') {
+        userUpdateBody.lastName = editFormData.lastName.trim();
+      }
+      if (editFormData.keycloakGlobalRole) {
+        userUpdateBody.keycloakGlobalRole = editFormData.keycloakGlobalRole;
+      }
+      if (editFormData.isActive !== undefined) {
+        userUpdateBody.isActive = editFormData.isActive;
+      }
+      // Include password only if provided
+      if (editFormData.password && editFormData.password.trim() !== '') {
+        userUpdateBody.password = editFormData.password;
+      }
+
+      // Update user
+      const userResponse = await UserService.updateUser(selectedEmployee.id, userUpdateBody);
+      
+      if (userResponse.data.success) {
+        // Update company assignment (assignUserToCompany handles upsert)
+        if (editFormData.companyId && editFormData.roleId) {
+          await UserService.assignUserToCompany(
+            selectedEmployee.id,
+            editFormData.companyId,
+            editFormData.roleId
+          );
+        }
+
+        showSuccessToast(t('EmployeeLists.employeeUpdatedSuccessfully'));
+        setEditModalOpen(false);
+        setEditFormData(null);
+        setSelectedEmployee(null);
+        setEditFormErrors({});
+        // Refresh users list after successful update
+        await fetchUsers(currentPage, searchTerm);
+      }
+    } catch (error) {
+      // Error toast is already handled by the interceptor
+      console.error('Error updating user:', error);
+    } finally {
+      setIsUpdatingUser(false);
     }
   };
 
+  // Close edit modal and reset form
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+    setEditFormData(null);
+    setSelectedEmployee(null);
+    setEditFormErrors({});
+  };
+
   // Handle edit form input change
-  const handleEditInputChange = (field: keyof Employee, value: string | boolean) => {
+  const handleEditInputChange = (field: keyof EditUserFormData, value: string | boolean) => {
     if (editFormData) {
       setEditFormData({
         ...editFormData,
         [field]: value,
       });
+      // Clear error for this field when user starts typing
+      if (editFormErrors[field as keyof typeof editFormErrors]) {
+        setEditFormErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[field as keyof typeof editFormErrors];
+          return newErrors;
+        });
+      }
     }
   };
 
+  // Validate edit user form
+  const validateEditUserForm = (formData: EditUserFormData): typeof editFormErrors => {
+    const errors: typeof editFormErrors = {};
+
+    // Validate email (required)
+    if (!formData.email || formData.email.trim() === '') {
+      errors.email = 'Validation.emailRequired';
+    } else {
+      const emailValidation = validateEmail(formData.email);
+      if (!emailValidation.isValid) {
+        errors.email = emailValidation.errorMessage;
+      }
+    }
+
+    // Validate password if provided (optional for update, but if provided must be valid)
+    if (formData.password && formData.password.trim() !== '') {
+      const passwordValidation = validateMinLength(formData.password, VALIDATION.MIN_PASSWORD_LENGTH);
+      if (!passwordValidation.isValid) {
+        errors.password = passwordValidation.errorMessage;
+      }
+    }
+
+    // Validate firstName (required)
+    if (!formData.firstName || formData.firstName.trim() === '') {
+      errors.firstName = 'Validation.firstNameRequired';
+    } else if (formData.firstName.trim().length > VALIDATION.MAX_NAME_LENGTH) {
+      errors.firstName = 'Validation.nameMaxLength';
+    }
+
+    // Validate lastName (required)
+    if (!formData.lastName || formData.lastName.trim() === '') {
+      errors.lastName = 'Validation.lastNameRequired';
+    } else if (formData.lastName.trim().length > VALIDATION.MAX_NAME_LENGTH) {
+      errors.lastName = 'Validation.nameMaxLength';
+    }
+
+    // Validate companyId (required)
+    if (!formData.companyId || formData.companyId.trim() === '') {
+      errors.companyId = 'Validation.companyRequired';
+    }
+
+    // Validate roleId (required)
+    if (!formData.roleId || formData.roleId.trim() === '') {
+      errors.roleId = 'Validation.roleRequired';
+    }
+
+    // Validate keycloakGlobalRole (required)
+    if (!formData.keycloakGlobalRole || !KEYCLOAK_GLOBAL_ROLES.includes(formData.keycloakGlobalRole as typeof KEYCLOAK_GLOBAL_ROLES[number])) {
+      errors.keycloakGlobalRole = 'Validation.keycloakGlobalRoleRequired';
+    }
+
+    return errors;
+  };
+
+  // Fetch companies for dropdown
+  const fetchCompanies = useCallback(async () => {
+    setLoadingCompanies(true);
+    try {
+      const response = await SuperAdminService.getCompaniesList({
+        page: 1,
+        limit: 50,
+        sortBy: 'name',
+        sortOrder: 'ASC',
+      });
+
+      if (response?.data?.data) {
+        const companiesData: Company[] = response.data.data.map((company: { id: string; name: string }) => ({
+          id: company.id,
+          name: company.name,
+        }));
+        setCompanies(companiesData);
+      }
+    } catch (error) {
+      // Error toast is already handled by the interceptor
+      console.error('Error fetching companies:', error);
+      setCompanies([]);
+    } finally {
+      setLoadingCompanies(false);
+    }
+  }, []);
+
+  // Fetch roles for dropdown
+  const fetchRoles = useCallback(async () => {
+    setLoadingRoles(true);
+    try {
+      const response = await RoleService.getRoles({
+        page: 1,
+        limit: 50,
+        sortBy: 'name',
+        sortOrder: 'ASC',
+      });
+
+      if (response?.data?.data) {
+        const rolesData: Role[] = response.data.data.map((role: { id: string; name: string; code: string }) => ({
+          id: role.id,
+          name: role.name,
+          code: role.code,
+        }));
+        setRoles(rolesData);
+      }
+    } catch (error) {
+      // Error toast is already handled by the interceptor
+      console.error('Error fetching roles:', error);
+      setRoles([]);
+    } finally {
+      setLoadingRoles(false);
+    }
+  }, []);
+
+  // Fetch companies and roles when create modal opens
+  useEffect(() => {
+    if (createModalOpen) {
+      fetchCompanies();
+      fetchRoles();
+    }
+  }, [createModalOpen, fetchCompanies, fetchRoles]);
+
   // Handle create form input change
-  const handleCreateInputChange = (field: string, value: string | boolean) => {
+  const handleCreateInputChange = (field: keyof CreateUserFormData, value: string) => {
     setCreateFormData(prev => ({
       ...prev,
       [field]: value,
     }));
     // Clear error for this field when user starts typing
-    if (createFormErrors[field as keyof typeof createFormErrors]) {
+    if (createFormErrors[field as keyof CreateUserFormErrors]) {
       setCreateFormErrors(prev => {
         const newErrors = { ...prev };
-        delete newErrors[field as keyof typeof createFormErrors];
+        delete newErrors[field as keyof CreateUserFormErrors];
         return newErrors;
       });
     }
@@ -288,71 +569,101 @@ const EmployeeLists = () => {
   const handleCloseCreateModal = () => {
     setCreateModalOpen(false);
     setCreateFormData({
+      email: '',
+      password: '',
       firstName: '',
       lastName: '',
-      email: '',
-      phone: '',
-      keycloakrole: 'COMPANY_USER',
-      isActive: true,
+      companyId: '',
+      roleId: '',
+      keycloakGlobalRole: KEYCLOAK_GLOBAL_ROLES[0],
     });
     setCreateFormErrors({});
   };
 
-  // Create employee handler
-  const handleCreateEmployee = () => {
-    const errors: typeof createFormErrors = {};
-    let isValid = true;
+  // Validate create user form
+  const validateCreateUserForm = (formData: CreateUserFormData): CreateUserFormErrors => {
+    const errors: CreateUserFormErrors = {};
 
     // Validate email (required)
-    const emailValidation = validateEmail(createFormData.email);
+    const emailValidation = validateEmail(formData.email);
     if (!emailValidation.isValid) {
       errors.email = emailValidation.errorMessage;
-      isValid = false;
     }
 
-    // Validate phone (optional but if provided, must be valid)
-    if (createFormData.phone && createFormData.phone.trim() !== '') {
-      const phoneValidation = validatePhone(createFormData.phone);
-      if (!phoneValidation.isValid) {
-        errors.phone = phoneValidation.errorMessage;
-        isValid = false;
-      }
+    // Validate password (required, min length)
+    const passwordValidation = validateMinLength(formData.password, VALIDATION.MIN_PASSWORD_LENGTH, 'password');
+    if (!passwordValidation.isValid) {
+      errors.password = passwordValidation.errorMessage;
     }
 
-    // Validate firstName (optional but if provided, must be valid)
-    if (createFormData.firstName && createFormData.firstName.length > 100) {
-      errors.firstName = 'Validation.nameMaxLength';
-      isValid = false;
+    // Validate firstName (required)
+    const firstNameValidation = validateRequired(formData.firstName, 'firstName');
+    if (!firstNameValidation.isValid) {
+      errors.firstName = firstNameValidation.errorMessage;
     }
 
-    // Validate lastName (optional but if provided, must be valid)
-    if (createFormData.lastName && createFormData.lastName.length > 100) {
-      errors.lastName = 'Validation.nameMaxLength';
-      isValid = false;
+    // Validate lastName (required)
+    const lastNameValidation = validateRequired(formData.lastName, 'lastName');
+    if (!lastNameValidation.isValid) {
+      errors.lastName = lastNameValidation.errorMessage;
     }
 
-    if (!isValid) {
+    // Validate companyId (required)
+    const companyValidation = validateRequired(formData.companyId, 'companyId');
+    if (!companyValidation.isValid) {
+      errors.companyId = 'Validation.companyRequired';
+    }
+
+    // Validate roleId (required)
+    const roleValidation = validateRequired(formData.roleId, 'roleId');
+    if (!roleValidation.isValid) {
+      errors.roleId = 'Validation.roleRequired';
+    }
+
+    // Validate keycloakGlobalRole (required)
+    if (!formData.keycloakGlobalRole || !KEYCLOAK_GLOBAL_ROLES.includes(formData.keycloakGlobalRole as typeof KEYCLOAK_GLOBAL_ROLES[number])) {
+      errors.keycloakGlobalRole = 'Validation.keycloakGlobalRoleRequired';
+    }
+
+    return errors;
+  };
+
+  // Create user handler
+  const handleCreateUser = async () => {
+    // Validate form
+    const errors = validateCreateUserForm(createFormData);
+    if (Object.keys(errors).length > 0) {
       setCreateFormErrors(errors);
       return;
     }
 
-    // Create new employee
-    const newEmployee: Employee = {
-      id: String(Date.now()), // Simple ID generation for dummy data
-      firstName: createFormData.firstName.trim() || undefined,
-      lastName: createFormData.lastName.trim() || undefined,
-      email: createFormData.email.trim(),
-      phone: createFormData.phone.trim() || undefined,
-      keycloakrole: createFormData.keycloakrole,
-      isActive: createFormData.isActive,
-      createdAt: new Date().toISOString(),
-    };
+    setIsCreatingUser(true);
+    try {
+      const requestBody = {
+        email: createFormData.email.trim(),
+        password: createFormData.password,
+        firstName: createFormData.firstName.trim(),
+        lastName: createFormData.lastName.trim(),
+        keycloakGlobalRole: createFormData.keycloakGlobalRole,
+        companyId: createFormData.companyId,
+        roleId: createFormData.roleId,
+      };
 
-    setEmployees(prev => [...prev, newEmployee]);
-    showSuccessToast(t('EmployeeLists.employeeCreatedSuccessfully') || 'Employee created successfully');
-    handleCloseCreateModal();
+      const response = await UserService.createUser(requestBody);
+      
+      if (response.data.success) {  
+        showSuccessToast(t('EmployeeLists.userCreatedSuccessfully'));
+        handleCloseCreateModal();
+        // Refresh users list after successful creation
+        await fetchUsers(currentPage, searchTerm);
+      }
+    } catch (error) {
+      // Error toast is already handled by the interceptor
+      console.error('Error creating user:', error);
+    } finally {
+      setIsCreatingUser(false);
+    }
   };
-
   return (
     <>
       <Breadcrumbs title={t('Navigation.employeeLists')} breadcrumbItem={t('Navigation.employeeLists')} />
@@ -384,17 +695,25 @@ const EmployeeLists = () => {
                   <thead className="table-light">
                     <tr>
                       <th>{t('EmployeeLists.employee')}</th>
-                      <th>{t('Common.email')}</th>
-                      <th>{t('Common.phone')}</th>
-                      <th>{t('EmployeeLists.role')}</th>
+                      <th>{t('UserList.roleCompany')}</th>
+                      <th>{t('Common.email')}</th>                      
+                      <th>{t('UserList.role')}</th>
+                      <th>{t('EmployeeLists.labels.keycloakGlobalRole')}</th>
                       <th>{t('Common.status')}</th>
-                      <th>{t('EmployeeLists.createdDate')}</th>
+                      <th>{t('EmployeeLists.lastLogin')}</th>
                       <th>{t('Common.action')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {currentEmployees.length > 0 ? (
-                      currentEmployees.map((employee) => (
+                    {loading ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-4">
+                          <Spinner size="sm" className="me-2" />
+                          <span>{t('Common.loading')}</span>
+                        </td>
+                      </tr>
+                    ) : employees.length > 0 ? (
+                      employees.map((employee) => (
                         <tr key={employee.id}>
                           <td>
                             <div className="d-flex align-items-center">
@@ -406,16 +725,20 @@ const EmployeeLists = () => {
                               </div>
                             </div>
                           </td>
+                          
+                          <td>-</td>
                           <td>{employee.email}</td>
-                          <td>{employee.phone || '-'}</td>
-                          <td>{getRoleBadge(employee.keycloakrole)}</td>
+                          <td>-</td>
+                          <td>{getRoleBadge(employee.keycloakGlobalRole)}</td>
                           <td>{getStatusBadge(employee.isActive)}</td>
                           <td>
-                            {new Date(employee.createdAt).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
+                            {employee.lastLoginAt
+                              ? new Date(employee.lastLoginAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })
+                              : '-'}
                           </td>
                           <td>
                             <div className="d-flex gap-2">
@@ -449,7 +772,7 @@ const EmployeeLists = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7} className="text-center py-4">
+                        <td colSpan={6} className="text-center py-4">
                           <p className="text-muted mb-0">{t('EmployeeLists.noEmployeesFound')}</p>
                         </td>
                       </tr>
@@ -459,74 +782,14 @@ const EmployeeLists = () => {
               </div>
 
               {/* Pagination */}
-              {filteredEmployees.length > 0 && (
-                <div className="d-flex justify-content-between align-items-center mt-3">
-                  <div className="d-flex align-items-center gap-2">
-                    <span className="text-muted">
-                      {t('EmployeeLists.showing') || 'Showing'} {indexOfFirstItem + 1} {t('EmployeeLists.to') || 'to'} {Math.min(indexOfLastItem, filteredEmployees.length)} {t('EmployeeLists.of') || 'of'} {filteredEmployees.length} {t('EmployeeLists.entries') || 'entries'}
-                    </span>
-                    <Input
-                      type="select"
-                      value={itemsPerPage}
-                      onChange={(e) => {
-                        setItemsPerPage(Number(e.target.value));
-                        setCurrentPage(1);
-                      }}
-                      style={{ width: '60px' }}
-                      className="d-inline-block form-select-sm"
-                    >
-                      <option value="5">5</option>
-                      <option value="10">10</option>
-                      <option value="25">25</option>
-                      <option value="50">50</option>
-                      <option value="100">100</option>
-                    </Input>
-                    <span className="text-muted">{t('EmployeeLists.perPage') || 'per page'}</span>
-                  </div>
-
-                  <Pagination className="pagination-rounded">
-                    <PaginationItem disabled={currentPage === 1}>
-                      <PaginationLink
-                        previous
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      />
-                    </PaginationItem>
-                    
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                      // Show first page, last page, current page, and pages around current
-                      if (
-                        page === 1 ||
-                        page === totalPages ||
-                        (page >= currentPage - 1 && page <= currentPage + 1)
-                      ) {
-                        return (
-                          <PaginationItem key={page} active={page === currentPage}>
-                            <PaginationLink onClick={() => setCurrentPage(page)}>
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      } else if (
-                        page === currentPage - 2 ||
-                        page === currentPage + 2
-                      ) {
-                        return (
-                          <PaginationItem key={page} disabled>
-                            <PaginationLink>...</PaginationLink>
-                          </PaginationItem>
-                        );
-                      }
-                      return null;
-                    })}
-                    
-                    <PaginationItem disabled={currentPage === totalPages}>
-                      <PaginationLink
-                        next
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      />
-                    </PaginationItem>
-                  </Pagination>
-                </div>
+              {employees.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={handlePageChange}
+                />
               )}
             </CardBody>
           </Card>
@@ -554,25 +817,25 @@ const EmployeeLists = () => {
                 <p className="mb-0">{selectedEmployee.email}</p>
               </div>
               <div className="col-md-6 mb-3">
-                <label className="form-label fw-semibold text-muted">{t('Common.phone')}</label>
-                <p className="mb-0">{selectedEmployee.phone || '-'}</p>
-              </div>
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-semibold text-muted">{t('EmployeeLists.role')}</label>
-                <div>{getRoleBadge(selectedEmployee.keycloakrole)}</div>
+                <label className="form-label fw-semibold text-muted">{t('EmployeeLists.labels.keycloakGlobalRole')}</label>
+                <div>{getRoleBadge(selectedEmployee.keycloakGlobalRole)}</div>
               </div>
               <div className="col-md-6 mb-3">
                 <label className="form-label fw-semibold text-muted">{t('Common.status')}</label>
                 <div>{getStatusBadge(selectedEmployee.isActive)}</div>
               </div>
               <div className="col-md-6 mb-3">
-                <label className="form-label fw-semibold text-muted">{t('EmployeeLists.createdDate')}</label>
+                <label className="form-label fw-semibold text-muted">{t('EmployeeLists.lastLogin')}</label>
                 <p className="mb-0">
-                  {new Date(selectedEmployee.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
+                  {selectedEmployee.lastLoginAt
+                    ? new Date(selectedEmployee.lastLoginAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    : '-'}
                 </p>
               </div>
             </div>
@@ -586,81 +849,193 @@ const EmployeeLists = () => {
       </Modal>
 
       {/* Edit Employee Modal */}
-      <Modal isOpen={editModalOpen} toggle={() => setEditModalOpen(!editModalOpen)} size="md" centered>
-        <ModalHeader toggle={() => setEditModalOpen(!editModalOpen)}>
+      <Modal isOpen={editModalOpen} toggle={handleCloseEditModal} size="md" centered>
+        <ModalHeader toggle={handleCloseEditModal}>
           {t('EmployeeLists.editEmployee')}
         </ModalHeader>
         <ModalBody>
-          {editFormData && (
+          {loadingUserDetails ? (
+            <div className="text-center py-4">
+              <Spinner size="sm" className="me-2" />
+              <span>{t('Common.loading')}</span>
+            </div>
+          ) : editFormData ? (
             <div className="row m-0">
               <div className="col-md-6 mb-3">
-                <Label className="form-label fw-semibold">{t('EmployeeLists.labels.firstName')}</Label>
+                <Label className="form-label fw-semibold">
+                  {t('EmployeeLists.labels.firstName')} <span className="text-danger">*</span>
+                </Label>
                 <Input
                   type="text"
-                  value={editFormData.firstName || ''}
+                  value={editFormData.firstName}
                   onChange={(e) => handleEditInputChange('firstName', e.target.value)}
                   placeholder={t('EmployeeLists.enterFirstName')}
-                  maxLength={100}
+                  invalid={!!editFormErrors.firstName}
+                  maxLength={VALIDATION.MAX_NAME_LENGTH}
                 />
+                {editFormErrors.firstName && (
+                  <FormFeedback type="invalid">
+                    {t(editFormErrors.firstName)}
+                  </FormFeedback>
+                )}
               </div>
+
               <div className="col-md-6 mb-3">
-                <Label className="form-label fw-semibold">{t('EmployeeLists.labels.lastName')}</Label>
+                <Label className="form-label fw-semibold">
+                  {t('EmployeeLists.labels.lastName')} <span className="text-danger">*</span>
+                </Label>
                 <Input
                   type="text"
-                  value={editFormData.lastName || ''}
+                  value={editFormData.lastName}
                   onChange={(e) => handleEditInputChange('lastName', e.target.value)}
                   placeholder={t('EmployeeLists.enterLastName')}
-                  maxLength={100}
+                  invalid={!!editFormErrors.lastName}
+                  maxLength={VALIDATION.MAX_NAME_LENGTH}
                 />
+                {editFormErrors.lastName && (
+                  <FormFeedback type="invalid">
+                    {t(editFormErrors.lastName)}
+                  </FormFeedback>
+                )}
               </div>
+
               <div className="col-md-12 mb-3">
-                <Label className="form-label fw-semibold">{t('EmployeeLists.labels.email')}</Label>
+                <Label className="form-label fw-semibold">
+                  {t('EmployeeLists.labels.email')} <span className="text-danger">*</span>
+                </Label>
                 <Input
                   type="email"
                   value={editFormData.email}
                   onChange={(e) => handleEditInputChange('email', e.target.value)}
                   placeholder={t('EmployeeLists.enterEmail')}
+                  invalid={!!editFormErrors.email}
                 />
+                {editFormErrors.email && (
+                  <FormFeedback type="invalid">
+                    {t(editFormErrors.email)}
+                  </FormFeedback>
+                )}
               </div>
+
               <div className="col-md-12 mb-3">
-                <Label className="form-label fw-semibold">{t('EmployeeLists.labels.phone')}</Label>
+                <Label className="form-label fw-semibold">
+                  {t('EmployeeLists.labels.password')}
+                </Label>
                 <Input
-                  type="tel"
-                  value={editFormData.phone || ''}
-                  onChange={(e) => handleEditInputChange('phone', e.target.value)}
-                  placeholder={t('EmployeeLists.enterPhone')}
+                  type="password"
+                  value={editFormData.password}
+                  onChange={(e) => handleEditInputChange('password', e.target.value)}
+                  placeholder={t('EmployeeLists.enterPassword')}
+                  invalid={!!editFormErrors.password}
                 />
+                {editFormErrors.password && (
+                  <FormFeedback type="invalid">
+                    {t(editFormErrors.password)}
+                  </FormFeedback>
+                )}
+                <small className="text-muted">{t('EmployeeLists.passwordOptional')}</small>
               </div>
+
               <div className="col-md-12 mb-3">
-                <Label className="form-label fw-semibold">{t('EmployeeLists.labels.role')}</Label>
+                <Label className="form-label fw-semibold">
+                  {t('EmployeeLists.labels.company')} <span className="text-danger">*</span>
+                </Label>
+                {loadingCompanies ? (
+                  <div className="d-flex align-items-center">
+                    <Spinner size="sm" className="me-2" />
+                    <span className="text-muted">{t('Common.loading')}</span>
+                  </div>
+                ) : (
+                  <Input
+                    type="select"
+                    value={editFormData.companyId}
+                    onChange={(e) => handleEditInputChange('companyId', e.target.value)}
+                    invalid={!!editFormErrors.companyId}
+                  >
+                    <option value="">{t('Common.select')}</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </Input>
+                )}
+                {editFormErrors.companyId && (
+                  <FormFeedback type="invalid">
+                    {t(editFormErrors.companyId)}
+                  </FormFeedback>
+                )}
+              </div>
+
+              <div className="col-md-12 mb-3">
+                <Label className="form-label fw-semibold">
+                  {t('EmployeeLists.labels.role')} <span className="text-danger">*</span>
+                </Label>
+                {loadingRoles ? (
+                  <div className="d-flex align-items-center">
+                    <Spinner size="sm" className="me-2" />
+                    <span className="text-muted">{t('Common.loading')}</span>
+                  </div>
+                ) : (
+                  <Input
+                    type="select"
+                    value={editFormData.roleId}
+                    onChange={(e) => handleEditInputChange('roleId', e.target.value)}
+                    invalid={!!editFormErrors.roleId}
+                  >
+                    <option value="">{t('Common.select')}</option>
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name}
+                      </option>
+                    ))}
+                  </Input>
+                )}
+                {editFormErrors.roleId && (
+                  <FormFeedback type="invalid">
+                    {t(editFormErrors.roleId)}
+                  </FormFeedback>
+                )}
+              </div>
+
+              <div className="col-md-12 mb-3">
+                <Label className="form-label fw-semibold">
+                  {t('EmployeeLists.labels.keycloakGlobalRole')} <span className="text-danger">*</span>
+                </Label>
                 <Input
                   type="select"
-                  value={editFormData.keycloakrole || 'COMPANY_USER'}
-                  onChange={(e) => handleEditInputChange('keycloakrole', e.target.value)}
+                  value={editFormData.keycloakGlobalRole}
+                  onChange={(e) => handleEditInputChange('keycloakGlobalRole', e.target.value)}
+                  invalid={!!editFormErrors.keycloakGlobalRole}
                 >
-                  <option value="COMPANY_USER">{t('EmployeeLists.roleCompanyUser')}</option>
-                  <option value="SUPER_ADMIN">{t('EmployeeLists.roleSuperAdmin')}</option>
+                  <option value="">{t('Common.select')}</option>
+                  {KEYCLOAK_GLOBAL_ROLES.map((role) => (
+                    <option key={role} value={role}>
+                      {t(`EmployeeLists.keycloakGlobalRole${role}`)}
+                    </option>
+                  ))}
                 </Input>
-              </div>
-              <div className="col-md-12 mb-3">
-                <Label className="form-label fw-semibold">{t('Common.status')}</Label>
-                <Input
-                  type="select"
-                  value={editFormData.isActive ? 'true' : 'false'}
-                  onChange={(e) => handleEditInputChange('isActive', e.target.value === 'true')}
-                >
-                  <option value="true">{t('EmployeeLists.statusActive')}</option>
-                  <option value="false">{t('EmployeeLists.statusInactive')}</option>
-                </Input>
+                {editFormErrors.keycloakGlobalRole && (
+                  <FormFeedback type="invalid">
+                    {t(editFormErrors.keycloakGlobalRole)}
+                  </FormFeedback>
+                )}
               </div>
             </div>
-          )}
+          ) : null}
         </ModalBody>
         <ModalFooter>
-          <Button color="primary" onClick={handleSaveEdit}>
-            {t('Common.save')}
+          <Button color="primary" onClick={handleSaveEdit} disabled={isUpdatingUser}>
+            {isUpdatingUser ? (
+              <>
+                <Spinner size="sm" className="me-2" />
+                {t('Common.loading')}
+              </>
+            ) : (
+              t('Common.save')
+            )}
           </Button>
-          <Button color="secondary" onClick={() => setEditModalOpen(false)}>
+          <Button color="secondary" onClick={handleCloseEditModal} disabled={isUpdatingUser}>
             {t('Common.cancel')}
           </Button>
         </ModalFooter>
@@ -690,16 +1065,16 @@ const EmployeeLists = () => {
         </ModalFooter>
       </Modal>
 
-      {/* Create Employee Modal */}
+      {/* Create User Modal */}
       <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="md" centered>
         <ModalHeader toggle={handleCloseCreateModal}>
-          {t('EmployeeLists.createEmployee')}
+          {t('EmployeeLists.createUser')}
         </ModalHeader>
         <ModalBody>
           <div className="row m-0">
             <div className="col-md-6 mb-3">
               <Label className="form-label fw-semibold">
-                {t('EmployeeLists.labels.firstName')}
+                {t('EmployeeLists.labels.firstName')} <span className="text-danger">*</span>
               </Label>
               <Input
                 type="text"
@@ -707,7 +1082,7 @@ const EmployeeLists = () => {
                 onChange={(e) => handleCreateInputChange('firstName', e.target.value)}
                 placeholder={t('EmployeeLists.enterFirstName')}
                 invalid={!!createFormErrors.firstName}
-                maxLength={100}
+                maxLength={VALIDATION.MAX_NAME_LENGTH}
               />
               {createFormErrors.firstName && (
                 <FormFeedback type="invalid">
@@ -718,7 +1093,7 @@ const EmployeeLists = () => {
 
             <div className="col-md-6 mb-3">
               <Label className="form-label fw-semibold">
-                {t('EmployeeLists.labels.lastName')}
+                {t('EmployeeLists.labels.lastName')} <span className="text-danger">*</span>
               </Label>
               <Input
                 type="text"
@@ -726,7 +1101,7 @@ const EmployeeLists = () => {
                 onChange={(e) => handleCreateInputChange('lastName', e.target.value)}
                 placeholder={t('EmployeeLists.enterLastName')}
                 invalid={!!createFormErrors.lastName}
-                maxLength={100}
+                maxLength={VALIDATION.MAX_NAME_LENGTH}
               />
               {createFormErrors.lastName && (
                 <FormFeedback type="invalid">
@@ -755,56 +1130,121 @@ const EmployeeLists = () => {
 
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">
-                {t('EmployeeLists.labels.phone')}
+                {t('EmployeeLists.labels.password')} <span className="text-danger">*</span>
               </Label>
               <Input
-                type="tel"
-                value={createFormData.phone}
-                onChange={(e) => handleCreateInputChange('phone', e.target.value)}
-                placeholder={t('EmployeeLists.enterPhone')}
-                invalid={!!createFormErrors.phone}
+                type="password"
+                value={createFormData.password}
+                onChange={(e) => handleCreateInputChange('password', e.target.value)}
+                placeholder={t('EmployeeLists.enterPassword')}
+                invalid={!!createFormErrors.password}
               />
-              {createFormErrors.phone && (
+              {createFormErrors.password && (
                 <FormFeedback type="invalid">
-                  {t(createFormErrors.phone)}
+                  {t(createFormErrors.password)}
                 </FormFeedback>
               )}
             </div>
 
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">
-                {t('EmployeeLists.labels.role')}
+                {t('EmployeeLists.labels.company')} <span className="text-danger">*</span>
               </Label>
-              <Input
-                type="select"
-                value={createFormData.keycloakrole}
-                onChange={(e) => handleCreateInputChange('keycloakrole', e.target.value)}
-              >
-                <option value="COMPANY_USER">{t('EmployeeLists.roleCompanyUser')}</option>
-                <option value="SUPER_ADMIN">{t('EmployeeLists.roleSuperAdmin')}</option>
-              </Input>
+              {loadingCompanies ? (
+                <div className="d-flex align-items-center">
+                  <Spinner size="sm" className="me-2" />
+                  <span className="text-muted">{t('Common.loading')}</span>
+                </div>
+              ) : (
+                <Input
+                  type="select"
+                  value={createFormData.companyId}
+                  onChange={(e) => handleCreateInputChange('companyId', e.target.value)}
+                  invalid={!!createFormErrors.companyId}
+                >
+                  <option value="">{t('Common.select')}</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </Input>
+              )}
+              {createFormErrors.companyId && (
+                <FormFeedback type="invalid">
+                  {t(createFormErrors.companyId)}
+                </FormFeedback>
+              )}
             </div>
 
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">
-                {t('Common.status')}
+                {t('EmployeeLists.labels.role')} <span className="text-danger">*</span>
+              </Label>
+              {loadingRoles ? (
+                <div className="d-flex align-items-center">
+                  <Spinner size="sm" className="me-2" />
+                  <span className="text-muted">{t('Common.loading')}</span>
+                </div>
+              ) : (
+                <Input
+                  type="select"
+                  value={createFormData.roleId}
+                  onChange={(e) => handleCreateInputChange('roleId', e.target.value)}
+                  invalid={!!createFormErrors.roleId}
+                >
+                  <option value="">{t('Common.select')}</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </Input>
+              )}
+              {createFormErrors.roleId && (
+                <FormFeedback type="invalid">
+                  {t(createFormErrors.roleId)}
+                </FormFeedback>
+              )}
+            </div>
+
+            <div className="col-md-12 mb-3">
+              <Label className="form-label fw-semibold">
+                {t('EmployeeLists.labels.keycloakGlobalRole')} <span className="text-danger">*</span>
               </Label>
               <Input
                 type="select"
-                value={createFormData.isActive ? 'true' : 'false'}
-                onChange={(e) => handleCreateInputChange('isActive', e.target.value === 'true')}
+                value={createFormData.keycloakGlobalRole}
+                onChange={(e) => handleCreateInputChange('keycloakGlobalRole', e.target.value)}
+                invalid={!!createFormErrors.keycloakGlobalRole}
               >
-                <option value="true">{t('EmployeeLists.statusActive')}</option>
-                <option value="false">{t('EmployeeLists.statusInactive')}</option>
+                <option value="">{t('Common.select')}</option>
+                {KEYCLOAK_GLOBAL_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {role.toUpperCase()}
+                  </option>
+                ))} 
               </Input>
+              {createFormErrors.keycloakGlobalRole && (
+                <FormFeedback type="invalid">
+                  {t(createFormErrors.keycloakGlobalRole)}
+                </FormFeedback>
+              )}
             </div>
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button color="primary" onClick={handleCreateEmployee}>
-            {t('EmployeeLists.createEmployee')}
+          <Button color="primary" onClick={handleCreateUser} disabled={isCreatingUser}>
+            {isCreatingUser ? (
+              <>
+                <Spinner size="sm" className="me-2" />
+                {t('Common.loading')}
+              </>
+            ) : (
+              t('EmployeeLists.createUser')
+            )}
           </Button>
-          <Button color="secondary" onClick={handleCloseCreateModal}>
+          <Button color="secondary" onClick={handleCloseCreateModal} disabled={isCreatingUser}>
             {t('Common.cancel')}
           </Button>
         </ModalFooter>

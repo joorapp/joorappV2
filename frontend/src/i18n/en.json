@@ -125,6 +125,7 @@
     "previous": "Previous",
     "search": "Search...",
     "searchPlaceholder": "Search...",
+    "select": "Select",
     "add": "Add",
     "refresh": "Refresh",
     "email": "Email",
@@ -186,6 +187,10 @@
     "passwordRequired": "Please enter a password",
     "passwordMinLength": "Password must be at least 8 characters long",
     "roleRequired": "Please select a role",
+    "companyRequired": "Please select a company",
+    "keycloakGlobalRoleRequired": "Please select a Keycloak global role",
+    "firstNameRequired": "Please enter your first name",
+    "lastNameRequired": "Please enter your last name",
     "priceRequired": "Please enter the price",
     "priceInvalid": "Please enter a valid price (must be a positive number)",
     "titleMaxLength": "Title must not exceed 200 characters",
@@ -453,7 +458,8 @@
     "enterPassword": "Enter password",
     "enterPhone": "Enter phone number",
     "passwordHint": "Password must be at least 8 characters long",
-    "selectCompany": "Select a company (optional)",
+    "passwordOptional": "Leave blank to keep current password",
+    "selectCompany": "Select a company",
     "selectRole": "Select a role",
     "modal": {
       "employeeDetails": "Employee Details"
@@ -465,8 +471,13 @@
       "password": "Password",
       "phone": "Phone",
       "company": "Company",
-      "role": "Role"
+      "role": "Role",
+      "keycloakGlobalRole": "Keycloak Global Role"
     },
+    "createUser": "Create User",
+    "userCreatedSuccessfully": "User created successfully",
+    "keycloakGlobalRoleCOMPANY_USER": "Company User",
+    "keycloakGlobalRoleCOMPANY_ADMIN": "Company Admin",
     "showing": "Showing",
     "to": "to",
     "of": "of",

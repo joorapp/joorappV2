@@ -19,6 +19,7 @@ import SuperAdminDashboard, {
   Profile,
   NotificationList,
 } from './SuperAdminDashboard/SuperAdminDashboard';
+import UserList from './UserList/UserList';
 
 const SuperAdminRoutes: React.FC = () => {
   return (
@@ -31,6 +32,7 @@ const SuperAdminRoutes: React.FC = () => {
         <Route path="RolesList" element={<Roles />} />
         <Route path="RolePermissions" element={<RolePermissions />} />
         <Route path="UserList" element={<EmployeeLists />} />
+        {/* <Route path="UserList" element={<UserList />} />   */}
         <Route path="Loglist" element={<LogLists />} />
         <Route path="SubscriptionPlans" element={<SubscriptionPlans />} />
         <Route path="Tickets" element={<Tickets />} />
