@@ -118,11 +118,13 @@
     "delete": "حذف",
     "confirm": "تأكيد",
     "confirmDelete": "تأكيد الحذف",
+    "confirmToDelete": "تأكيد الحذف",
     "back": "رجوع",
     "next": "التالي",
     "previous": "السابق",
     "search": "بحث...",
     "searchPlaceholder": "بحث...",
+    "select": "اختر",
     "add": "إضافة",
     "refresh": "تحديث",
     "email": "البريد الإلكتروني",
@@ -152,7 +154,11 @@
       "deleted": "تم الحذف بنجاح",
       "saved": "تم الحفظ بنجاح",
       "updated": "تم التحديث بنجاح"
-    }
+    },
+    "showing": "عرض",
+    "to": "إلى",
+    "of": "من",
+    "results": "نتائج"
   },
   "Validation": {
     "emailRequired": "يرجى إدخال بريدك الإلكتروني",
@@ -171,6 +177,10 @@
     "passwordRequired": "يرجى إدخال كلمة مرور",
     "passwordMinLength": "يجب أن تكون كلمة المرور على الأقل 8 أحرف",
     "roleRequired": "يرجى اختيار دور",
+    "companyRequired": "يرجى اختيار شركة",
+    "keycloakGlobalRoleRequired": "يرجى اختيار دور عام في Keycloak",
+    "firstNameRequired": "يرجى إدخال الاسم الأول",
+    "lastNameRequired": "يرجى إدخال اسم العائلة",
     "priceRequired": "يرجى إدخال السعر",
     "priceInvalid": "يرجى إدخال سعر صحيح (يجب أن يكون رقماً موجباً)",
     "titleMaxLength": "يجب ألا يتجاوز العنوان 200 حرف",
@@ -196,6 +206,9 @@
     "createClient": "إنشاء عميل",
     "editClient": "تعديل العميل",
     "updateClient": "تحديث العميل",
+    "clientCreatedSuccessfully": "تم إنشاء العميل بنجاح",
+    "clientUpdatedSuccessfully": "تم تحديث العميل بنجاح",
+    "clientDeletedSuccessfully": "تم حذف العميل بنجاح",
     "profilePhoto": "صورة الملف الشخصي",
     "uploadProfilePhoto": "تحميل وتغيير صورة الملف الشخصي",
     "enterClientName": "أدخل اسم العميل",
@@ -429,7 +442,8 @@
     "enterPassword": "أدخل كلمة المرور",
     "enterPhone": "أدخل رقم الهاتف",
     "passwordHint": "يجب أن تكون كلمة المرور على الأقل 8 أحرف",
-    "selectCompany": "اختر شركة (اختياري)",
+    "passwordOptional": "اتركه فارغًا للاحتفاظ بكلمة المرور الحالية",
+    "selectCompany": "اختر شركة",
     "selectRole": "اختر دوراً",
     "modal": {
       "employeeDetails": "تفاصيل الموظف"
@@ -441,8 +455,13 @@
       "password": "كلمة المرور",
       "phone": "الهاتف",
       "company": "الشركة",
-      "role": "الدور"
+      "role": "الدور",
+      "keycloakGlobalRole": "الدور العام في Keycloak"
     },
+    "createUser": "إنشاء مستخدم",
+    "userCreatedSuccessfully": "تم إنشاء المستخدم بنجاح",
+    "keycloakGlobalRoleCOMPANY_USER": "مستخدم الشركة",
+    "keycloakGlobalRoleCOMPANY_ADMIN": "مسؤول الشركة",
     "showing": "عرض",
     "to": "إلى",
     "of": "من",

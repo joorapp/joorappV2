@@ -9,10 +9,13 @@ import axios from "axios";
 import { BASE_URL } from "../constants/api";
 import { showErrorToastFromError } from "../utils/toast";
 
+// Get API timeout from environment variable (default: 10000ms = 10 seconds)
+const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT) || 10000;
+
 const unincepaxios = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-type": "application/json" },
-  timeout: 10000,
+  timeout: API_TIMEOUT,
 });
 
 const requestHandler = (request: any) => request;
