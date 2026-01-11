@@ -57,23 +57,24 @@ export const createUserData = (overrides = {}) => {
  * @returns {Object} Company data ready for Company.create()
  */
 export const createCompanyData = (overrides = {}) => {
-  return {
+  const data = {
     name: generateUniqueName('Company'),
     description: 'Test company description',
     isActive: true,
     status: COMPANY_STATUS_DEFAULT,
-    email: null,
-    phone: null,
-    buildingAddress: null,
-    streetAddress: null,
-    city: null,
-    state: null,
-    postalCode: null,
-    country: null,
-    logo: null,
-    planId: null,
     ...overrides
   };
+  
+  // Remove null/undefined optional fields to prevent validation errors
+  // The API controller checks `if (field !== undefined)` which is true for null
+  const optionalFields = ['email', 'phone', 'buildingAddress', 'streetAddress', 'city', 'state', 'postalCode', 'country', 'logo', 'planId'];
+  optionalFields.forEach(field => {
+    if (data[field] === null || data[field] === undefined) {
+      delete data[field];
+    }
+  });
+  
+  return data;
 };
 
 /**

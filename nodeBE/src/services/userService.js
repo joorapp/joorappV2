@@ -12,6 +12,8 @@ import { ConflictError, NotFoundError, BadRequestError } from '../utils/errors.j
 import { buildPaginationQuery, buildSortQuery } from '../utils/businessHelpers.js';
 import { KEYCLOAK_GLOBAL_ROLE_VALUES } from '../constants/keycloakRoles.js';
 import sequelize from '../config/database.js';
+import { Op } from 'sequelize';
+import { Plan, CompanyUser, Company, CompanyRole } from '../models/index.js';
 
 // Create module-specific logger
 const logger = createModuleLogger('userService');
@@ -462,5 +464,239 @@ export const deleteUserFromDB = async (userId, context) => {
   await user.update({ isActive: false });
   
   logger.info('User marked as inactive in database', { userId });
+};
+
+/**
+ * Enable user in Keycloak
+ * @param {string} keycloakId - Keycloak user ID
+ * @returns {Promise<void>}
+ * 
+ * @example
+ * await enableUserInKeycloak('kc-uuid');
+ */
+export const enableUserInKeycloak = async (keycloakId) => {
+  logger.debug('Enabling user in Keycloak', { keycloakId });
+  
+  const kcAdminClient = await getAdminClient();
+  
+  // Enable user in Keycloak
+  await kcAdminClient.users.update({ id: keycloakId }, { enabled: true });
+  
+  logger.info('User enabled in Keycloak', { keycloakId });
+};
+
+/**
+ * Enable user in database (mark as active)
+ * @param {string} userId - User UUID
+ * @param {Object} context - Audit context (not used for User model, but kept for consistency)
+ * @returns {Promise<void>}
+ * @throws {NotFoundError} If user not found
+ * 
+ * @example
+ * await enableUserInDB('user-uuid', { userId: 'admin-uuid' });
+ */
+export const enableUserInDB = async (userId, context) => {
+  logger.debug('Enabling user in database', { userId });
+  
+  const user = await userRepository.findByIdOrFail(userId);
+  
+  // Mark user as active in database
+  await user.update({ isActive: true });
+  
+  logger.info('User marked as active in database', { userId });
+};
+
+/**
+ * Format company data for user response
+ * @param {Object} companyUser - CompanyUser record with company and role populated
+ * @param {boolean} includeLogo - Whether to include logo in response
+ * @returns {Object} Formatted company object
+ */
+const formatCompanyForUser = (companyUser, includeLogo = false) => {
+  const company = companyUser.company;
+  const role = companyUser.role;
+  
+  const formatted = {
+    id: company.id,
+    name: company.name,
+    description: company.description,
+    isActive: company.isActive,
+    status: company.status,
+    email: company.email,
+    phone: company.phone,
+    buildingAddress: company.buildingAddress,
+    streetAddress: company.streetAddress,
+    city: company.city,
+    state: company.state,
+    postalCode: company.postalCode,
+    country: company.country,
+    plan: company.plan ? {
+      id: company.plan.id,
+      name: company.plan.name,
+      code: company.plan.code,
+      description: company.plan.description,
+      price: parseFloat(company.plan.price) || 0.00,
+      isActive: company.plan.isActive,
+      createdDate: company.plan.createdDate,
+      updatedDate: company.plan.updatedDate,
+      version: company.plan.version
+    } : null,
+    role: role ? {
+      id: role.id,
+      name: role.name,
+      code: role.code,
+      description: role.description
+    } : null,
+    companyUser: {
+      id: companyUser.id,
+      isActive: companyUser.isActive
+    }
+  };
+  
+  // Include logo only if requested
+  if (includeLogo) {
+    formatted.logo = company.logo;
+  }
+  
+  return formatted;
+};
+
+/**
+ * Get user by ID with companies
+ * @param {string} userId - User UUID
+ * @param {Object} [options] - Options
+ * @param {boolean} [options.includeLogo=false] - Whether to include company logos in response
+ * @returns {Promise<Object>} User object with companies array
+ * @throws {NotFoundError} If user not found
+ * 
+ * @example
+ * const user = await getUserByIdWithCompanies('user-uuid', { includeLogo: true });
+ */
+export const getUserByIdWithCompanies = async (userId, options = {}) => {
+  const { includeLogo = false } = options;
+  logger.debug('Getting user by ID with companies', { userId, includeLogo });
+  
+  const user = await userRepository.findUserWithCompanies(userId, {
+    include: [
+      {
+        model: CompanyUser,
+        as: 'companyUsers',
+        required: false,
+        include: [
+          {
+            model: Company,
+            as: 'company',
+            include: [
+              {
+                model: Plan,
+                as: 'plan',
+                required: false
+              }
+            ]
+          },
+          {
+            model: CompanyRole,
+            as: 'role'
+          }
+        ]
+      }
+    ]
+  });
+  
+  const companies = (user.companyUsers || []).map(cu => formatCompanyForUser(cu, includeLogo));
+  
+  return {
+    id: user.id,
+    keycloakId: user.keycloakId,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    keycloakGlobalRole: user.keycloakGlobalRole,
+    isActive: user.isActive,
+    createdDate: user.createdDate,
+    companies
+  };
+};
+
+/**
+ * List users with companies
+ * @param {Object} filters - Search and filter parameters
+ * @param {string} filters.search - Search term for email, firstName, lastName
+ * @param {Object} pagination - Pagination parameters { page, limit, offset }
+ * @param {Array} sort - Sort array [[field, order]]
+ * @returns {Promise<Object>} { users: Array, total: number }
+ * 
+ * @example
+ * const result = await listUsersWithCompanies(
+ *   { search: 'john' },
+ *   { page: 1, limit: 10, offset: 0 },
+ *   [['email', 'ASC']]
+ * );
+ */
+export const listUsersWithCompanies = async (filters = {}, pagination = {}, sort = []) => {
+  logger.debug('Listing users with companies', { filters, pagination, sort });
+  
+  const { search } = filters;
+  
+  // Build where clause for search if provided (case-insensitive)
+  const where = search ? {
+    [Op.or]: [
+      { email: { [Op.iLike]: `%${search}%` } },
+      { firstName: { [Op.iLike]: `%${search}%` } },
+      { lastName: { [Op.iLike]: `%${search}%` } }
+    ]
+  } : {};
+  
+  // Get users with companies
+  const { User } = await import('../models/index.js');
+  const result = await User.findAndCountAll({
+    where,
+    limit: pagination.limit,
+    offset: pagination.offset,
+    order: sort.length > 0 ? sort : [['email', 'ASC']],
+    include: [
+      {
+        model: CompanyUser,
+        as: 'companyUsers',
+        required: false,
+        include: [
+          {
+            model: Company,
+            as: 'company',
+            include: [
+              {
+                model: Plan,
+                as: 'plan',
+                required: false
+              }
+            ]
+          },
+          {
+            model: CompanyRole,
+            as: 'role'
+          }
+        ]
+      }
+    ]
+  });
+  
+  return {
+    users: result.rows.map(user => {
+      const companies = (user.companyUsers || []).map(cu => formatCompanyForUser(cu, false));
+      
+      return {
+        id: user.id,
+        keycloakId: user.keycloakId,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        keycloakGlobalRole: user.keycloakGlobalRole,
+        isActive: user.isActive,
+        createdDate: user.createdDate,
+        companies
+      };
+    }),
+    total: result.count
+  };
 };
 
