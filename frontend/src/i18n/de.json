@@ -118,11 +118,13 @@
     "delete": "Löschen",
     "confirm": "Bestätigen",
     "confirmDelete": "Löschen bestätigen",
+    "confirmToDelete": "Löschen bestätigen",
     "back": "Zurück",
     "next": "Weiter",
     "previous": "Vorherige",
     "search": "Suchen...",
     "searchPlaceholder": "Suchen...",
+    "select": "Auswählen",
     "add": "Hinzufügen",
     "refresh": "Aktualisieren",
     "email": "E-Mail",
@@ -152,7 +154,11 @@
       "deleted": "Erfolgreich gelöscht",
       "saved": "Erfolgreich gespeichert",
       "updated": "Erfolgreich aktualisiert"
-    }
+    },
+    "showing": "Zeige",
+    "to": "bis",
+    "of": "von",
+    "results": "Ergebnisse"
   },
   "Validation": {
     "emailRequired": "Bitte geben Sie Ihre E-Mail-Adresse ein",
@@ -171,6 +177,10 @@
     "passwordRequired": "Bitte geben Sie ein Passwort ein",
     "passwordMinLength": "Das Passwort muss mindestens 8 Zeichen lang sein",
     "roleRequired": "Bitte wählen Sie eine Rolle aus",
+    "companyRequired": "Bitte wählen Sie ein Unternehmen aus",
+    "keycloakGlobalRoleRequired": "Bitte wählen Sie eine Keycloak globale Rolle aus",
+    "firstNameRequired": "Bitte geben Sie Ihren Vornamen ein",
+    "lastNameRequired": "Bitte geben Sie Ihren Nachnamen ein",
     "priceRequired": "Bitte geben Sie den Preis ein",
     "priceInvalid": "Bitte geben Sie einen gültigen Preis ein (muss eine positive Zahl sein)",
     "titleMaxLength": "Der Titel darf 200 Zeichen nicht überschreiten",
@@ -196,6 +206,9 @@
     "createClient": "Kunde erstellen",
     "editClient": "Kunde bearbeiten",
     "updateClient": "Kunde aktualisieren",
+    "clientCreatedSuccessfully": "Kunde erfolgreich erstellt",
+    "clientUpdatedSuccessfully": "Kunde erfolgreich aktualisiert",
+    "clientDeletedSuccessfully": "Kunde erfolgreich gelöscht",
     "profilePhoto": "Profilfoto",
     "uploadProfilePhoto": "Profilfoto hochladen und ändern",
     "enterClientName": "Kundenname eingeben",
@@ -429,7 +442,8 @@
     "enterPassword": "Passwort eingeben",
     "enterPhone": "Telefonnummer eingeben",
     "passwordHint": "Das Passwort muss mindestens 8 Zeichen lang sein",
-    "selectCompany": "Unternehmen auswählen (optional)",
+    "passwordOptional": "Leer lassen, um das aktuelle Passwort beizubehalten",
+    "selectCompany": "Unternehmen auswählen",
     "selectRole": "Rolle auswählen",
     "modal": {
       "employeeDetails": "Mitarbeiterdetails"
@@ -441,8 +455,13 @@
       "password": "Passwort",
       "phone": "Telefon",
       "company": "Unternehmen",
-      "role": "Rolle"
+      "role": "Rolle",
+      "keycloakGlobalRole": "Keycloak Globale Rolle"
     },
+    "createUser": "Benutzer erstellen",
+    "userCreatedSuccessfully": "Benutzer erfolgreich erstellt",
+    "keycloakGlobalRoleCOMPANY_USER": "Unternehmensbenutzer",
+    "keycloakGlobalRoleCOMPANY_ADMIN": "Unternehmensadministrator",
     "showing": "Anzeigen",
     "to": "bis",
     "of": "von",

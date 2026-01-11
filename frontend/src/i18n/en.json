@@ -110,6 +110,7 @@
     "pending": "Pending"
   },
   "Common": {
+    "streetAddress": "Street Address",
     "loading": "Loading...",
     "error": "Error",
     "cancel": "Cancel",
@@ -118,11 +119,13 @@
     "delete": "Delete",
     "confirm": "Confirm",
     "confirmDelete": "Confirm Delete",
+    "confirmToDelete": "Confirm to delete",
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
     "search": "Search...",
     "searchPlaceholder": "Search...",
+    "select": "Select",
     "add": "Add",
     "refresh": "Refresh",
     "email": "Email",
@@ -144,6 +147,15 @@
     "noDataAvailable": "No data available",
     "editPlan": "Edit Plan",
     "deletePlan": "Delete Plan",
+    "StatusNew": "New",
+    "StatusPending": "Pending",
+    "StatusInactive": "Inactive",
+    "StatusActive": "Active",
+    "StatusDeleted": "Deleted",
+    "StatusBlocked": "Blocked",
+    "StatusUnblocked": "Unblocked",
+    "StatusVerified": "Verified",
+    "StatusUnverified": "Unverified",
     "errors": {
       "fillAllFields": "Please fill in all fields",
       "selectPlan": "Please select a plan"
@@ -152,7 +164,11 @@
       "deleted": "Successfully deleted",
       "saved": "Successfully saved",
       "updated": "Successfully updated"
-    }
+    },
+    "showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "results": "results"
   },
   "Validation": {
     "emailRequired": "Please enter your email",
@@ -171,6 +187,10 @@
     "passwordRequired": "Please enter a password",
     "passwordMinLength": "Password must be at least 8 characters long",
     "roleRequired": "Please select a role",
+    "companyRequired": "Please select a company",
+    "keycloakGlobalRoleRequired": "Please select a Keycloak global role",
+    "firstNameRequired": "Please enter your first name",
+    "lastNameRequired": "Please enter your last name",
     "priceRequired": "Please enter the price",
     "priceInvalid": "Please enter a valid price (must be a positive number)",
     "titleMaxLength": "Title must not exceed 200 characters",
@@ -196,12 +216,17 @@
     "createClient": "Create Client",
     "editClient": "Edit Client",
     "updateClient": "Update Client",
+    "clientCreatedSuccessfully": "Client created successfully",
+    "clientUpdatedSuccessfully": "Client updated successfully",
+    "clientDeletedSuccessfully": "Client deleted successfully",
     "profilePhoto": "Profile Photo",
     "uploadProfilePhoto": "Upload and change profile photo",
     "enterClientName": "Enter client name",
     "enterEmailAddress": "Enter email address",
     "enterPhoneNumber": "Enter phone number",
-    "enterAddress": "Enter address",
+    "enterBuildingAddress": "Enter building address",
+    "enterStreetAddress": "Enter street address",
+    "buildingAddress": "Building Address",
     "enterDescription": "Enter description (optional)",
     "confirmDelete": "Confirm Delete",
     "areYouSure": "Are you sure?",
@@ -238,17 +263,21 @@
       "email": "Email",
       "phone": "Phone",
       "address": "Address",
+      "buildingAddress": "Building Address",
       "description": "Description",
       "country": "Country",
       "state": "State",
       "city": "City",
-      "zipCode": "Zip Code"
+      "zipCode": "Zip Code",
+      "postalCode": "Postal Code",
+      "streetAddress": "Street Address"
     },
     "placeholders": {
       "enterCountry": "Enter country",
       "enterState": "Enter state",
       "enterCity": "Enter city",
-      "enterZipCode": "Enter zip code"
+      "enterZipCode": "Enter zip code",
+      "enterPostalCode": "Enter postal code"
     },
     "planFeatures": {
       "accessToAllBasic": "Access to all basic",
@@ -429,7 +458,8 @@
     "enterPassword": "Enter password",
     "enterPhone": "Enter phone number",
     "passwordHint": "Password must be at least 8 characters long",
-    "selectCompany": "Select a company (optional)",
+    "passwordOptional": "Leave blank to keep current password",
+    "selectCompany": "Select a company",
     "selectRole": "Select a role",
     "modal": {
       "employeeDetails": "Employee Details"
@@ -441,8 +471,13 @@
       "password": "Password",
       "phone": "Phone",
       "company": "Company",
-      "role": "Role"
+      "role": "Role",
+      "keycloakGlobalRole": "Keycloak Global Role"
     },
+    "createUser": "Create User",
+    "userCreatedSuccessfully": "User created successfully",
+    "keycloakGlobalRoleCOMPANY_USER": "Company User",
+    "keycloakGlobalRoleCOMPANY_ADMIN": "Company Admin",
     "showing": "Showing",
     "to": "to",
     "of": "of",

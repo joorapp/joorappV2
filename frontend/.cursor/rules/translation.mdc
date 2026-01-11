@@ -216,6 +216,33 @@ Even placeholder text must be translated:
 <Input placeholder={t('Login.placeholders.enterEmail')} />
 ```
 
+## Dropdown Placeholder Text
+
+**CRITICAL**: All dropdown select placeholders MUST use the common `Common.select` translation key.
+
+```typescript
+// ❌ WRONG - Specific placeholder text
+<Input type="select">
+  <option value="">{t('EmployeeLists.selectCompany')}</option>
+  <option value="">{t('EmployeeLists.selectRole')}</option>
+  <option value="">Select a status</option>
+</Input>
+
+// ✅ CORRECT - Always use Common.select
+<Input type="select">
+  <option value="">{t('Common.select')}</option>
+  {options.map((option) => (
+    <option key={option.id} value={option.id}>{option.name}</option>
+  ))}
+</Input>
+```
+
+**Rules:**
+- ✅ **ALWAYS** use `t('Common.select')` for all dropdown placeholder options
+- ✅ **ALWAYS** add the first `<option value="">` with `Common.select` before mapping options
+- ❌ **NEVER** use specific placeholder text like "Select a company", "Select a role", etc.
+- ❌ **NEVER** hardcode "Select" or any dropdown placeholder text
+
 ## Button Labels and Titles
 
 All button text, tooltips, and titles must be translated:

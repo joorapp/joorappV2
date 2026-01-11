@@ -35,13 +35,13 @@ const API_ROUTES = {
     GET_COMPANIES: API_PATH + "/auth/companies",
     SELECT_COMPANY: API_PATH + "/auth/companies/<companyId>/select",
   },
-  USER: {
-    GET_USERS: API_PATH + "/users?pageSize=<pageSize>&pageNumber=<pageNumber>&key=<key>",
-    GET_USER_DETAILS: API_PATH + "/users/<userId>",
-    CREATE_USER: API_PATH + "/users",
-    UPDATE_USER: API_PATH + "/users/<userId>",
-    DELETE_USER: API_PATH + "/users/<userId>",
-  },
+  // USER: {
+  //   GET_USERS: API_PATH + "/users?pageSize=<pageSize>&pageNumber=<pageNumber>&key=<key>",
+  //   GET_USER_DETAILS: API_PATH + "/users/<userId>",
+  //   CREATE_USER: API_PATH + "/users",
+  //   UPDATE_USER: API_PATH + "/users/<userId>",
+  //   DELETE_USER: API_PATH + "/users/<userId>",
+  // },
   COMPANY: {
     GET_COMPANY_PROFILE: API_PATH + "/companies/<companyId>",
     UPDATE_COMPANY_PROFILE: API_PATH + "/companies/<companyId>",
@@ -52,6 +52,22 @@ const API_ROUTES = {
   },
   SUPERADMIN: {
     CREATE_COMPANY: API_PATH + "/superAdmin/companies",
+    UPDATE_COMPANY: API_PATH + "/superAdmin/companies/<companyId>",
+    DELETE_COMPANY: API_PATH + "/superAdmin/companies/<companyId>",
+    GET_COMPANIES_LIST: API_PATH + "/superAdmin/companies",
+    GET_COMPANY_BY_ID: API_PATH + "/superAdmin/companies/<companyId>?includeLogo=true",
+    CREATE_ROLE: API_PATH + "/superAdmin/roles",
+    UPDATE_ROLE: API_PATH + "/superAdmin/roles/<roleId>",
+    DELETE_ROLE: API_PATH + "/superAdmin/roles/<roleId>",
+    GET_ROLES_LIST: API_PATH + "/superAdmin/roles",
+    GET_ROLE_BY_ID: API_PATH + "/superAdmin/roles/<roleId>",
+    GET_USERS_LIST: API_PATH + "/superAdmin/users?page=<page>&limit=<limit>&search=<search>",
+    GET_USER_BY_ID: API_PATH + "/superAdmin/users/<userId>",
+    CREATE_USER: API_PATH + "/superAdmin/users",
+    UPDATE_USER: API_PATH + "/superAdmin/users/<userId>",
+    DELETE_USER: API_PATH + "/superAdmin/users/<userId>",
+    ASSIGN_USER_TO_COMPANY: API_PATH + "/superAdmin/users/<userId>/assign",
+    UPDATE_USER_COMPANY_ROLE: API_PATH + "/superAdmin/users/<userId>/companies/<companyId>/role",
   },
 };
 
