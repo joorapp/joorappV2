@@ -327,6 +327,170 @@ const swaggerDefinition = {
             format: 'date-time',
             description: 'Creation timestamp',
             example: '2024-11-23T12:00:00.000Z'
+          },
+          companies: {
+            type: 'array',
+            description: 'Array of companies the user is associated with',
+            items: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  format: 'uuid',
+                  description: 'Company UUID',
+                  example: '550e8400-e29b-41d4-a716-446655440000'
+                },
+                name: {
+                  type: 'string',
+                  description: 'Company name',
+                  example: 'Company Name'
+                },
+                description: {
+                  type: 'string',
+                  description: 'Company description',
+                  example: 'A leading technology company'
+                },
+                isActive: {
+                  type: 'boolean',
+                  description: 'Whether the company is active',
+                  example: true
+                },
+                status: {
+                  type: 'string',
+                  enum: ['NEW', 'ACTIVE', 'LICENSE_EXPIRED'],
+                  description: 'Company status',
+                  example: 'ACTIVE'
+                },
+                email: {
+                  type: 'string',
+                  format: 'email',
+                  description: 'Company email',
+                  example: 'contact@company.com'
+                },
+                phone: {
+                  type: 'string',
+                  description: 'Company phone',
+                  example: '+1 234-567-8900'
+                },
+                buildingAddress: {
+                  type: 'string',
+                  description: 'Building address',
+                  example: 'Suite 100'
+                },
+                streetAddress: {
+                  type: 'string',
+                  description: 'Street address',
+                  example: '123 Main Street'
+                },
+                city: {
+                  type: 'string',
+                  description: 'City',
+                  example: 'New York'
+                },
+                state: {
+                  type: 'string',
+                  description: 'State',
+                  example: 'NY'
+                },
+                postalCode: {
+                  type: 'string',
+                  description: 'Postal code',
+                  example: '10001'
+                },
+                country: {
+                  type: 'string',
+                  description: 'Country',
+                  example: 'United States'
+                },
+                logo: {
+                  type: 'string',
+                  description: 'Base64 encoded company logo (only included in single user GET response)',
+                  example: null
+                },
+                plan: {
+                  type: 'object',
+                  nullable: true,
+                  properties: {
+                    id: {
+                      type: 'string',
+                      format: 'uuid',
+                      example: '550e8400-e29b-41d4-a716-446655440003'
+                    },
+                    name: {
+                      type: 'string',
+                      example: 'Basic'
+                    },
+                    code: {
+                      type: 'string',
+                      example: 'BASIC'
+                    },
+                    description: {
+                      type: 'string',
+                      example: 'Basic subscription plan'
+                    },
+                    price: {
+                      type: 'number',
+                      example: 0
+                    },
+                    isActive: {
+                      type: 'boolean',
+                      example: true
+                    },
+                    createdDate: {
+                      type: 'string',
+                      format: 'date-time',
+                      example: '2024-11-23T12:00:00.000Z'
+                    },
+                    updatedDate: {
+                      type: 'string',
+                      format: 'date-time',
+                      example: '2024-11-23T12:00:00.000Z'
+                    },
+                    version: {
+                      type: 'integer',
+                      example: 1
+                    }
+                  }
+                },
+                role: {
+                  type: 'object',
+                  nullable: true,
+                  properties: {
+                    id: {
+                      type: 'string',
+                      format: 'uuid',
+                      example: '660e8400-e29b-41d4-a716-446655440001'
+                    },
+                    name: {
+                      type: 'string',
+                      example: 'CompanyAdmin'
+                    },
+                    code: {
+                      type: 'string',
+                      example: 'COMPANY_ADMIN'
+                    },
+                    description: {
+                      type: 'string',
+                      example: 'Company administrator role'
+                    }
+                  }
+                },
+                companyUser: {
+                  type: 'object',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      format: 'uuid',
+                      example: '770e8400-e29b-41d4-a716-446655440002'
+                    },
+                    isActive: {
+                      type: 'boolean',
+                      example: true
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         required: ['id', 'keycloakId', 'email', 'keycloakGlobalRole', 'isActive']
@@ -849,6 +1013,67 @@ const swaggerDefinition = {
             type: 'string',
             description: 'Role description',
             example: 'Updated role description'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the role is active',
+            example: true
+          }
+        }
+      },
+      // Role create request schema (for superAdmin/roles POST)
+      RoleCreateRequest: {
+        type: 'object',
+        required: ['name', 'code'],
+        properties: {
+          name: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 100,
+            description: 'Role name',
+            example: 'Project Manager'
+          },
+          code: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 50,
+            description: 'Unique role code',
+            example: 'PROJECT_MANAGER'
+          },
+          description: {
+            type: 'string',
+            description: 'Role description',
+            example: 'Manages projects'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the role is active',
+            example: true
+          }
+        }
+      },
+      // Role update request schema (for superAdmin/roles PUT)
+      RoleUpdateRequest: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 100,
+            description: 'Role name',
+            example: 'Updated Project Manager'
+          },
+          code: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 50,
+            description: 'Unique role code',
+            example: 'UPDATED_PM'
+          },
+          description: {
+            type: 'string',
+            description: 'Role description',
+            example: 'Updated description'
           },
           isActive: {
             type: 'boolean',
