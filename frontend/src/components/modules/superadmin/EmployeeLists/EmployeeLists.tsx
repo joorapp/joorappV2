@@ -26,6 +26,15 @@ interface Employee {
   keycloakGlobalRole?: string;
   isActive: boolean;
   lastLoginAt?: string;
+  companies?: Array<{
+    id: string;
+    name: string;
+    role?: {
+      id: string;
+      name: string;
+      code: string;
+    };
+  }>;
 }
 
 interface Company {
@@ -65,6 +74,8 @@ const EmployeeLists = () => {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [toggleStatusModalOpen, setToggleStatusModalOpen] = useState(false);
+  const [employeeToToggle, setEmployeeToToggle] = useState<Employee | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -113,6 +124,7 @@ const EmployeeLists = () => {
     keycloakGlobalRole?: string;
   }>({});
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
 
   // Get initials from employee name
   const getInitials = (employee: Employee): string => {
@@ -198,6 +210,15 @@ const EmployeeLists = () => {
           keycloakGlobalRole?: string;
           isActive: boolean;
           lastLoginAt?: string;
+          companies?: Array<{
+            id: string;
+            name: string;
+            role?: {
+              id: string;
+              name: string;
+              code: string;
+            };
+          }>;
         }) => ({
           id: user.id,
           keycloakId: user.keycloakId,
@@ -207,13 +228,14 @@ const EmployeeLists = () => {
           keycloakGlobalRole: user.keycloakGlobalRole,
           isActive: user.isActive,
           lastLoginAt: user.lastLoginAt,
+          companies: user.companies || [],
         }));
 
         setEmployees(mappedEmployees);
 
         // Extract pagination metadata
         const pagination = response.data?.pagination || {};
-        setTotalPages(pagination.totalPages || 1);
+        setTotalPages(pagination.pages || 1);
         setTotalItems(pagination.total || 0);
         setCurrentPage(pagination.page || page);
       }
@@ -283,15 +305,20 @@ const EmployeeLists = () => {
       const userResponse = await UserService.getUserById(employee.id);
       const userData = userResponse?.data?.data || {};
       
+      // Get company and role from employee's companies array or from userData
+      const firstCompany = (employee.companies && employee.companies.length > 0 ? employee.companies[0] : null) ||
+                          (userData.companies && userData.companies.length > 0 ? userData.companies[0] : null);
+      const companyId = firstCompany?.id || '';
+      const roleId = firstCompany?.role?.id || '';
+      
       // Initialize edit form data with user info
-      // Note: companyId and roleId will be fetched separately if needed
       setEditFormData({
         email: userData.email || employee.email,
         password: '', // Password is optional for update
         firstName: userData.firstName || employee.firstName || '',
         lastName: userData.lastName || employee.lastName || '',
-        companyId: '', // Will be populated if we have an API to get user's company
-        roleId: '', // Will be populated if we have an API to get user's role
+        companyId: companyId,
+        roleId: roleId,
         keycloakGlobalRole: userData.keycloakGlobalRole || employee.keycloakGlobalRole || '',
         isActive: userData.isActive !== undefined ? userData.isActive : employee.isActive,
       });
@@ -302,13 +329,17 @@ const EmployeeLists = () => {
       // Error toast is already handled by the interceptor
       console.error('Error fetching user details:', error);
       // Fallback to employee data
+      const firstCompany = employee.companies && employee.companies.length > 0 ? employee.companies[0] : null;
+      const companyId = firstCompany?.id || '';
+      const roleId = firstCompany?.role?.id || '';
+      
       setEditFormData({
         email: employee.email,
         password: '',
         firstName: employee.firstName || '',
         lastName: employee.lastName || '',
-        companyId: '',
-        roleId: '',
+        companyId: companyId,
+        roleId: roleId,
         keycloakGlobalRole: employee.keycloakGlobalRole || '',
         isActive: employee.isActive,
       });
@@ -325,12 +356,17 @@ const EmployeeLists = () => {
   };
 
   // Confirm delete
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedEmployee) {
-      setEmployees(prev => prev.filter(emp => emp.id !== selectedEmployee.id));
-      showSuccessToast(t('EmployeeLists.employeeDeletedSuccessfully') || 'Employee deleted successfully');
-      setDeleteModalOpen(false);
-      setSelectedEmployee(null);
+      const response =  await UserService.deleteUser(selectedEmployee.id);
+      console.log(response);
+      if (response.data.success) {
+        setEmployees(prev => prev.filter(emp => emp.id !== selectedEmployee.id));
+        showSuccessToast(t('EmployeeLists.employeeDeletedSuccessfully') || 'Employee deleted successfully');
+        setDeleteModalOpen(false);
+        setSelectedEmployee(null);
+        await fetchUsers(currentPage, searchTerm);
+      }
     }
   };
 
@@ -628,6 +664,51 @@ const EmployeeLists = () => {
     return errors;
   };
 
+  // Handle toggle user enable/disable - opens confirmation modal
+  const handleToggleUserStatus = (employee: Employee) => {
+    if (togglingUserId === employee.id) return; // Prevent multiple clicks
+    setEmployeeToToggle(employee);
+    setToggleStatusModalOpen(true);
+  };
+
+  // Confirm toggle user enable/disable
+  const confirmToggleUserStatus = async () => {
+    console.log('confirmToggleUserStatus', employeeToToggle);
+    if (!employeeToToggle) return;
+
+    setTogglingUserId(employeeToToggle.id);
+    setToggleStatusModalOpen(false);
+    
+    try {
+      let response;
+      if (employeeToToggle.isActive) {
+        response = await UserService.disableUser(employeeToToggle.id);
+      } else {
+        response = await UserService.enableUser(employeeToToggle.id);
+      }
+
+      if (response?.data?.success) {
+        // Update the employee in the list
+        setEmployees(prev => prev.map(emp => 
+          emp.id === employeeToToggle.id 
+            ? { ...emp, isActive: !emp.isActive }
+            : emp
+        ));
+        showSuccessToast(
+          employeeToToggle.isActive 
+            ? t('EmployeeLists.userDisabledSuccessfully')
+            : t('EmployeeLists.userEnabledSuccessfully')
+        );
+      }
+    } catch (error) {
+      // Error toast is already handled by the interceptor
+      console.error('Error toggling user status:', error);
+    } finally {
+      setTogglingUserId(null);
+      setEmployeeToToggle(null);
+    }
+  };
+
   // Create user handler
   const handleCreateUser = async () => {
     // Validate form
@@ -707,39 +788,45 @@ const EmployeeLists = () => {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={6} className="text-center py-4">
+                        <td colSpan={8} className="text-center py-4">
                           <Spinner size="sm" className="me-2" />
                           <span>{t('Common.loading')}</span>
                         </td>
                       </tr>
                     ) : employees.length > 0 ? (
-                      employees.map((employee) => (
-                        <tr key={employee.id}>
-                          <td>
-                            <div className="d-flex align-items-center">
-                              <div className={`avatar-xs me-3 ${getAvatarColor(employee)} rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold`}>
-                                {getInitials(employee)}
+                      employees.map((employee) => {
+                        // Get first company and role for display
+                        const firstCompany = employee.companies && employee.companies.length > 0 ? employee.companies[0] : null;
+                        const companyName = firstCompany?.name || '-';
+                        const roleName = firstCompany?.role?.name || '-';
+                        
+                        return (
+                          <tr key={employee.id}>
+                            <td>
+                              <div className="d-flex align-items-center">
+                                <div className={`avatar-xs me-3 ${getAvatarColor(employee)} rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold`}>
+                                  {getInitials(employee)}
+                                </div>
+                                <div>
+                                  <h5 className="mb-0 font-size-14">{getEmployeeName(employee)}</h5>
+                                </div>
                               </div>
-                              <div>
-                                <h5 className="mb-0 font-size-14">{getEmployeeName(employee)}</h5>
-                              </div>
-                            </div>
-                          </td>
-                          
-                          <td>-</td>
-                          <td>{employee.email}</td>
-                          <td>-</td>
-                          <td>{getRoleBadge(employee.keycloakGlobalRole)}</td>
-                          <td>{getStatusBadge(employee.isActive)}</td>
-                          <td>
-                            {employee.lastLoginAt
-                              ? new Date(employee.lastLoginAt).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric'
-                                })
-                              : '-'}
-                          </td>
+                            </td>
+                            
+                            <td>{companyName}</td>
+                            <td>{employee.email}</td>
+                            <td>{roleName}</td>
+                            <td>{getRoleBadge(employee.keycloakGlobalRole)}</td>
+                            <td>{getStatusBadge(employee.isActive)}</td>
+                            <td>
+                              {employee.lastLoginAt
+                                ? new Date(employee.lastLoginAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  })
+                                : '-'}
+                            </td>
                           <td>
                             <div className="d-flex gap-2">
                               <Button
@@ -758,21 +845,38 @@ const EmployeeLists = () => {
                               >
                                 <i className="mdi mdi-pencil"></i>
                               </Button>
-                              <Button
+                              {/* <Button
                                 color="outline-danger"
                                 className="p-1 border-0"
                                 title={t('Common.delete')}
                                 onClick={() => handleDelete(employee)}
                               >
                                 <i className="mdi mdi-delete"></i>
-                              </Button>
+                              </Button> */}
+                              <div className="form-check form-switch d-inline-flex align-items-center">
+                                <Input
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  checked={employee.isActive}
+                                  onChange={() => handleToggleUserStatus(employee)}
+                                  disabled={togglingUserId === employee.id}
+                                  title={employee.isActive ? t('EmployeeLists.disableUser') : t('EmployeeLists.enableUser')}
+                                  style={{ cursor: togglingUserId === employee.id ? 'not-allowed' : 'pointer' }}
+                                />
+                                {togglingUserId === employee.id && (
+                                  <Spinner size="sm" className="ms-2" />
+                                )}
+                              </div>
+
+
                             </div>
                           </td>
                         </tr>
-                      ))
+                        );
+                      })
                     ) : (
                       <tr>
-                        <td colSpan={6} className="text-center py-4">
+                        <td colSpan={8} className="text-center py-4">
                           <p className="text-muted mb-0">{t('EmployeeLists.noEmployeesFound')}</p>
                         </td>
                       </tr>
@@ -872,6 +976,7 @@ const EmployeeLists = () => {
                   placeholder={t('EmployeeLists.enterFirstName')}
                   invalid={!!editFormErrors.firstName}
                   maxLength={VALIDATION.MAX_NAME_LENGTH}
+                  autoComplete="off"
                 />
                 {editFormErrors.firstName && (
                   <FormFeedback type="invalid">
@@ -891,6 +996,7 @@ const EmployeeLists = () => {
                   placeholder={t('EmployeeLists.enterLastName')}
                   invalid={!!editFormErrors.lastName}
                   maxLength={VALIDATION.MAX_NAME_LENGTH}
+                  autoComplete="off"
                 />
                 {editFormErrors.lastName && (
                   <FormFeedback type="invalid">
@@ -909,6 +1015,7 @@ const EmployeeLists = () => {
                   onChange={(e) => handleEditInputChange('email', e.target.value)}
                   placeholder={t('EmployeeLists.enterEmail')}
                   invalid={!!editFormErrors.email}
+                  autoComplete="off"
                 />
                 {editFormErrors.email && (
                   <FormFeedback type="invalid">
@@ -922,11 +1029,12 @@ const EmployeeLists = () => {
                   {t('EmployeeLists.labels.password')}
                 </Label>
                 <Input
-                  type="password"
+                  type="text"
                   value={editFormData.password}
                   onChange={(e) => handleEditInputChange('password', e.target.value)}
                   placeholder={t('EmployeeLists.enterPassword')}
                   invalid={!!editFormErrors.password}
+                  autoComplete="off"
                 />
                 {editFormErrors.password && (
                   <FormFeedback type="invalid">
@@ -1011,7 +1119,8 @@ const EmployeeLists = () => {
                   <option value="">{t('Common.select')}</option>
                   {KEYCLOAK_GLOBAL_ROLES.map((role) => (
                     <option key={role} value={role}>
-                      {t(`EmployeeLists.keycloakGlobalRole${role}`)}
+                      {/* {t(`EmployeeLists.keycloakGlobalRole${role}`)} */}
+                      {role.toUpperCase()}
                     </option>
                   ))}
                 </Input>
@@ -1065,6 +1174,50 @@ const EmployeeLists = () => {
         </ModalFooter>
       </Modal>
 
+      {/* Toggle Status Confirmation Modal */}
+      <Modal isOpen={toggleStatusModalOpen} toggle={() => setToggleStatusModalOpen(!toggleStatusModalOpen)} centered>
+        <ModalHeader toggle={() => setToggleStatusModalOpen(!toggleStatusModalOpen)}>
+          {employeeToToggle?.isActive ? t('EmployeeLists.confirmDisableUser') : t('EmployeeLists.confirmEnableUser')}
+        </ModalHeader>
+        <ModalBody>
+          {employeeToToggle && (
+            <p>
+              {employeeToToggle.isActive 
+                ? t('EmployeeLists.disableUserConfirmation') 
+                : t('EmployeeLists.enableUserConfirmation')}
+              <br />
+              <strong>{getEmployeeName(employeeToToggle)} ({employeeToToggle.email})</strong>
+            </p>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button 
+            color={employeeToToggle?.isActive ? "danger" : "success"} 
+            onClick={confirmToggleUserStatus}
+            disabled={togglingUserId === employeeToToggle?.id}
+          >
+            {togglingUserId === employeeToToggle?.id ? (
+              <>
+                <Spinner size="sm" className="me-2" />
+                {t('Common.loading')}
+              </>
+            ) : (
+              employeeToToggle?.isActive ? t('EmployeeLists.disableUser') : t('EmployeeLists.enableUser')
+            )}
+          </Button>
+          <Button 
+            color="secondary" 
+            onClick={() => {
+              setToggleStatusModalOpen(false);
+              setEmployeeToToggle(null);
+            }}
+            disabled={togglingUserId === employeeToToggle?.id}
+          >
+            {t('Common.cancel')}
+          </Button>
+        </ModalFooter>
+      </Modal>
+
       {/* Create User Modal */}
       <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="md" centered>
         <ModalHeader toggle={handleCloseCreateModal}>
@@ -1078,6 +1231,7 @@ const EmployeeLists = () => {
               </Label>
               <Input
                 type="text"
+                autoComplete="off"
                 value={createFormData.firstName}
                 onChange={(e) => handleCreateInputChange('firstName', e.target.value)}
                 placeholder={t('EmployeeLists.enterFirstName')}
@@ -1097,6 +1251,7 @@ const EmployeeLists = () => {
               </Label>
               <Input
                 type="text"
+                autoComplete="off"
                 value={createFormData.lastName}
                 onChange={(e) => handleCreateInputChange('lastName', e.target.value)}
                 placeholder={t('EmployeeLists.enterLastName')}
@@ -1116,6 +1271,7 @@ const EmployeeLists = () => {
               </Label>
               <Input
                 type="email"
+                autoComplete="off"
                 value={createFormData.email}
                 onChange={(e) => handleCreateInputChange('email', e.target.value)}
                 placeholder={t('EmployeeLists.enterEmail')}
@@ -1133,7 +1289,8 @@ const EmployeeLists = () => {
                 {t('EmployeeLists.labels.password')} <span className="text-danger">*</span>
               </Label>
               <Input
-                type="password"
+                type="text"
+                autoComplete="off"
                 value={createFormData.password}
                 onChange={(e) => handleCreateInputChange('password', e.target.value)}
                 placeholder={t('EmployeeLists.enterPassword')}
