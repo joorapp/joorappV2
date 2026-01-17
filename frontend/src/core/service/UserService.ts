@@ -56,5 +56,17 @@ export default class UserService {
       { roleId }
     );
   }
+
+  static enableUser(userId: string) {
+      return HttpUtil.put(
+        API_ROUTES.SUPERADMIN.ENABLE_USER.replace("<userId>", userId)
+    );
+  }
+
+  static disableUser(userId: string) {
+    return HttpUtil.put(
+      API_ROUTES.SUPERADMIN.DISABLE_USER.replace("<userId>", userId)
+    );
+  }
 }
 

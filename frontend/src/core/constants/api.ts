@@ -68,6 +68,8 @@ const API_ROUTES = {
     DELETE_USER: API_PATH + "/superAdmin/users/<userId>",
     ASSIGN_USER_TO_COMPANY: API_PATH + "/superAdmin/users/<userId>/assign",
     UPDATE_USER_COMPANY_ROLE: API_PATH + "/superAdmin/users/<userId>/companies/<companyId>/role",
+    ENABLE_USER: API_PATH + "/superAdmin/users/<userId>/enable",
+    DISABLE_USER: API_PATH + "/superAdmin/users/<userId>/disable",
   },
 };
 
