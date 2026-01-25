@@ -141,8 +141,9 @@ export const SORT_ORDER = {
 // KEYCLOAK GLOBAL ROLES
 // ============================================
 export const KEYCLOAK_GLOBAL_ROLES = [
-  'COMPANY_USER',
+  'SUPER_ADMIN',
   'COMPANY_ADMIN',
+  'COMPANY_USER',
 ] as const;
 
 // ============================================

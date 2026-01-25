@@ -84,12 +84,12 @@ export class UserRepository extends MasterBaseRepository {
     
     const { limit = 10, offset = 0 } = pagination;
     
-    // Build search filter with OR conditions
+    // Build search filter with OR conditions (case-insensitive)
     const where = searchTerm ? {
       [Op.or]: [
-        { email: { [Op.like]: `%${searchTerm}%` } },
-        { firstName: { [Op.like]: `%${searchTerm}%` } },
-        { lastName: { [Op.like]: `%${searchTerm}%` } }
+        { email: { [Op.iLike]: `%${searchTerm}%` } },
+        { firstName: { [Op.iLike]: `%${searchTerm}%` } },
+        { lastName: { [Op.iLike]: `%${searchTerm}%` } }
       ]
     } : {};
     

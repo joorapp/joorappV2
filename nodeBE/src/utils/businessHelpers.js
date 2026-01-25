@@ -119,8 +119,8 @@ export const buildFilterQuery = (filters, allowedFields, options = {}) => {
       if (exactMatch) {
         where[field] = filters[field];
       } else {
-        // Use LIKE for string fields (case-insensitive)
-        where[field] = { [require('sequelize').Op.like]: `%${filters[field]}%` };
+        // Use iLike for string fields (case-insensitive)
+        where[field] = { [require('sequelize').Op.iLike]: `%${filters[field]}%` };
       }
     }
   }
@@ -248,9 +248,9 @@ export const buildSearchFilter = (searchTerm, fields) => {
     return {};
   }
   
-  // Create OR conditions for each field
+  // Create OR conditions for each field (case-insensitive)
   const conditions = fields.map(field => ({
-    [field]: { [Op.like]: `%${sanitized}%` }
+    [field]: { [Op.iLike]: `%${sanitized}%` }
   }));
   
   return {

@@ -17,7 +17,8 @@ jest.unstable_mockModule('../../repositories/userRepository.js', () => ({
     findByIdOrFail: jest.fn(),
     findOne: jest.fn(),
     searchUsers: jest.fn(),
-    findAndCountAll: jest.fn()
+    findAndCountAll: jest.fn(),
+    findUserWithCompanies: jest.fn()
   }
 }));
 
@@ -30,8 +31,13 @@ jest.unstable_mockModule('../keycloakService.js', () => ({
 jest.unstable_mockModule('../../models/index.js', () => ({
   User: {
     create: jest.fn(),
-    update: jest.fn()
-  }
+    update: jest.fn(),
+    findAndCountAll: jest.fn()
+  },
+  CompanyUser: {},
+  Company: {},
+  CompanyRole: {},
+  Plan: {}
 }));
 
 // Import after mocking (must use await import for ES modules)
@@ -546,6 +552,173 @@ describe('User Service', () => {
       await expect(
         userService.deleteUserFromDB(userId, { userId: uuidv4() })
       ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('enableUserInKeycloak', () => {
+    it('should enable user in Keycloak', async () => {
+      // Arrange
+      const keycloakId = uuidv4();
+      mockKeycloakAdminClient.users.update.mockResolvedValue(undefined);
+
+      // Act
+      await userService.enableUserInKeycloak(keycloakId);
+
+      // Assert
+      expect(mockKeycloakAdminClient.users.update).toHaveBeenCalledWith(
+        { id: keycloakId },
+        { enabled: true }
+      );
+    });
+  });
+
+  describe('enableUserInDB', () => {
+    it('should mark user as active in database', async () => {
+      // Arrange
+      const userId = uuidv4();
+      userRepository.findByIdOrFail.mockResolvedValue(mockUser);
+      Object.defineProperty(mockUser, 'update', {
+        value: jest.fn().mockResolvedValue(undefined),
+        writable: true
+      });
+
+      // Act
+      await userService.enableUserInDB(userId, { userId: uuidv4() });
+
+      // Assert
+      expect(userRepository.findByIdOrFail).toHaveBeenCalledWith(userId);
+      expect(mockUser.update).toHaveBeenCalledWith({ isActive: true });
+    });
+
+    it('should throw NotFoundError when user does not exist', async () => {
+      // Arrange
+      const userId = uuidv4();
+      userRepository.findByIdOrFail.mockRejectedValue(
+        new NotFoundError('User', userId)
+      );
+
+      // Act & Assert
+      await expect(
+        userService.enableUserInDB(userId, { userId: uuidv4() })
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('getUserByIdWithCompanies', () => {
+    it('should return user with companies array', async () => {
+      // Arrange
+      const userId = uuidv4();
+      const mockUserWithCompanies = {
+        id: mockUser.id,
+        keycloakId: mockUser.keycloakId,
+        email: mockUser.email,
+        firstName: mockUser.firstName,
+        lastName: mockUser.lastName,
+        keycloakGlobalRole: mockUser.keycloakGlobalRole,
+        isActive: mockUser.isActive,
+        createdDate: new Date(),
+        companyUsers: []
+      };
+
+      // Mock the repository method
+      userRepository.findUserWithCompanies.mockResolvedValue(mockUserWithCompanies);
+
+      // Act
+      const result = await userService.getUserByIdWithCompanies(userId, { includeLogo: false });
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.companies).toBeDefined();
+      expect(Array.isArray(result.companies)).toBe(true);
+    });
+
+    it('should include logo when includeLogo is true', async () => {
+      // Arrange
+      const userId = uuidv4();
+      const mockCompany = {
+        id: uuidv4(),
+        name: 'Test Company',
+        logo: 'base64logo'
+      };
+      const mockUserWithCompanies = {
+        id: mockUser.id,
+        keycloakId: mockUser.keycloakId,
+        email: mockUser.email,
+        firstName: mockUser.firstName,
+        lastName: mockUser.lastName,
+        keycloakGlobalRole: mockUser.keycloakGlobalRole,
+        isActive: mockUser.isActive,
+        createdDate: new Date(),
+        companyUsers: [{
+          id: uuidv4(),
+          isActive: true,
+          company: mockCompany,
+          role: null
+        }]
+      };
+
+      userRepository.findUserWithCompanies.mockResolvedValue(mockUserWithCompanies);
+
+      // Act
+      const result = await userService.getUserByIdWithCompanies(userId, { includeLogo: true });
+
+      // Assert
+      expect(userRepository.findUserWithCompanies).toHaveBeenCalled();
+      expect(result.companies).toBeDefined();
+      if (result.companies.length > 0) {
+        expect(result.companies[0].logo).toBeDefined();
+      }
+    });
+  });
+
+  describe('listUsersWithCompanies', () => {
+    it('should return users with companies array', async () => {
+      // Arrange
+      const mockUsers = [
+        {
+          id: uuidv4(),
+          keycloakId: uuidv4(),
+          email: 'user1@example.com',
+          firstName: 'User',
+          lastName: 'One',
+          keycloakGlobalRole: 'COMPANY_USER',
+          isActive: true,
+          createdDate: new Date(),
+          companyUsers: []
+        },
+        {
+          id: uuidv4(),
+          keycloakId: uuidv4(),
+          email: 'user2@example.com',
+          firstName: 'User',
+          lastName: 'Two',
+          keycloakGlobalRole: 'COMPANY_USER',
+          isActive: true,
+          createdDate: new Date(),
+          companyUsers: []
+        }
+      ];
+
+      const mockFindAndCountAll = jest.fn().mockResolvedValue({
+        rows: mockUsers,
+        count: 2
+      });
+
+      // Mock User model - need to set it before the function is called
+      const modelsModule = await import('../../models/index.js');
+      modelsModule.User.findAndCountAll = mockFindAndCountAll;
+
+      // Act
+      const result = await userService.listUsersWithCompanies({}, { limit: 10, offset: 0 }, []);
+
+      // Assert
+      expect(result.users).toBeDefined();
+      expect(Array.isArray(result.users)).toBe(true);
+      expect(result.total).toBe(2);
+      result.users.forEach(user => {
+        expect(user.companies).toBeDefined();
+        expect(Array.isArray(user.companies)).toBe(true);
+      });
     });
   });
 });

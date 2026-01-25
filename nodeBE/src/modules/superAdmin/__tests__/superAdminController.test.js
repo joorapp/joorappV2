@@ -112,6 +112,8 @@ jest.unstable_mockModule('../../../services/roleService.js', () => ({
 
 const mockListUsers = jest.fn();
 const mockGetUserById = jest.fn();
+const mockListUsersWithCompanies = jest.fn();
+const mockGetUserByIdWithCompanies = jest.fn();
 const mockCreateUserInDB = jest.fn();
 const mockCreateUserInKeycloak = jest.fn();
 const mockCheckUserExistsInKeycloak = jest.fn();
@@ -119,17 +121,23 @@ const mockUpdateUserInDB = jest.fn();
 const mockUpdateUserInKeycloak = jest.fn();
 const mockDeleteUserFromKeycloak = jest.fn();
 const mockDeleteUserFromDB = jest.fn();
+const mockEnableUserInKeycloak = jest.fn();
+const mockEnableUserInDB = jest.fn();
 
 jest.unstable_mockModule('../../../services/userService.js', () => ({
   listUsers: mockListUsers,
   getUserById: mockGetUserById,
+  listUsersWithCompanies: mockListUsersWithCompanies,
+  getUserByIdWithCompanies: mockGetUserByIdWithCompanies,
   createUserInDB: mockCreateUserInDB,
   createUserInKeycloak: mockCreateUserInKeycloak,
   checkUserExistsInKeycloak: mockCheckUserExistsInKeycloak,
   updateUserInDB: mockUpdateUserInDB,
   updateUserInKeycloak: mockUpdateUserInKeycloak,
   deleteUserFromKeycloak: mockDeleteUserFromKeycloak,
-  deleteUserFromDB: mockDeleteUserFromDB
+  deleteUserFromDB: mockDeleteUserFromDB,
+  enableUserInKeycloak: mockEnableUserInKeycloak,
+  enableUserInDB: mockEnableUserInDB
 }));
 
 const mockAssignUserToCompany = jest.fn();
@@ -661,6 +669,10 @@ describe('Super Admin Controller', () => {
       const mockKeycloakUser = { id: uuidv4() };
       const mockNewUser = createMockUser({ email: 'newuser@example.com' });
       const mockCompanyUser = createMockCompanyUser();
+      const mockUserWithCompanies = {
+        ...mockNewUser,
+        companies: []
+      };
 
       mockValidateRequired.mockImplementation(() => {});
       mockValidateEmail.mockImplementation(() => {});
@@ -671,6 +683,7 @@ describe('Super Admin Controller', () => {
       mockCreateUserInKeycloak.mockResolvedValue(mockKeycloakUser);
       mockCreateUserInDB.mockResolvedValue(mockNewUser);
       mockAssignUserToCompany.mockResolvedValue(mockCompanyUser);
+      mockGetUserByIdWithCompanies.mockResolvedValue(mockUserWithCompanies);
 
       // Act
       await superAdminController.createUserWithCompany(req, res);
@@ -679,6 +692,7 @@ describe('Super Admin Controller', () => {
       expect(mockCreateUserInKeycloak).toHaveBeenCalled();
       expect(mockCreateUserInDB).toHaveBeenCalled();
       expect(mockAssignUserToCompany).toHaveBeenCalled();
+      expect(mockGetUserByIdWithCompanies).toHaveBeenCalledWith(mockNewUser.id, { includeLogo: false });
       expect(mockLogBusiness).toHaveBeenCalled();
       expect(mockLogSecurity).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(201);
@@ -686,48 +700,56 @@ describe('Super Admin Controller', () => {
   });
 
   describe('getUsers', () => {
-    it('should return paginated list of users', async () => {
+    it('should return paginated list of users with companies', async () => {
       // Arrange
       req.query = { page: '1', limit: '10' };
 
       const mockResult = {
-        users: [createMockUser(), createMockUser()],
+        users: [
+          { ...createMockUser(), companies: [] },
+          { ...createMockUser(), companies: [] }
+        ],
         total: 2
       };
 
-      mockListUsers.mockResolvedValue(mockResult);
+      mockBuildPaginationQuery.mockReturnValue({ page: 1, limit: 10, offset: 0 });
+      mockBuildSortQuery.mockReturnValue([['email', 'ASC']]);
+      mockListUsersWithCompanies.mockResolvedValue(mockResult);
 
       // Act
       await superAdminController.getUsers(req, res);
 
       // Assert
-      expect(mockListUsers).toHaveBeenCalled();
+      expect(mockListUsersWithCompanies).toHaveBeenCalled();
       expect(mockPaginatedResponse).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe('getUserById', () => {
-    it('should return user by ID', async () => {
+    it('should return user by ID with companies including logo', async () => {
       // Arrange
       const userId = uuidv4();
       req.params = { id: userId };
 
-      const mockUser = createMockUser({ id: userId });
+      const mockUser = {
+        ...createMockUser({ id: userId }),
+        companies: []
+      };
       mockValidateUUID.mockImplementation(() => {});
-      mockGetUserById.mockResolvedValue(mockUser);
+      mockGetUserByIdWithCompanies.mockResolvedValue(mockUser);
 
       // Act
       await superAdminController.getUserById(req, res);
 
       // Assert
-      expect(mockGetUserById).toHaveBeenCalledWith(userId);
+      expect(mockGetUserByIdWithCompanies).toHaveBeenCalledWith(userId, { includeLogo: true });
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe('updateUser', () => {
-    it('should update user successfully', async () => {
+    it('should update user successfully and return user with companies', async () => {
       // Arrange
       const userId = uuidv4();
       req.params = { id: userId };
@@ -737,17 +759,21 @@ describe('Super Admin Controller', () => {
       };
 
       const mockCurrentUser = createMockUser({ id: userId });
-      const mockUpdatedUser = createMockUser({
-        id: userId,
-        firstName: 'Updated',
-        lastName: 'Name'
-      });
+      const mockUpdatedUser = {
+        ...createMockUser({
+          id: userId,
+          firstName: 'Updated',
+          lastName: 'Name'
+        }),
+        companies: []
+      };
 
       mockValidateUUID.mockImplementation(() => {});
       mockValidateString.mockImplementation(() => {});
       mockGetUserById.mockResolvedValue(mockCurrentUser);
       mockUpdateUserInKeycloak.mockResolvedValue(undefined);
-      mockUpdateUserInDB.mockResolvedValue(mockUpdatedUser);
+      mockUpdateUserInDB.mockResolvedValue(undefined);
+      mockGetUserByIdWithCompanies.mockResolvedValue(mockUpdatedUser);
 
       // Act
       await superAdminController.updateUser(req, res);
@@ -755,6 +781,7 @@ describe('Super Admin Controller', () => {
       // Assert
       expect(mockUpdateUserInKeycloak).toHaveBeenCalled();
       expect(mockUpdateUserInDB).toHaveBeenCalled();
+      expect(mockGetUserByIdWithCompanies).toHaveBeenCalledWith(userId, { includeLogo: false });
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
@@ -779,6 +806,32 @@ describe('Super Admin Controller', () => {
       expect(mockGetUserById).toHaveBeenCalledWith(userId);
       expect(mockDeleteUserFromKeycloak).toHaveBeenCalledWith(mockUser.keycloakId);
       expect(mockDeleteUserFromDB).toHaveBeenCalledWith(userId, { userId: req.user.id });
+      expect(mockLogBusiness).toHaveBeenCalled();
+      expect(mockLogSecurity).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+  });
+
+  describe('enableUser', () => {
+    it('should enable user successfully', async () => {
+      // Arrange
+      const userId = uuidv4();
+      req.params = { id: userId };
+
+      const mockUser = createMockUser({ id: userId, keycloakId: uuidv4() });
+
+      mockValidateUUID.mockImplementation(() => {});
+      mockGetUserById.mockResolvedValue(mockUser);
+      mockEnableUserInKeycloak.mockResolvedValue(undefined);
+      mockEnableUserInDB.mockResolvedValue(undefined);
+
+      // Act
+      await superAdminController.enableUser(req, res);
+
+      // Assert
+      expect(mockGetUserById).toHaveBeenCalledWith(userId);
+      expect(mockEnableUserInKeycloak).toHaveBeenCalledWith(mockUser.keycloakId);
+      expect(mockEnableUserInDB).toHaveBeenCalledWith(userId, { userId: req.user.id });
       expect(mockLogBusiness).toHaveBeenCalled();
       expect(mockLogSecurity).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(200);
