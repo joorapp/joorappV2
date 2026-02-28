@@ -850,7 +850,14 @@
     "completedContracts": "{{count}} عقود مكتملة",
     "cashInHand": "النقد في متناول اليد: {{amount}}",
     "cashInBank": "النقد في البنك: {{amount}}",
-    "totalCash": "إجمالي النقد: {{amount}}"
+    "totalCash": "إجمالي النقد: {{amount}}",
+    "projectId": "معرف المشروع",
+    "stageNameActivitySubactivity": "رقم المرحلة - اسم المرحلة - النشاط - النشاط الفرعي",
+    "startEndDates": "تواريخ البدء والانتهاء",
+    "sq": "SQ",
+    "cq": "CQ",
+    "pq": "PQ",
+    "progress": "التقدم"
   },
   "CompanySidebar": {
     "clients": "العملاء",

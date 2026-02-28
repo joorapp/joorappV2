@@ -850,7 +850,14 @@
     "completedContracts": "{{count}} Abgeschlossene Verträge",
     "cashInHand": "Bargeld: {{amount}}",
     "cashInBank": "Bankguthaben: {{amount}}",
-    "totalCash": "Gesamtgeld: {{amount}}"
+    "totalCash": "Gesamtgeld: {{amount}}",
+    "projectId": "Projekt-ID",
+    "stageNameActivitySubactivity": "Stufe Nr. - Stufenname - Aktivität - Unteraktivität",
+    "startEndDates": "Start- und Enddaten",
+    "sq": "SQ",
+    "cq": "CQ",
+    "pq": "PQ",
+    "progress": "Fortschritt"
   },
   "CompanySidebar": {
     "clients": "Kunden",

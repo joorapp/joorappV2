@@ -875,7 +875,14 @@
     "completedContracts": "{{count}} Completed contracts",
     "cashInHand": "Cash in hand: {{amount}}",
     "cashInBank": "Cash in bank: {{amount}}",
-    "totalCash": "Total cash: {{amount}}"
+    "totalCash": "Total cash: {{amount}}",
+    "projectId": "Project ID",
+    "stageNameActivitySubactivity": "Stage No. - Stage Name - Activity - Subactivity",
+    "startEndDates": "Start & End dates",
+    "sq": "SQ",
+    "cq": "CQ",
+    "pq": "PQ",
+    "progress": "Progress"
   },
   "CompanySidebar": {
     "clients": "Clients",

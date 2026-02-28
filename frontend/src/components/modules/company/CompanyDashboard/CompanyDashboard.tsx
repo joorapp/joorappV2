@@ -306,7 +306,7 @@ export const CompanyOverview = () => {
                     </div>
                     <div className="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
                       <span className="avatar-title rounded-circle bg-primary">
-                        <i className="bx bx-cart font-size-24 text-white"></i>
+                        <i className="bx bx- font-size-24 text-white"></i>
                       </span>
                     </div>
                   </div>
@@ -364,20 +364,20 @@ export const CompanyOverview = () => {
 
       <Row>
         <Col lg="12">
-          <div className="mb-3 h4 card-title">{t('DashboardContent.latestTransaction')}</div>
+          <div className="mb-3 h4 card-title">Project Status</div>
           <Card>
             <CardBody className="p-1">
               <Table responsive className="table align-middle table-nowrap mb-0 table-hover">
                 <thead className="table-light">
                   <tr>
                     <th><input type="checkbox" className="form-check-input" /></th>
-                    <th>Project ID</th>
-                    <th>Stage No. - Stage Name - Activity - Subactivity</th>
-                    <th>Start & End dates</th>
-                    <th>SQ</th>
-                    <th>CQ</th>
-                    <th>PQ</th>
-                    <th>Progress</th>
+                    <th>{t('CompanyDashboard.projectId')}</th>
+                    <th>{t('CompanyDashboard.stageNameActivitySubactivity')}</th>
+                    <th>{t('CompanyDashboard.startEndDates')}</th>
+                    <th>{t('CompanyDashboard.sq')}</th>
+                    <th>{t('CompanyDashboard.cq')}</th>
+                    <th>{t('CompanyDashboard.pq')}</th>
+                    <th>{t('CompanyDashboard.progress')}</th>
                   </tr>
                 </thead>
                 <tbody>
