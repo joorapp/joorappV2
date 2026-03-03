@@ -897,6 +897,34 @@
     "expandDetails": "Details anzeigen",
     "noPaymentsFound": "Keine Kundenzahlungen gefunden"
   },
+  "CompanyClientTypes": {
+    "pageTitle": "KUNDENTYPEN",
+    "breadcrumbParent": "Kunden",
+    "breadcrumbItem": "Kundentypen",
+    "addClientType": "Kundentyp hinzufügen",
+    "editClientType": "Kundentyp bearbeiten",
+    "createdSuccessfully": "Kundentyp wurde erfolgreich erstellt",
+    "updatedSuccessfully": "Kundentyp wurde erfolgreich aktualisiert",
+    "deletedSuccessfully": "Kundentyp wurde erfolgreich gelöscht",
+    "deleteConfirmation": "Möchten Sie diesen Kundentyp wirklich löschen",
+    "noClientTypesFound": "Keine Kundentypen gefunden",
+    "table": {
+      "id": "ID",
+      "name": "Kundentyp",
+      "description": "Beschreibung",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "fields": {
+      "name": "Name des Kundentyps",
+      "description": "Beschreibung",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Name des Kundentyps eingeben",
+      "description": "Beschreibung eingeben (optional)"
+    }
+  },
   "CompanySidebar": {
     "clients": "Kunden",
     "manageClients": "Kunden verwalten",

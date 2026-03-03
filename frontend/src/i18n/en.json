@@ -163,6 +163,8 @@
     "statusCompleted": "Completed",
     "statusOverdue": "Overdue",
     "statusNew": "New",
+    "settings": "Settings",
+    "create": "Create",
     "errors": {
       "fillAllFields": "Please fill in all fields",
       "selectPlan": "Please select a plan"
@@ -410,30 +412,9 @@
       "user": "User:",
       "email": "Email:",
       "role": "Role:"
-    },
-    "orders": {
-      "ordersManagement": "Orders Management",
-      "ordersManagementPage": "Orders management page - TODO: Implement orders functionality",
-      "completed": "Completed",
-      "processing": "Processing",
-      "shipped": "Shipped"
-    },
-    "products": {
-      "productsManagement": "Products Management",
-      "productsManagementPage": "Products management page - TODO: Implement products functionality"
-    },
-    "customers": {
-      "customersManagement": "Customers Management",
-      "customersManagementPage": "Customers management page - TODO: Implement customers functionality"
-    },
-    "analytics": {
-      "analyticsReports": "Analytics & Reports",
-      "analyticsPage": "Analytics page - TODO: Implement analytics functionality"
-    },
-    "settings": {
-      "companySettings": "Company Settings",
-      "settingsPage": "Settings page - TODO: Implement settings functionality"
+
     }
+    
   },
   "ActiveClients": {
     "clientDetails": "Client Details",
@@ -902,6 +883,34 @@
     "viewList": "List view",
     "viewGrid": "Grid view"
   },
+  "CompanyClientTypes": {
+    "pageTitle": "CLIENT TYPES",
+    "breadcrumbParent": "Clients",
+    "breadcrumbItem": "Client Types",
+    "addClientType": "Add client type",
+    "editClientType": "Edit client type",
+    "createdSuccessfully": "Client type created successfully",
+    "updatedSuccessfully": "Client type updated successfully",
+    "deletedSuccessfully": "Client type deleted successfully",
+    "deleteConfirmation": "Do you really want to delete client type",
+    "noClientTypesFound": "No client types found",
+    "table": {
+      "id": "ID",
+      "name": "Client type",
+      "description": "Description",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "fields": {
+      "name": "Client type name",
+      "description": "Description",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Enter client type name",
+      "description": "Enter description (optional)"
+    }
+  },
   "ClientPayment": {
     "pageTitle": "CLIENT PAYMENT",
     "breadcrumbParent": "Clients",
@@ -944,6 +953,7 @@
     "clientPayment": "Client Payment",
     "clientInvoice": "Client Invoice",
     "clientVisits": "Client Visits",
+    "clientTypes": "Client Types",
     "projects": "Projects",
     "projectTypes": "Project Types",
     "projectCategories": "Project Categories",

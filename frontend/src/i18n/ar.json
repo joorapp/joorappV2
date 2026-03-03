@@ -897,6 +897,34 @@
     "expandDetails": "عرض التفاصيل",
     "noPaymentsFound": "لا توجد مدفوعات عملاء"
   },
+  "CompanyClientTypes": {
+    "pageTitle": "أنواع العملاء",
+    "breadcrumbParent": "العملاء",
+    "breadcrumbItem": "أنواع العملاء",
+    "addClientType": "إضافة نوع عميل",
+    "editClientType": "تعديل نوع العميل",
+    "createdSuccessfully": "تم إنشاء نوع العميل بنجاح",
+    "updatedSuccessfully": "تم تحديث نوع العميل بنجاح",
+    "deletedSuccessfully": "تم حذف نوع العميل بنجاح",
+    "deleteConfirmation": "هل تريد حقًا حذف نوع العميل",
+    "noClientTypesFound": "لا توجد أنواع عملاء",
+    "table": {
+      "id": "المعرف",
+      "name": "نوع العميل",
+      "description": "الوصف",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "fields": {
+      "name": "اسم نوع العميل",
+      "description": "الوصف",
+      "status": "الحالة"
+    },
+    "placeholders": {
+      "name": "أدخل اسم نوع العميل",
+      "description": "أدخل الوصف (اختياري)"
+    }
+  },
   "CompanySidebar": {
     "clients": "العملاء",
     "manageClients": "إدارة العملاء",

@@ -471,6 +471,33 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
       label: t('CompanySidebar.downloadReports'),
     },
     {
+      key: 'settings',
+      iconClass: 'bx bx-cog',
+      label: t('Navigation.settings'),
+      children: [
+        {
+          key: 'settingsClientTypes',
+          path: '/company/clients/types',
+          label: t('CompanySidebar.clientTypes'),
+        },
+        {
+          key: 'settingsProjectTypes',
+          path: '/company/projects/types',
+          label: t('CompanySidebar.projectTypes'),
+        },
+        {
+          key: 'settingsProjectCategories',
+          path: '/company/projects/categories',
+          label: t('CompanySidebar.projectCategories'),
+        },
+        {
+          key: 'settingsRoles',
+          path: '/company/users/role-permissions',
+          label: t('Navigation.roles'),
+        },
+      ],
+    },
+    {
       key: 'usersGroup',
       iconClass: 'bx bx-git-branch',
       label: t('CompanySidebar.manageUsers'),
@@ -491,14 +518,8 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
           label: t('CompanySidebar.howItWorks'),
         },
       ],
-    },
-    {
-      key: 'logout',
-      path: '#',
-      iconClass: 'bx bx-log-out',
-      label: t('Navigation.logout'),
-      onClick: handleLogout,
-    },
+    }
+    
   ] as const;
 
   return (

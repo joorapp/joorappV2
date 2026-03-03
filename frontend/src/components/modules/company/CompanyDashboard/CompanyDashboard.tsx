@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card, CardBody, CardTitle, Row, Col, Table } from 'reactstrap';
-import { useAuth } from '../../../../context/AuthContext';
 import profileImg from '../../../../assets/images/profile-img.png';
 import clientLogo from '../../../../assets/images/client_logo.png';
 import CompanyHeader from '../CompanyHeader/CompanyHeader';
@@ -443,76 +442,6 @@ export const CompanyOverview = () => {
   );
 };
 
-export const CompanyProfile = () => {
-  const { t } = useTranslation();
-  const { user } = useAuth();
-
-  return (
-    <div className="company-profile">
-      <h2 className="company-profile__title">{t('Navigation.profile')}</h2>
-      <div className="company-profile__content">
-        <div className="company-profile__info">
-          <h3>{t('Company.information.companyInformation')}</h3>
-          <p>{t('Company.information.companyID')} {user?.companyId}</p>
-          <p>{t('Company.information.user')} {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName ?? user?.email ?? ''}</p>
-          <p>{t('Company.information.email')} {user?.email}</p>
-          <p>{t('Company.information.role')} {user?.role}</p>
-        </div>
-        {/* TODO: Add profile editing form */}
-      </div>
-    </div>
-  );
-};
-
-export const CompanyOrders = () => {
-  const { t } = useTranslation();
-  return (
-    <div className="company-orders">
-      <h2>{t('Company.orders.ordersManagement')}</h2>
-      <p>{t('Company.orders.ordersManagementPage')}</p>
-    </div>
-  );
-};
-
-export const CompanyProducts = () => {
-  const { t } = useTranslation();
-  return (
-    <div className="company-products">
-      <h2>{t('Company.products.productsManagement')}</h2>
-      <p>{t('Company.products.productsManagementPage')}</p>
-    </div>
-  );
-};
-
-export const CompanyCustomers = () => {
-  const { t } = useTranslation();
-  return (
-    <div className="company-customers">
-      <h2>{t('Company.customers.customersManagement')}</h2>
-      <p>{t('Company.customers.customersManagementPage')}</p>
-    </div>
-  );
-};
-
-export const CompanyAnalytics = () => {
-  const { t } = useTranslation();
-  return (
-    <div className="company-analytics">
-      <h2>{t('Company.analytics.analyticsReports')}</h2>
-      <p>{t('Company.analytics.analyticsPage')}</p>
-    </div>
-  );
-};
-
-export const CompanySettings = () => {
-  const { t } = useTranslation();
-  return (
-    <div className="company-settings">
-      <h2>{t('Company.settings.companySettings')}</h2>
-      <p>{t('Company.settings.settingsPage')}</p>
-    </div>
-  );
-};
 
 const CompanyDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
