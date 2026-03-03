@@ -15,13 +15,17 @@ import CompanyDashboard, {
   CompanyAnalytics,
   CompanySettings,
 } from './CompanyDashboard/CompanyDashboard';
+import CompanyClientsList from './CompanyClientsList/CompanyClientsList';
+import ClientPaymentPage from './ClientPayment/ClientPayment';
 
 const CompanyRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<CompanyDashboard />}>        
+      <Route path="/" element={<CompanyDashboard />}>
         <Route index element={<CompanyOverview />} />
         <Route path="dashboard" element={<CompanyOverview />} />
+        <Route path="clients" element={<CompanyClientsList />} />
+        <Route path="clients/payments" element={<ClientPaymentPage />} />
         <Route path="profile" element={<CompanyProfile />} />
         <Route path="orders" element={<CompanyOrders />} />
         <Route path="products" element={<CompanyProducts />} />

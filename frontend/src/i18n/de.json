@@ -146,6 +146,8 @@
     "noDataAvailable": "Keine Daten verfügbar",
     "editPlan": "Plan bearbeiten",
     "deletePlan": "Plan löschen",
+    "StatusGeneral": "Allgemein",
+    "StatusSupplier": "Lieferant",
     "errors": {
       "fillAllFields": "Bitte füllen Sie alle Felder aus",
       "selectPlan": "Bitte wählen Sie einen Plan aus"
@@ -858,6 +860,42 @@
     "cq": "CQ",
     "pq": "PQ",
     "progress": "Fortschritt"
+  },
+  "CompanyClientsList": {
+    "pageTitle": "KUNDEN",
+    "clients": "Kunden",
+    "newClients": "Neue Kunden",
+    "planButton": "Plan"
+  },
+  "ClientPayment": {
+    "pageTitle": "KUNDENZAHLUNG",
+    "breadcrumbParent": "Kunden",
+    "breadcrumbItem": "Kundenzahlung",
+    "filters": {
+      "filter": "Filter",
+      "all": "Alle",
+      "pending": "Ausstehend",
+      "completed": "Abgeschlossen",
+      "overdue": "Überfällig"
+    },
+    "addPayment": "Zahlung",
+    "table": {
+      "client": "Kunde",
+      "project": "Projekt",
+      "invoice": "Rechnungsnr.",
+      "amount": "Betrag",
+      "dueDate": "Fälligkeitsdatum",
+      "status": "Status",
+      "action": "Aktion"
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "completed": "Abgeschlossen",
+      "overdue": "Überfällig"
+    },
+    "viewPayment": "Zahlung anzeigen",
+    "expandDetails": "Details anzeigen",
+    "noPaymentsFound": "Keine Kundenzahlungen gefunden"
   },
   "CompanySidebar": {
     "clients": "Kunden",

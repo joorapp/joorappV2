@@ -46,116 +46,7 @@ export const CompanyOverview = () => {
     <>
       <Breadcrumbs title={t('Dashboards.Dashboards')} breadcrumbItem={t('Dashboards.Dashboard')} />
 
-      {/* 8 mini-stats-wid cards from dashboard image */}
-      <Row className="mb-4">
-        <Col lg="3" md="6" className="mb-3">
-          <Card className="mini-stats-wid border-start border-danger border-3">
-            <CardBody>
-              <p className="text-muted fw-medium mb-1">{t('CompanyDashboard.clients')}</p>
-              <h4 className="mb-2">8</h4>
-              <ul className="list-unstyled mb-0 font-size-13 text-muted">
-                <li>{t('CompanyDashboard.pendingPayments', { count: 1 })}</li>
-                <li>{t('CompanyDashboard.completedPayments', { count: 0 })}</li>
-                <li>{t('CompanyDashboard.clientInvoices', { count: 1 })}</li>
-              </ul>
-            </CardBody>
-          </Card>
-        </Col>
-        <Col lg="3" md="6" className="mb-3">
-          <Card className="mini-stats-wid border-start border-warning border-3">
-            <CardBody>
-              <p className="text-muted fw-medium mb-1">{t('CompanyDashboard.projects')}</p>
-              <h4 className="mb-2">8</h4>
-              <ul className="list-unstyled mb-0 font-size-13 text-muted">
-                <li>{t('CompanyDashboard.upcomingProjects', { count: 0 })}</li>
-                <li>{t('CompanyDashboard.ongoingProjects', { count: 8 })}</li>
-                <li>{t('CompanyDashboard.completedProjects', { count: 0 })}</li>
-                <li>{t('CompanyDashboard.onHold', { count: 0 })}</li>
-              </ul>
-            </CardBody>
-          </Card>
-        </Col>
-        <Col lg="3" md="6" className="mb-3">
-          <Card className="mini-stats-wid border-start border-info border-3">
-            <CardBody>
-              <p className="text-muted fw-medium mb-1">{t('CompanyDashboard.materials')} & {t('CompanyDashboard.rentalItems')}</p>
-              <div className="d-flex justify-content-between mb-1">
-                <span className="text-muted font-size-13">{t('CompanyDashboard.materials')}</span>
-                <span className="fw-medium">131</span>
-              </div>
-              <div className="d-flex justify-content-between font-size-13 text-muted">
-                <span>{t('CompanyDashboard.rentalItems')}</span>
-                <span>8</span>
-              </div>
-            </CardBody>
-          </Card>
-        </Col>
-        <Col lg="3" md="6" className="mb-3">
-          <Card className="mini-stats-wid border-start border-success border-3">
-            <CardBody>
-              <p className="text-muted fw-medium mb-1">{t('CompanyDashboard.staffs')}</p>
-              <h4 className="mb-2">14</h4>
-              <ul className="list-unstyled mb-0 font-size-13 text-muted">
-                <li>{t('CompanyDashboard.officeStaffs', { count: 14 })}</li>
-                <li>{t('CompanyDashboard.freelancers', { count: 0 })}</li>
-              </ul>
-            </CardBody>
-          </Card>
-        </Col>
-        <Col lg="3" md="6" className="mb-3">
-          <Card className="mini-stats-wid border-start border-danger border-3">
-            <CardBody>
-              <p className="text-muted fw-medium mb-1">{t('CompanyDashboard.suppliers')}</p>
-              <h4 className="mb-2">13</h4>
-              <ul className="list-unstyled mb-0 font-size-13 text-muted">
-                <li>{t('CompanyDashboard.mSuppliers', { amount: '₹ 9,607.00' })}</li>
-                <li>{t('CompanyDashboard.rSuppliers', { amount: '₹ 1,000.00' })}</li>
-              </ul>
-            </CardBody>
-          </Card>
-        </Col>
-        <Col lg="3" md="6" className="mb-3">
-          <Card className="mini-stats-wid border-start border-warning border-3">
-            <CardBody>
-              <p className="text-muted fw-medium mb-1">{t('CompanyDashboard.subcontractors')}</p>
-              <h4 className="mb-2">2</h4>
-              <ul className="list-unstyled mb-0 font-size-13 text-muted">
-                <li>{t('CompanyDashboard.pendingContracts', { count: 1 })}</li>
-                <li>{t('CompanyDashboard.completedContracts', { count: 0 })}</li>
-              </ul>
-            </CardBody>
-          </Card>
-        </Col>
-        <Col lg="3" md="6" className="mb-3">
-          <Card className="mini-stats-wid border-start border-info border-3">
-            <CardBody>
-              <p className="text-muted fw-medium mb-1">{t('CompanyDashboard.reports')}</p>
-              <h4 className="mb-2">28</h4>
-              <ul className="list-unstyled mb-0 font-size-13 text-muted">
-                <li>{t('CompanyDashboard.cashInHand', { amount: '₹ 5,000.00' })}</li>
-                <li>{t('CompanyDashboard.cashInBank', { amount: '₹ 2,34,207.00' })}</li>
-                <li>{t('CompanyDashboard.totalCash', { amount: '₹ 2,39,207.00' })}</li>
-              </ul>
-            </CardBody>
-          </Card>
-        </Col>
-        <Col lg="3" md="6" className="mb-3">
-          <Card className="mini-stats-wid border-start border-success border-3">
-            <CardBody>
-              <p className="text-muted fw-medium mb-1">{t('CompanyDashboard.users')}</p>
-              <h4 className="mb-2">22</h4>
-              <div className="font-size-13 text-muted d-flex flex-wrap gap-2">
-                <span>3 PM</span>
-                <span>1 AM</span>
-                <span>12 SO</span>
-                <span>1 PD</span>
-                <span>1 QC</span>
-                <span>4 Pu M</span>
-              </div>
-            </CardBody>
-          </Card>
-        </Col>
-      </Row>
+     
 
       <Row>
         <Col xl="4">
@@ -271,7 +162,7 @@ export const CompanyOverview = () => {
                     </div>
                     <div className="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
                       <span className="avatar-title rounded-circle bg-primary">
-                        <i className="bx bx-cart font-size-24 text-white"></i>
+                        <i className="bx bx-car font-size-24 text-white"></i>
                       </span>
                     </div>
                   </div>
@@ -285,11 +176,11 @@ export const CompanyOverview = () => {
                   <div className="d-flex">
                     <div className="flex-grow-1">
                       <p className="text-muted fw-medium">{t('CompanyDashboard.suppliers')}</p>
-                      <h4 className="mb-0">8</h4>
+                      <h4 className="mb-0">13</h4>
                     </div>
                     <div className="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
                       <span className="avatar-title rounded-circle bg-primary">
-                        <i className="bx bx-cart font-size-24 text-white"></i>
+                        <i className="bx bx-package font-size-24 text-white"></i>
                       </span>
                     </div>
                   </div>
@@ -302,11 +193,11 @@ export const CompanyOverview = () => {
                   <div className="d-flex">
                     <div className="flex-grow-1">
                       <p className="text-muted fw-medium">{t('CompanyDashboard.subcontractors')}</p>
-                      <h4 className="mb-0">8</h4>
+                      <h4 className="mb-0">2</h4>
                     </div>
                     <div className="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
                       <span className="avatar-title rounded-circle bg-primary">
-                        <i className="bx bx- font-size-24 text-white"></i>
+                        <i className="bx bx-wrench font-size-24 text-white"></i>
                       </span>
                     </div>
                   </div>
@@ -319,11 +210,11 @@ export const CompanyOverview = () => {
                   <div className="d-flex">
                     <div className="flex-grow-1">
                       <p className="text-muted fw-medium">{t('CompanyDashboard.reports')}</p>
-                      <h4 className="mb-0">8</h4>
+                      <h4 className="mb-0">28</h4>
                     </div>
                     <div className="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
                       <span className="avatar-title rounded-circle bg-primary">
-                        <i className="bx bx-cart font-size-24 text-white"></i>
+                        <i className="bx bx-bar-chart-alt-2 font-size-24 text-white"></i>
                       </span>
                     </div>
                   </div>

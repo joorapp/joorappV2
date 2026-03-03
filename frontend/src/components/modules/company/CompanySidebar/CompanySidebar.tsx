@@ -106,23 +106,38 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
     const pathName = location.pathname;
     const ul = document.getElementById('side-menu');
     if (!ul) return;
+
     const items = ul.getElementsByTagName('a') as HTMLCollectionOf<HTMLAnchorElement>;
     removeActivation(items);
+
+    let exactMatch: HTMLAnchorElement | null = null;
+    let prefixMatch: HTMLAnchorElement | null = null;
+
     for (let i = 0; i < items.length; ++i) {
       const item = items[i];
       const itemPath = item.getAttribute('href');
       const itemPathname = item.pathname || itemPath;
+
       if (
         itemPathname &&
         itemPathname !== '/#' &&
         itemPathname !== '/' &&
         !item.classList.contains('has-arrow')
       ) {
-        if (pathName === itemPathname || pathName.startsWith(itemPathname + '/')) {
-          activateParentDropdown(item);
+        if (pathName === itemPathname) {
+          exactMatch = item;
           break;
         }
+
+        if (!prefixMatch && pathName.startsWith(itemPathname + '/')) {
+          prefixMatch = item;
+        }
       }
+    }
+
+    const itemToActivate = exactMatch || prefixMatch;
+    if (itemToActivate) {
+      activateParentDropdown(itemToActivate);
     }
   }, [location.pathname, activateParentDropdown]);
 

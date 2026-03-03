@@ -23,6 +23,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  name?: string;
   role?: UserRole; // Optional, can be derived from other data
   companyId?: string; // For company users
 }

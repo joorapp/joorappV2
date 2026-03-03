@@ -110,6 +110,8 @@
     "pending": "Pending"
   },
   "Common": {
+    "id": "ID",
+    "name": "Name",
     "streetAddress": "Street Address",
     "loading": "Loading...",
     "error": "Error",
@@ -151,11 +153,16 @@
     "StatusPending": "Pending",
     "StatusInactive": "Inactive",
     "StatusActive": "Active",
+    "StatusGeneral": "General",
+    "StatusSupplier": "Supplier",
     "StatusDeleted": "Deleted",
     "StatusBlocked": "Blocked",
     "StatusUnblocked": "Unblocked",
     "StatusVerified": "Verified",
     "StatusUnverified": "Unverified",
+    "statusCompleted": "Completed",
+    "statusOverdue": "Overdue",
+    "statusNew": "New",
     "errors": {
       "fillAllFields": "Please fill in all fields",
       "selectPlan": "Please select a plan"
@@ -198,6 +205,7 @@
   },
   "NewClients": {
     "newClient": "New Client",
+    "clientId": "Client ID",
     "clientName": "Client Name",
     "status": "Status",
     "joinedDate": "Joined Date",
@@ -214,6 +222,8 @@
     "freeUsing": "Free Using",
     "daysRemaining": "days",
     "createClient": "Create Client",
+    "type": "Type",
+    "totalAmount": "Total Amount",
     "editClient": "Edit Client",
     "updateClient": "Update Client",
     "clientCreatedSuccessfully": "Client created successfully",
@@ -883,6 +893,49 @@
     "cq": "CQ",
     "pq": "PQ",
     "progress": "Progress"
+  },
+  "CompanyClientsList": {
+    "pageTitle": "CLIENTS LIST",
+    "clients": "Clients",
+    "newClients": "New Clients",
+    "planButton": "Plan",
+    "viewList": "List view",
+    "viewGrid": "Grid view"
+  },
+  "ClientPayment": {
+    "pageTitle": "CLIENT PAYMENT",
+    "breadcrumbParent": "Clients",
+    "breadcrumbItem": "Client Payment",
+    "filters": {
+      "filter": "Filter",
+      "all": "All",
+      "pending": "Pending",
+      "completed": "Completed",
+      "overdue": "Overdue"
+    },
+    "addPayment": "Payment",
+    "table": {
+      "client": "Client",
+      "project": "Project",
+      "invoice": "Invoice No.",
+      "amount": "Amount",
+      "dueDate": "Due Date",
+      "status": "Status",
+      "action": "Action",
+      "projectCost": "Project Cost",
+      "paidAmount": "Paid Amount",
+      "balanceAmount": "Balance Amount"
+
+
+    },
+    "status": {
+      "pending": "Pending",
+      "completed": "Completed",
+      "overdue": "Overdue"
+    },
+    "viewPayment": "View payment",
+    "expandDetails": "Show details",
+    "noPaymentsFound": "No client payments found"
   },
   "CompanySidebar": {
     "clients": "Clients",

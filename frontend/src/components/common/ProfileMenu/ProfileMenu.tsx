@@ -14,13 +14,21 @@ import { useNavigate, Link } from "react-router-dom";
 import user1 from "../../../assets/images/users/avatar-1.jpg";
 import LoginService from "../../../core/service/LoginService";
 import { useAuth } from "../../../context/AuthContext";
+import { useCompanies } from "../../../context/CompaniesContext";
 
 const ProfileMenu = (props: { t: (key: string) => string }) => {
   // Declare a new state variable, which we'll call "menu"
   const [menu, setMenu] = useState(false);
-  const username = "Admin";
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
+  const { companies } = useCompanies();
+
+  const displayName =
+    (user?.firstName || user?.lastName)
+      ? `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim()
+      : user?.name || user?.email || "Admin";
+  
+  const companyName = companies.length > 0 ? companies[0].name : "";
   
   // Determine profile route based on user role
   const getProfileRoute = () => {
@@ -58,7 +66,9 @@ const ProfileMenu = (props: { t: (key: string) => string }) => {
             src={user1}
             alt="Header Avatar"
           />
-          <span className="d-none d-xl-inline-block ms-2 me-1">{username}</span>
+          <span className="d-none d-xl-inline-block ms-2 me-1">
+            {companyName ? `${companyName}` : displayName}
+          </span>
           <i className="mdi mdi-chevron-down d-none d-xl-inline-block" />
         </DropdownToggle>
         <DropdownMenu className="dropdown-menu-end">

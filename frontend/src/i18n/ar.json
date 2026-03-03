@@ -146,6 +146,8 @@
     "noDataAvailable": "لا توجد بيانات متاحة",
     "editPlan": "تعديل الخطة",
     "deletePlan": "حذف الخطة",
+    "StatusGeneral": "عام",
+    "StatusSupplier": "مورد",
     "errors": {
       "fillAllFields": "يرجى ملء جميع الحقول",
       "selectPlan": "يرجى اختيار خطة"
@@ -858,6 +860,42 @@
     "cq": "CQ",
     "pq": "PQ",
     "progress": "التقدم"
+  },
+  "CompanyClientsList": {
+    "pageTitle": "العملاء",
+    "clients": "العملاء",
+    "newClients": "عملاء جدد",
+    "planButton": "الخطة"
+  },
+  "ClientPayment": {
+    "pageTitle": "مدفوعات العملاء",
+    "breadcrumbParent": "العملاء",
+    "breadcrumbItem": "مدفوعات العملاء",
+    "filters": {
+      "filter": "تصفية",
+      "all": "الكل",
+      "pending": "قيد الانتظار",
+      "completed": "مكتملة",
+      "overdue": "متأخرة"
+    },
+    "addPayment": "دفع",
+    "table": {
+      "client": "العميل",
+      "project": "المشروع",
+      "invoice": "رقم الفاتورة",
+      "amount": "المبلغ",
+      "dueDate": "تاريخ الاستحقاق",
+      "status": "الحالة",
+      "action": "إجراء"
+    },
+    "status": {
+      "pending": "قيد الانتظار",
+      "completed": "مكتملة",
+      "overdue": "متأخرة"
+    },
+    "viewPayment": "عرض الدفع",
+    "expandDetails": "عرض التفاصيل",
+    "noPaymentsFound": "لا توجد مدفوعات عملاء"
   },
   "CompanySidebar": {
     "clients": "العملاء",
