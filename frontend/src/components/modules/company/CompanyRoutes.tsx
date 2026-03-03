@@ -10,6 +10,8 @@ import CompanyDashboard, { CompanyOverview } from './CompanyDashboard/CompanyDas
 import CompanyClientsList from './CompanyClientsList/CompanyClientsList';
 import ClientPaymentPage from './ClientPayment/ClientPayment';
 import CompanyClientTypes from './CompanyClientTypes/CompanyClientTypes';
+import CompanyProjectTypes from './CompanyProjectTypes/CompanyProjectTypes';
+import CompanyProjectCategories from './CompanyProjectCategories/CompanyProjectCategories';
 
 const CompanyRoutes = () => {
   return (
@@ -19,6 +21,8 @@ const CompanyRoutes = () => {
         <Route path="dashboard" element={<CompanyOverview />} />
         <Route path="clients" element={<CompanyClientsList />} />
         <Route path="clients/types" element={<CompanyClientTypes />} />
+        <Route path="projects/types" element={<CompanyProjectTypes />} />
+        <Route path="projects/categories" element={<CompanyProjectCategories />} />
         <Route path="clients/payments" element={<ClientPaymentPage />} />
         {/* Fallback inside company */}
         <Route path="*" element={<Navigate to="/company" replace />} />

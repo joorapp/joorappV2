@@ -235,16 +235,8 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
       iconClass: 'bx bx-buildings',
       label: t('CompanySidebar.projects'),
       children: [
-        {
-          key: 'projectTypes',
-          path: '/company/projects/types',
-          label: t('CompanySidebar.projectTypes'),
-        },
-        {
-          key: 'projectCategories',
-          path: '/company/projects/categories',
-          label: t('CompanySidebar.projectCategories'),
-        },
+        
+        
         {
           key: 'projects',
           path: '/company/projects',
@@ -481,7 +473,7 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
           label: t('CompanySidebar.clientTypes'),
         },
         {
-          key: 'settingsProjectTypes',
+          key: 'projectTypes',
           path: '/company/projects/types',
           label: t('CompanySidebar.projectTypes'),
         },
@@ -490,31 +482,28 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
           path: '/company/projects/categories',
           label: t('CompanySidebar.projectCategories'),
         },
-        {
-          key: 'settingsRoles',
-          path: '/company/users/role-permissions',
-          label: t('Navigation.roles'),
-        },
+       
       ],
     },
     {
       key: 'usersGroup',
       iconClass: 'bx bx-git-branch',
-      label: t('CompanySidebar.manageUsers'),
+      label: t('CompanySidebar.manageEmployees'),
       children: [
+       
         {
-          key: 'users',
-          path: '/company/users',
-          label: t('CompanySidebar.users'),
+          key: 'employees',
+          path: '/company/employees',
+          label: t('CompanySidebar.employees'),
         },
         {
           key: 'rolePermissions',
-          path: '/company/users/role-permissions',
+          path: '/company/employees/role-permissions',
           label: t('CompanySidebar.rolePermissions'),
         },
         {
           key: 'howItWorks',
-          path: '/company/users/how-it-works',
+          path: '/company/employees/how-it-works',
           label: t('CompanySidebar.howItWorks'),
         },
       ],

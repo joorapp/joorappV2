@@ -911,6 +911,68 @@
       "description": "Enter description (optional)"
     }
   },
+  "CompanyProjectTypes": {
+    "pageTitle": "PROJECT TYPES",
+    "breadcrumbParent": "Projects",
+    "breadcrumbItem": "Project Types",
+    "addProjectType": "Add project type",
+    "editProjectType": "Edit project type",
+    "createdSuccessfully": "Project type created successfully",
+    "updatedSuccessfully": "Project type updated successfully",
+    "deletedSuccessfully": "Project type deleted successfully",
+    "deleteConfirmation": "Do you really want to delete project type",
+    "noProjectTypesFound": "No project types found",
+    "table": {
+      "id": "ID",
+      "name": "Project type",
+      "description": "Description",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "fields": {
+      "name": "Project type name",
+      "description": "Description",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Enter project type name",
+      "description": "Enter description (optional)"
+    }
+  },
+  "CompanyProjectCategories": {
+    "pageTitle": "PROJECT CATEGORIES",
+    "breadcrumbParent": "Projects",
+    "breadcrumbItem": "Project Categories",
+    "addProjectCategory": "Add project category",
+    "editProjectCategory": "Edit project category",
+    "createdSuccessfully": "Project category created successfully",
+    "updatedSuccessfully": "Project category updated successfully",
+    "deletedSuccessfully": "Project category deleted successfully",
+    "deleteConfirmation": "Do you really want to delete project category",
+    "noProjectCategoriesFound": "No project categories found",
+    "table": {
+      "id": "ID",
+      "name": "Project category",
+      "description": "Description",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "fields": {
+      "name": "Project category name",
+      "description": "Description",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Enter project category name",
+      "description": "Enter description (optional)"
+    }
+  },
+  "CompanyRoles": {
+    "pageTitle": "ROLES",
+    "breadcrumbParent": "Users",
+    "breadcrumbItem": "Roles",
+    "addRole": "Add role"
+  },
   "ClientPayment": {
     "pageTitle": "CLIENT PAYMENT",
     "breadcrumbParent": "Clients",
@@ -998,7 +1060,9 @@
     "paySubcontractors": "Pay Subcontractors",
     "downloadReports": "Download Reports",
     "manageUsers": "Manage Users",
-    "users": "Users",
+    "manageEmployees": "Manage Employees",
+    "roles": "Roles",
+    "employees": "Employees",
     "rolePermissions": "Role Permissions",
     "howItWorks": "How it Works?"
   }

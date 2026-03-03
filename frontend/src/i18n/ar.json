@@ -343,6 +343,12 @@
       "description": "الوصف"
     }
   },
+  "CompanyRoles": {
+    "pageTitle": "الأدوار",
+    "breadcrumbParent": "المستخدمون",
+    "breadcrumbItem": "الأدوار",
+    "addRole": "إضافة دور"
+  },
   "Footer": {
     "termsOfService": "شروط الخدمة",
     "privacyPolicy": "سياسة الخصوصية",
@@ -925,6 +931,62 @@
       "description": "أدخل الوصف (اختياري)"
     }
   },
+  "CompanyProjectTypes": {
+    "pageTitle": "أنواع المشاريع",
+    "breadcrumbParent": "المشاريع",
+    "breadcrumbItem": "أنواع المشاريع",
+    "addProjectType": "إضافة نوع مشروع",
+    "editProjectType": "تعديل نوع المشروع",
+    "createdSuccessfully": "تم إنشاء نوع المشروع بنجاح",
+    "updatedSuccessfully": "تم تحديث نوع المشروع بنجاح",
+    "deletedSuccessfully": "تم حذف نوع المشروع بنجاح",
+    "deleteConfirmation": "هل تريد حقًا حذف نوع المشروع",
+    "noProjectTypesFound": "لا توجد أنواع مشاريع",
+    "table": {
+      "id": "المعرف",
+      "name": "نوع المشروع",
+      "description": "الوصف",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "fields": {
+      "name": "اسم نوع المشروع",
+      "description": "الوصف",
+      "status": "الحالة"
+    },
+    "placeholders": {
+      "name": "أدخل اسم نوع المشروع",
+      "description": "أدخل الوصف (اختياري)"
+    }
+  },
+  "CompanyProjectCategories": {
+    "pageTitle": "فئات المشاريع",
+    "breadcrumbParent": "المشاريع",
+    "breadcrumbItem": "فئات المشاريع",
+    "addProjectCategory": "إضافة فئة مشروع",
+    "editProjectCategory": "تعديل فئة المشروع",
+    "createdSuccessfully": "تم إنشاء فئة المشروع بنجاح",
+    "updatedSuccessfully": "تم تحديث فئة المشروع بنجاح",
+    "deletedSuccessfully": "تم حذف فئة المشروع بنجاح",
+    "deleteConfirmation": "هل تريد حقًا حذف فئة المشروع",
+    "noProjectCategoriesFound": "لا توجد فئات مشاريع",
+    "table": {
+      "id": "المعرف",
+      "name": "فئة المشروع",
+      "description": "الوصف",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "fields": {
+      "name": "اسم فئة المشروع",
+      "description": "الوصف",
+      "status": "الحالة"
+    },
+    "placeholders": {
+      "name": "أدخل اسم فئة المشروع",
+      "description": "أدخل الوصف (اختياري)"
+    }
+  },
   "CompanySidebar": {
     "clients": "العملاء",
     "manageClients": "إدارة العملاء",
@@ -976,6 +1038,7 @@
     "paySubcontractors": "دفع للمقاولين من الباطن",
     "downloadReports": "تنزيل التقارير",
     "manageUsers": "إدارة المستخدمين",
+    "roles": "الأدوار",
     "users": "المستخدمون",
     "rolePermissions": "أذونات الأدوار",
     "howItWorks": "كيف يعمل؟"

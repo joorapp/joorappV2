@@ -343,6 +343,12 @@
       "description": "Beschreibung"
     }
   },
+  "CompanyRoles": {
+    "pageTitle": "ROLLEN",
+    "breadcrumbParent": "Benutzer",
+    "breadcrumbItem": "Rollen",
+    "addRole": "Rolle hinzufügen"
+  },
   "Footer": {
     "termsOfService": "Nutzungsbedingungen",
     "privacyPolicy": "Datenschutzrichtlinie",
@@ -925,6 +931,62 @@
       "description": "Beschreibung eingeben (optional)"
     }
   },
+  "CompanyProjectTypes": {
+    "pageTitle": "PROJEKTTYPEN",
+    "breadcrumbParent": "Projekte",
+    "breadcrumbItem": "Projekttypen",
+    "addProjectType": "Projekttyp hinzufügen",
+    "editProjectType": "Projekttyp bearbeiten",
+    "createdSuccessfully": "Projekttyp wurde erfolgreich erstellt",
+    "updatedSuccessfully": "Projekttyp wurde erfolgreich aktualisiert",
+    "deletedSuccessfully": "Projekttyp wurde erfolgreich gelöscht",
+    "deleteConfirmation": "Möchten Sie diesen Projekttyp wirklich löschen",
+    "noProjectTypesFound": "Keine Projekttypen gefunden",
+    "table": {
+      "id": "ID",
+      "name": "Projekttyp",
+      "description": "Beschreibung",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "fields": {
+      "name": "Name des Projekttyps",
+      "description": "Beschreibung",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Name des Projekttyps eingeben",
+      "description": "Beschreibung eingeben (optional)"
+    }
+  },
+  "CompanyProjectCategories": {
+    "pageTitle": "PROJEKTKATEGORIEN",
+    "breadcrumbParent": "Projekte",
+    "breadcrumbItem": "Projektkategorien",
+    "addProjectCategory": "Projektkategorie hinzufügen",
+    "editProjectCategory": "Projektkategorie bearbeiten",
+    "createdSuccessfully": "Projektkategorie wurde erfolgreich erstellt",
+    "updatedSuccessfully": "Projektkategorie wurde erfolgreich aktualisiert",
+    "deletedSuccessfully": "Projektkategorie wurde erfolgreich gelöscht",
+    "deleteConfirmation": "Möchten Sie diese Projektkategorie wirklich löschen",
+    "noProjectCategoriesFound": "Keine Projektkategorien gefunden",
+    "table": {
+      "id": "ID",
+      "name": "Projektkategorie",
+      "description": "Beschreibung",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "fields": {
+      "name": "Name der Projektkategorie",
+      "description": "Beschreibung",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Name der Projektkategorie eingeben",
+      "description": "Beschreibung eingeben (optional)"
+    }
+  },
   "CompanySidebar": {
     "clients": "Kunden",
     "manageClients": "Kunden verwalten",
@@ -976,6 +1038,7 @@
     "paySubcontractors": "Subunternehmer bezahlen",
     "downloadReports": "Berichte herunterladen",
     "manageUsers": "Benutzer verwalten",
+    "roles": "Rollen",
     "users": "Benutzer",
     "rolePermissions": "Rollenberechtigungen",
     "howItWorks": "Wie funktioniert es?"
