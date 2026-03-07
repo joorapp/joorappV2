@@ -432,6 +432,7 @@
     "firstName": "الاسم الأول",
     "lastName": "اسم العائلة",
     "role": "الدور",
+    "jobTitle": "المسمى الوظيفي",
     "createdDate": "تاريخ الإنشاء",
     "lastLogin": "آخر تسجيل دخول",
     "statusActive": "نشط",
@@ -672,6 +673,19 @@
       "subcontractorManagement": "إدارة المقاولين من الباطن",
       "financeManagement": "إدارة المالية",
       "reportsManagement": "إدارة التقارير"
+    }
+  },
+  "AssignRoles": {
+    "noAssignmentsFound": "لم يتم العثور على تعيينات أدوار",
+    "updatedSuccessfully": "تم تحديث تعيين الدور بنجاح",
+    "table": {
+      "applicationRole": "دور التطبيق",
+      "lastUpdated": "آخر تحديث"
+    },
+    "modal": {
+      "title": "تعيين دور",
+      "currentRole": "الدور الحالي",
+      "selectRole": "اختر دور التطبيق"
     }
   },
   "Tickets": {
@@ -929,6 +943,87 @@
     "placeholders": {
       "name": "أدخل اسم نوع العميل",
       "description": "أدخل الوصف (اختياري)"
+    }
+  },
+  "CompanyProjectsList": {
+    "pageTitle": "قائمة المشاريع",
+    "breadcrumbParent": "المشاريع",
+    "breadcrumbItem": "قائمة المشاريع",
+    "addProject": "إضافة مشروع",
+    "createdSuccessfully": "تم إنشاء المشروع بنجاح",
+    "noProjectsFound": "لم يتم العثور على مشاريع",
+    "form": {
+      "drawingFileType": "نوع ملف الرسم",
+      "client": "العميل",
+      "selectClient": "اختر العميل",
+      "addClient": "إضافة عميل",
+      "clientName": "اسم العميل",
+      "clientNamePlaceholder": "أدخل اسم العميل",
+      "projectType": "نوع المشروع",
+      "selectProjectType": "اختر نوع المشروع",
+      "addProjectType": "إضافة نوع المشروع",
+      "projectCategory": "فئة المشروع",
+      "selectProjectCategory": "اختر فئة المشروع",
+      "addProjectCategory": "إضافة فئة المشروع",
+      "projectStatus": "حالة المشروع",
+      "selectProjectStatus": "اختر حالة المشروع",
+      "projectName": "اسم المشروع",
+      "placeholderProjectName": "اسم المشروع",
+      "projectCost": "تكلفة المشروع",
+      "placeholderEstimatedCost": "التكلفة التقديرية",
+      "area": "المساحة",
+      "placeholderArea": "مثال: 3500 قدم² / 2850 م² إلخ ...",
+      "placeholderLocation": "موقع المشروع",
+      "startDate": "تاريخ البدء",
+      "finishDate": "تاريخ الانتهاء (يمكن إضافته لاحقاً)",
+      "assignProjectManager": "تعيين مدير المشروع",
+      "selectProjectManager": "اختر مدير المشروع لهذا المشروع",
+      "addProjectManager": "إضافة مدير المشروع",
+      "assignStoreIncharge": "تعيين مسؤول المخزن",
+      "addStoreIncharge": "إضافة مسؤول المخزن",
+      "selectOne": "اختر واحداً",
+      "optionName": "الاسم",
+      "optionNamePlaceholder": "أدخل الاسم",
+      "assignSiteOperations": "تعيين عمليات الموقع (أضف عمليات الموقع الذي هو أيضاً مسؤول المخزن)",
+      "selectSiteOperations": "اختر عمليات الموقع",
+      "placeholderSiteOperations": "",
+      "remarks": "ملاحظات",
+      "placeholderRemarks": "ملاحظات (ملاحظة حول مشروعك)",
+      "drawingsLink": "رابط الرسومات",
+      "placeholderDrawingsLink": "https://example.com أو http://example.com",
+      "drawingsUpload": "الرسومات (رفع PDF / صورة)",
+      "drawingFileSizeError": "يجب ألا يتجاوز حجم الملف 30 كيلوبايت",
+      "drawingFileHint": "PDF أو صورة فقط. الحجم الأقصى: 30 كيلوبايت"
+    },
+    "placeholders": {
+      "name": "أدخل اسم المشروع",
+      "clientName": "أدخل اسم العميل",
+      "projectManager": "أدخل اسم مدير المشروع",
+      "location": "أدخل الموقع",
+      "drawing": "أدخل مرجع الرسم",
+      "category": "أدخل الفئة",
+      "projectCost": "أدخل تكلفة المشروع"
+    },
+    "drawingPdf": "PDF",
+    "drawingImage": "صورة",
+    "viewDrawing": "عرض",
+    "statusActive": "نشط",
+    "statusCompleted": "مكتمل",
+    "statusPending": "قيد الانتظار",
+    "statusOnHold": "معلق",
+    "table": {
+      "id": "المعرف",
+      "name": "اسم المشروع",
+      "client": "العميل",
+      "projectManager": "مدير المشروع",
+      "location": "الموقع",
+      "drawing": "الرسم",
+      "type": "النوع",
+      "category": "الفئة",
+      "projectCost": "تكلفة المشروع",
+      "startDate": "تاريخ البدء",
+      "endDate": "تاريخ الانتهاء",
+      "progress": "التقدم"
     }
   },
   "CompanyProjectTypes": {

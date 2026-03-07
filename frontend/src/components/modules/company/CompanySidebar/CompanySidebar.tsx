@@ -235,13 +235,12 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
       iconClass: 'bx bx-buildings',
       label: t('CompanySidebar.projects'),
       children: [
-        
-        
         {
-          key: 'projects',
+          key: 'projectsList',
           path: '/company/projects',
           label: t('CompanySidebar.projectsList'),
         },
+       
         {
           key: 'estimations',
           path: '/company/projects/estimations',
@@ -249,114 +248,114 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
         },
       ],
     },
-    {
-      key: 'scheduleActivitiesGroup',
-      iconClass: 'bx bx-calendar-event',
-      label: t('CompanySidebar.scheduleActivities'),
-      children: [
-        {
-          key: 'stages',
-          path: '/company/schedule/stages',
-          label: t('CompanySidebar.stages'),
-        },
-        {
-          key: 'activities',
-          path: '/company/schedule/activities',
-          label: t('CompanySidebar.activities'),
-        },
-        {
-          key: 'subActivities',
-          path: '/company/schedule/sub-activities',
-          label: t('CompanySidebar.subActivities'),
-        },
-      ],
-    },
-    {
-      key: 'assignTasks',
-      path: '/company/assign-tasks',
-      iconClass: 'bx bx-check-square',
-      label: t('CompanySidebar.assignTasks'),
-    },
-    {
-      key: 'materialsGroup',
-      iconClass: 'bx bx-layer',
-      label: t('CompanySidebar.manageMaterials'),
-      children: [
-        {
-          key: 'materialCategories',
-          path: '/company/materials/categories',
-          label: t('CompanySidebar.materialCategories'),
-        },
-        {
-          key: 'units',
-          path: '/company/materials/units',
-          label: t('CompanySidebar.units'),
-        },
-        {
-          key: 'materials',
-          path: '/company/materials',
-          label: t('CompanySidebar.materials'),
-        },
-      ],
-    },
-    {
-      key: 'inventoryGroup',
-      iconClass: 'bx bx-box',
-      label: t('CompanySidebar.manageInventory'),
-      children: [
-        {
-          key: 'inventory',
-          path: '/company/inventory',
-          label: t('CompanySidebar.inventory'),
-        },
-        {
-          key: 'materialTransfer',
-          path: '/company/inventory/material-transfer',
-          label: t('CompanySidebar.materialTransfer'),
-        },
-        {
-          key: 'materialReturn',
-          path: '/company/inventory/material-return',
-          label: t('CompanySidebar.materialReturn'),
-        },
-        {
-          key: 'newStores',
-          path: '/company/inventory/new-stores',
-          label: t('CompanySidebar.newStores'),
-        },
-      ],
-    },
-    {
-      key: 'rentalsGroup',
-      iconClass: 'bx bx-car',
-      label: t('CompanySidebar.manageRentals'),
-      children: [
-        {
-          key: 'rentalCategories',
-          path: '/company/rentals/categories',
-          label: t('CompanySidebar.rentalCategories'),
-        },
-        {
-          key: 'rentalItems',
-          path: '/company/rentals/items',
-          label: t('CompanySidebar.rentalItems'),
-        },
-      ],
-    },
+    // {
+    //   key: 'scheduleActivitiesGroup',
+    //   iconClass: 'bx bx-calendar-event',
+    //   label: t('CompanySidebar.scheduleActivities'),
+    //   children: [
+    //     {
+    //       key: 'stages',
+    //       path: '/company/schedule/stages',
+    //       label: t('CompanySidebar.stages'),
+    //     },
+    //     {
+    //       key: 'activities',
+    //       path: '/company/schedule/activities',
+    //       label: t('CompanySidebar.activities'),
+    //     },
+    //     {
+    //       key: 'subActivities',
+    //       path: '/company/schedule/sub-activities',
+    //       label: t('CompanySidebar.subActivities'),
+    //     },
+    //   ],
+    // },
+    // {
+    //   key: 'assignTasks',
+    //   path: '/company/assign-tasks',
+    //   iconClass: 'bx bx-check-square',
+    //   label: t('CompanySidebar.assignTasks'),
+    // },
+    // {
+    //   key: 'materialsGroup',
+    //   iconClass: 'bx bx-layer',
+    //   label: t('CompanySidebar.manageMaterials'),
+    //   children: [
+    //     {
+    //       key: 'materialCategories',
+    //       path: '/company/materials/categories',
+    //       label: t('CompanySidebar.materialCategories'),
+    //     },
+    //     {
+    //       key: 'units',
+    //       path: '/company/materials/units',
+    //       label: t('CompanySidebar.units'),
+    //     },
+    //     {
+    //       key: 'materials',
+    //       path: '/company/materials',
+    //       label: t('CompanySidebar.materials'),
+    //     },
+    //   ],
+    // },
+    // {
+    //   key: 'inventoryGroup',
+    //   iconClass: 'bx bx-box',
+    //   label: t('CompanySidebar.manageInventory'),
+    //   children: [
+    //     {
+    //       key: 'inventory',
+    //       path: '/company/inventory',
+    //       label: t('CompanySidebar.inventory'),
+    //     },
+    //     {
+    //       key: 'materialTransfer',
+    //       path: '/company/inventory/material-transfer',
+    //       label: t('CompanySidebar.materialTransfer'),
+    //     },
+    //     {
+    //       key: 'materialReturn',
+    //       path: '/company/inventory/material-return',
+    //       label: t('CompanySidebar.materialReturn'),
+    //     },
+    //     {
+    //       key: 'newStores',
+    //       path: '/company/inventory/new-stores',
+    //       label: t('CompanySidebar.newStores'),
+    //     },
+    //   ],
+    // },
+    // {
+    //   key: 'rentalsGroup',
+    //   iconClass: 'bx bx-car',
+    //   label: t('CompanySidebar.manageRentals'),
+    //   children: [
+    //     {
+    //       key: 'rentalCategories',
+    //       path: '/company/rentals/categories',
+    //       label: t('CompanySidebar.rentalCategories'),
+    //     },
+    //     {
+    //       key: 'rentalItems',
+    //       path: '/company/rentals/items',
+    //       label: t('CompanySidebar.rentalItems'),
+    //     },
+    //   ],
+    // },
     {
       key: 'staffsGroup',
       iconClass: 'bx bx-user-voice',
-      label: t('CompanySidebar.manageStaffs'),
+      label: t('CompanySidebar.manageEmployees'),
       children: [
         {
-          key: 'jobTitles',
-          path: '/company/staffs/job-titles',
-          label: t('CompanySidebar.jobTitles'),
+          key: 'employees',
+          path: '/company/employees',
+          label: t('CompanySidebar.employees'),
         },
         {
-          key: 'staffs',
-          path: '/company/staffs',
-          label: t('CompanySidebar.staffs'),
+          key: 'assignRoles',
+          path: '/company/staffs/assignRoles',
+          label: t('CompanySidebar.assignRoles'),
         },
         {
           key: 'salaries',
@@ -375,93 +374,93 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
         },
       ],
     },
-    {
-      key: 'cashBookGroup',
-      iconClass: 'bx bx-rupee',
-      label: t('CompanySidebar.cashBook'),
-      children: [
-        {
-          key: 'openingBalance',
-          path: '/company/cash-book/opening-balance',
-          label: t('CompanySidebar.openingBalance'),
-        },
-        {
-          key: 'cashTransfers',
-          path: '/company/cash-book/transfers',
-          label: t('CompanySidebar.transfers'),
-        },
-        {
-          key: 'otherIncomes',
-          path: '/company/cash-book/other-incomes',
-          label: t('CompanySidebar.otherIncomes'),
-        },
-        {
-          key: 'otherExpenses',
-          path: '/company/cash-book/other-expenses',
-          label: t('CompanySidebar.otherExpenses'),
-        },
-      ],
-    },
-    {
-      key: 'suppliersGroup',
-      iconClass: 'bx bx-id-card',
-      label: t('CompanySidebar.manageSuppliers'),
-      children: [
-        {
-          key: 'suppliers',
-          path: '/company/suppliers',
-          label: t('CompanySidebar.suppliers'),
-        },
-        {
-          key: 'purchases',
-          path: '/company/suppliers/purchases',
-          label: t('CompanySidebar.purchases'),
-        },
-        {
-          key: 'payMaterialSuppliers',
-          path: '/company/suppliers/pay-material-suppliers',
-          label: t('CompanySidebar.payMaterialSuppliers'),
-        },
-        {
-          key: 'rentalBills',
-          path: '/company/suppliers/rental-bills',
-          label: t('CompanySidebar.rentalBills'),
-        },
-        {
-          key: 'payRentalSuppliers',
-          path: '/company/suppliers/pay-rental-suppliers',
-          label: t('CompanySidebar.payRentalSuppliers'),
-        },
-      ],
-    },
-    {
-      key: 'subcontractorsGroup',
-      iconClass: 'bx bx-train',
-      label: t('CompanySidebar.subcontractors'),
-      children: [
-        {
-          key: 'subcontractors',
-          path: '/company/subcontractors',
-          label: t('CompanySidebar.subcontractors'),
-        },
-        {
-          key: 'contractTypes',
-          path: '/company/subcontractors/contract-types',
-          label: t('CompanySidebar.contractTypes'),
-        },
-        {
-          key: 'paySubcontractors',
-          path: '/company/subcontractors/pay',
-          label: t('CompanySidebar.paySubcontractors'),
-        },
-      ],
-    },
-    {
-      key: 'downloadReports',
-      path: '/company/download-reports',
-      iconClass: 'bx bx-download',
-      label: t('CompanySidebar.downloadReports'),
-    },
+    // {
+    //   key: 'cashBookGroup',
+    //   iconClass: 'bx bx-rupee',
+    //   label: t('CompanySidebar.cashBook'),
+    //   children: [
+    //     {
+    //       key: 'openingBalance',
+    //       path: '/company/cash-book/opening-balance',
+    //       label: t('CompanySidebar.openingBalance'),
+    //     },
+    //     {
+    //       key: 'cashTransfers',
+    //       path: '/company/cash-book/transfers',
+    //       label: t('CompanySidebar.transfers'),
+    //     },
+    //     {
+    //       key: 'otherIncomes',
+    //       path: '/company/cash-book/other-incomes',
+    //       label: t('CompanySidebar.otherIncomes'),
+    //     },
+    //     {
+    //       key: 'otherExpenses',
+    //       path: '/company/cash-book/other-expenses',
+    //       label: t('CompanySidebar.otherExpenses'),
+    //     },
+    //   ],
+    // },
+    // {
+    //   key: 'suppliersGroup',
+    //   iconClass: 'bx bx-id-card',
+    //   label: t('CompanySidebar.manageSuppliers'),
+    //   children: [
+    //     {
+    //       key: 'suppliers',
+    //       path: '/company/suppliers',
+    //       label: t('CompanySidebar.suppliers'),
+    //     },
+    //     {
+    //       key: 'purchases',
+    //       path: '/company/suppliers/purchases',
+    //       label: t('CompanySidebar.purchases'),
+    //     },
+    //     {
+    //       key: 'payMaterialSuppliers',
+    //       path: '/company/suppliers/pay-material-suppliers',
+    //       label: t('CompanySidebar.payMaterialSuppliers'),
+    //     },
+    //     {
+    //       key: 'rentalBills',
+    //       path: '/company/suppliers/rental-bills',
+    //       label: t('CompanySidebar.rentalBills'),
+    //     },
+    //     {
+    //       key: 'payRentalSuppliers',
+    //       path: '/company/suppliers/pay-rental-suppliers',
+    //       label: t('CompanySidebar.payRentalSuppliers'),
+    //     },
+    //   ],
+    // },
+    // {
+    //   key: 'subcontractorsGroup',
+    //   iconClass: 'bx bx-train',
+    //   label: t('CompanySidebar.subcontractors'),
+    //   children: [
+    //     {
+    //       key: 'subcontractors',
+    //       path: '/company/subcontractors',
+    //       label: t('CompanySidebar.subcontractors'),
+    //     },
+    //     {
+    //       key: 'contractTypes',
+    //       path: '/company/subcontractors/contract-types',
+    //       label: t('CompanySidebar.contractTypes'),
+    //     },
+    //     {
+    //       key: 'paySubcontractors',
+    //       path: '/company/subcontractors/pay',
+    //       label: t('CompanySidebar.paySubcontractors'),
+    //     },
+    //   ],
+    // },
+    // {
+    //   key: 'downloadReports',
+    //   path: '/company/download-reports',
+    //   iconClass: 'bx bx-download',
+    //   label: t('CompanySidebar.downloadReports'),
+    // },
     {
       key: 'settings',
       iconClass: 'bx bx-cog',
@@ -482,19 +481,10 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
           path: '/company/projects/categories',
           label: t('CompanySidebar.projectCategories'),
         },
-       
-      ],
-    },
-    {
-      key: 'usersGroup',
-      iconClass: 'bx bx-git-branch',
-      label: t('CompanySidebar.manageEmployees'),
-      children: [
-       
         {
-          key: 'employees',
-          path: '/company/employees',
-          label: t('CompanySidebar.employees'),
+          key: 'jobTitles',
+          path: '/company/employees/job-titles',
+          label: t('CompanySidebar.jobTitles'),
         },
         {
           key: 'rolePermissions',
@@ -506,8 +496,10 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
           path: '/company/employees/how-it-works',
           label: t('CompanySidebar.howItWorks'),
         },
+       
       ],
-    }
+    },
+    
     
   ] as const;
 

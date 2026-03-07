@@ -165,6 +165,8 @@
     "statusNew": "New",
     "settings": "Settings",
     "create": "Create",
+    "salary": "Salary",
+    "jobTitle": "Job Title",
     "errors": {
       "fillAllFields": "Please fill in all fields",
       "selectPlan": "Please select a plan"
@@ -431,6 +433,8 @@
     "firstName": "First Name",
     "lastName": "Last Name",
     "role": "Role",
+    "assignRoles": "Assign Roles",
+    "jobTitle": "Job Title",
     "createdDate": "Created Date",
     "lastLogin": "Last Login",
     "statusActive": "Active",
@@ -682,6 +686,19 @@
       "reportsManagement": "Reports Management"
     }
   },
+  "AssignRoles": {
+    "noAssignmentsFound": "No role assignments found",
+    "updatedSuccessfully": "Role assignment updated successfully",
+    "table": {
+      "applicationRole": "Application Role",
+      "lastUpdated": "Last Updated"
+    },
+    "modal": {
+      "title": "Assign Role",
+      "currentRole": "Current Role",
+      "selectRole": "Select application role"
+    }
+  },
   "Tickets": {
     "title": "Raising Tickets",
     "subtitle": "Create and manage support tickets",
@@ -911,6 +928,87 @@
       "description": "Enter description (optional)"
     }
   },
+  "CompanyProjectsList": {
+    "pageTitle": "PROJECTS LIST",
+    "breadcrumbParent": "Projects",
+    "breadcrumbItem": "Projects List",
+    "addProject": "Add Project",
+    "createdSuccessfully": "Project created successfully",
+    "noProjectsFound": "No projects found",
+    "form": {
+      "drawingFileType": "Drawing file type",
+      "client": "Client",
+      "selectClient": "Select client",
+      "addClient": "Add client",
+      "clientName": "Client name",
+      "clientNamePlaceholder": "Enter client name",
+      "projectType": "Project type",
+      "selectProjectType": "Select project type",
+      "addProjectType": "Add project type",
+      "projectCategory": "Project category",
+      "selectProjectCategory": "Select project category",
+      "addProjectCategory": "Add project category",
+      "projectStatus": "Project status",
+      "selectProjectStatus": "Select project status",
+      "projectName": "Project name",
+      "placeholderProjectName": "Project name",
+      "projectCost": "Project cost",
+      "placeholderEstimatedCost": "Estimated cost",
+      "area": "Area",
+      "placeholderArea": "Eg: 3500 Sq.ft / 2850 Sq.mt etc ...",
+      "placeholderLocation": "Location of the project",
+      "startDate": "Start date",
+      "finishDate": "Finish date (Can be added later)",
+      "assignProjectManager": "Assign a project manager",
+      "selectProjectManager": "Select a project manager for this project",
+      "addProjectManager": "Add project manager",
+      "assignStoreIncharge": "Assign store incharge",
+      "addStoreIncharge": "Add store incharge",
+      "selectOne": "Select one",
+      "optionName": "Name",
+      "optionNamePlaceholder": "Enter name",
+      "assignSiteOperations": "Assign site operations (Add site operations who is in store incharge also)",
+      "selectSiteOperations": "Select site operations",
+      "placeholderSiteOperations": "",
+      "remarks": "Remarks",
+      "placeholderRemarks": "Remarks (Something about your project as a note)",
+      "drawingsLink": "Drawings link",
+      "placeholderDrawingsLink": "https://example.com or http://example.com",
+      "drawingsUpload": "Drawings (PDF / Image upload)",
+      "drawingFileSizeError": "File size must not exceed 30 KB",
+      "drawingFileHint": "PDF or image only. Max size: 30 KB"
+    },
+    "placeholders": {
+      "name": "Enter project name",
+      "clientName": "Enter client name",
+      "projectManager": "Enter project manager name",
+      "location": "Enter location",
+      "drawing": "Enter drawing reference",
+      "category": "Enter category",
+      "projectCost": "Enter project cost"
+    },
+    "drawingPdf": "PDF",
+    "drawingImage": "Image",
+    "viewDrawing": "View",
+    "statusActive": "Active",
+    "statusCompleted": "Completed",
+    "statusPending": "Pending",
+    "statusOnHold": "On Hold",
+    "table": {
+      "id": "ID",
+      "name": "Project Name",
+      "client": "Client",
+      "projectManager": "Project Manager",
+      "location": "Location",
+      "drawing": "Drawing",
+      "type": "Type",
+      "category": "Category",
+      "projectCost": "Project Cost",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "progress": "Progress"
+    }
+  },
   "CompanyProjectTypes": {
     "pageTitle": "PROJECT TYPES",
     "breadcrumbParent": "Projects",
@@ -1019,7 +1117,7 @@
     "projects": "Projects",
     "projectTypes": "Project Types",
     "projectCategories": "Project Categories",
-    "projectsList": "Projects",
+    "projectsList": "Projects List",
     "estimations": "Estimations",
     "scheduleActivities": "Schedule Activities",
     "stages": "Stages",
@@ -1062,6 +1160,7 @@
     "manageUsers": "Manage Users",
     "manageEmployees": "Manage Employees",
     "roles": "Roles",
+    "assignRoles": "Assign Roles",
     "employees": "Employees",
     "rolePermissions": "Role Permissions",
     "howItWorks": "How it Works?"

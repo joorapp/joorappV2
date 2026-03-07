@@ -432,6 +432,7 @@
     "firstName": "Vorname",
     "lastName": "Nachname",
     "role": "Rolle",
+    "jobTitle": "Berufsbezeichnung",
     "createdDate": "Erstellungsdatum",
     "lastLogin": "Letzte Anmeldung",
     "statusActive": "Aktiv",
@@ -672,6 +673,19 @@
       "subcontractorManagement": "Subunternehmerverwaltung",
       "financeManagement": "Finanzverwaltung",
       "reportsManagement": "Berichtsverwaltung"
+    }
+  },
+  "AssignRoles": {
+    "noAssignmentsFound": "Keine Rollen-Zuweisungen gefunden",
+    "updatedSuccessfully": "Rollenzuweisung erfolgreich aktualisiert",
+    "table": {
+      "applicationRole": "Anwendungsrolle",
+      "lastUpdated": "Zuletzt aktualisiert"
+    },
+    "modal": {
+      "title": "Rolle zuweisen",
+      "currentRole": "Aktuelle Rolle",
+      "selectRole": "Anwendungsrolle auswählen"
     }
   },
   "Tickets": {
@@ -929,6 +943,87 @@
     "placeholders": {
       "name": "Name des Kundentyps eingeben",
       "description": "Beschreibung eingeben (optional)"
+    }
+  },
+  "CompanyProjectsList": {
+    "pageTitle": "PROJEKTLISTE",
+    "breadcrumbParent": "Projekte",
+    "breadcrumbItem": "Projektliste",
+    "addProject": "Projekt hinzufügen",
+    "createdSuccessfully": "Projekt erfolgreich erstellt",
+    "noProjectsFound": "Keine Projekte gefunden",
+    "form": {
+      "drawingFileType": "Zeichnungsdateityp",
+      "client": "Kunde",
+      "selectClient": "Kunde auswählen",
+      "addClient": "Kunde hinzufügen",
+      "clientName": "Kundenname",
+      "clientNamePlaceholder": "Kundenname eingeben",
+      "projectType": "Projekttyp",
+      "selectProjectType": "Projekttyp auswählen",
+      "addProjectType": "Projekttyp hinzufügen",
+      "projectCategory": "Projektkategorie",
+      "selectProjectCategory": "Projektkategorie auswählen",
+      "addProjectCategory": "Projektkategorie hinzufügen",
+      "projectStatus": "Projektstatus",
+      "selectProjectStatus": "Projektstatus auswählen",
+      "projectName": "Projektname",
+      "placeholderProjectName": "Projektname",
+      "projectCost": "Projektkosten",
+      "placeholderEstimatedCost": "Geschätzte Kosten",
+      "area": "Fläche",
+      "placeholderArea": "z. B.: 3500 qm / 2850 qm usw. ...",
+      "placeholderLocation": "Standort des Projekts",
+      "startDate": "Startdatum",
+      "finishDate": "Enddatum (kann später hinzugefügt werden)",
+      "assignProjectManager": "Projektmanager zuweisen",
+      "selectProjectManager": "Projektmanager für dieses Projekt auswählen",
+      "addProjectManager": "Projektmanager hinzufügen",
+      "assignStoreIncharge": "Lagerverantwortlichen zuweisen",
+      "addStoreIncharge": "Lagerverantwortlichen hinzufügen",
+      "selectOne": "Einen auswählen",
+      "optionName": "Name",
+      "optionNamePlaceholder": "Name eingeben",
+      "assignSiteOperations": "Baustellenoperationen zuweisen (Baustellenoperationen hinzufügen, die auch Lagerverantwortliche sind)",
+      "selectSiteOperations": "Baustellenoperationen auswählen",
+      "placeholderSiteOperations": "",
+      "remarks": "Anmerkungen",
+      "placeholderRemarks": "Anmerkungen (Notiz zu Ihrem Projekt)",
+      "drawingsLink": "Zeichnungslink",
+      "placeholderDrawingsLink": "https://example.com oder http://example.com",
+      "drawingsUpload": "Zeichnungen (PDF- / Bild-Upload)",
+      "drawingFileSizeError": "Dateigröße darf 30 KB nicht überschreiten",
+      "drawingFileHint": "Nur PDF oder Bild. Max. Größe: 30 KB"
+    },
+    "placeholders": {
+      "name": "Projektname eingeben",
+      "clientName": "Kundenname eingeben",
+      "projectManager": "Projektmanager eingeben",
+      "location": "Standort eingeben",
+      "drawing": "Zeichnungsreferenz eingeben",
+      "category": "Kategorie eingeben",
+      "projectCost": "Projektkosten eingeben"
+    },
+    "drawingPdf": "PDF",
+    "drawingImage": "Bild",
+    "viewDrawing": "Ansehen",
+    "statusActive": "Aktiv",
+    "statusCompleted": "Abgeschlossen",
+    "statusPending": "Ausstehend",
+    "statusOnHold": "Pausiert",
+    "table": {
+      "id": "ID",
+      "name": "Projektname",
+      "client": "Kunde",
+      "projectManager": "Projektmanager",
+      "location": "Standort",
+      "drawing": "Zeichnung",
+      "type": "Typ",
+      "category": "Kategorie",
+      "projectCost": "Projektkosten",
+      "startDate": "Startdatum",
+      "endDate": "Enddatum",
+      "progress": "Fortschritt"
     }
   },
   "CompanyProjectTypes": {
