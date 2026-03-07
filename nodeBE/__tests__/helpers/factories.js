@@ -60,6 +60,7 @@ export const createCompanyData = (overrides = {}) => {
   const data = {
     name: generateUniqueName('Company'),
     description: 'Test company description',
+    email: generateUniqueEmail(),
     isActive: true,
     status: COMPANY_STATUS_DEFAULT,
     ...overrides

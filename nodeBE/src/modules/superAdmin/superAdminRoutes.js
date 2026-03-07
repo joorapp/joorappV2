@@ -154,8 +154,8 @@ router.get('/dashboard', authMiddleware, asyncHandler(getDashboard));
  *   post:
  *     tags:
  *       - SuperAdmin
- *     summary: Create new company
- *     description: Allows super admins to create a new company in the system
+ *     summary: Create new company and admin user
+ *     description: Allows super admins to create a new company in the system. Simultaneously creates a user with COMPANY_ADMIN role associated with the newly created company, using the email provided in the company creation request.
  *     security:
  *       - bearerAuth: []
  *     requestBody:

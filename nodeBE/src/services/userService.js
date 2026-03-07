@@ -586,6 +586,7 @@ export const getUserByIdWithCompanies = async (userId, options = {}) => {
           {
             model: Company,
             as: 'company',
+            required: false,
             include: [
               {
                 model: Plan,
@@ -596,7 +597,8 @@ export const getUserByIdWithCompanies = async (userId, options = {}) => {
           },
           {
             model: CompanyRole,
-            as: 'role'
+            as: 'role',
+            required: false
           }
         ]
       }
@@ -663,6 +665,7 @@ export const listUsersWithCompanies = async (filters = {}, pagination = {}, sort
           {
             model: Company,
             as: 'company',
+            required: false,
             include: [
               {
                 model: Plan,
@@ -673,7 +676,8 @@ export const listUsersWithCompanies = async (filters = {}, pagination = {}, sort
           },
           {
             model: CompanyRole,
-            as: 'role'
+            as: 'role',
+            required: false
           }
         ]
       }

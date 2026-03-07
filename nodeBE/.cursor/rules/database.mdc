@@ -78,6 +78,12 @@ export default ModelName;
 
 ## Migrations
 
+**CRITICAL RULE: Single Responsibility Pattern for Migrations**
+- **One File = One Table**: One migration file MUST handle exactly ONE table creation or ONE specific schema alteration (like adding a column to an existing table).
+- **No Monoliths**: NEVER combine multiple `queryInterface.createTable()` calls into a single migration file. 
+- **Sequential Dependencies**: When creating multiple related tables (e.g., `Client`, `Project`, `ProjectUser`), you MUST generate separate files with sequentially increasing timestamps (e.g., `...00-create-clients.js`, `...01-create-projects.js`) to guarantee foreign key integrity during the `up` execution and clean rollbacks during `down`.
+
+Other Migration Rules:
 - Use sequelize-cli for migrations (when implemented)
 - Migrations in `src/migrations/` directory
 - Always create both `up` and `down` migrations

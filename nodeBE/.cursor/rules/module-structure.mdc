@@ -16,6 +16,10 @@ alwaysApply: true
 8. **Create controller test** in `src/modules/{module}/__tests__/{module}Controller.test.js` (see test-file-locations.mdc)
 9. **Create integration test** in `src/modules/__tests__/{module}.integration.test.js` (see test-file-locations.mdc)
 
+## Controller Splitting (For Complex Modules)
+If a module acts as a domain boundary (e.g., `admin`) but manages multiple distinct sub-entities (e.g., Users, Clients, Projects), **DO NOT** put all handlers in a single `{module}Controller.js`.
+👉 **CRITICAL**: See `nodeBE/.cursor/rules/controller-splitting.mdc` for the mandatory pattern on how to split controllers by entity while maintaining a single route file.
+
 ## Route Handler Pattern
 ```javascript
 import { validateUUID } from '../../utils/validators.js';

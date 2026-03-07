@@ -17,6 +17,8 @@ import {
   removeUserFromCompany,
   updateUserRole
 } from './adminController.js';
+import * as clientController from './clientController.js';
+import * as projectController from './projectController.js';
 import { authMiddleware } from '../../middleware/authMiddleware.js';
 import { companyContextMiddleware } from '../../middleware/companyContextMiddleware.js';
 import { asyncHandler } from '../../middleware/errorHandler.js';
@@ -835,5 +837,512 @@ router.delete('/users/:id', authMiddleware, companyContextMiddleware, asyncHandl
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.put('/users/:id/role', authMiddleware, companyContextMiddleware, asyncHandler(updateUserRole));
+
+// =====================================================
+// Client Management Routes
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/admin/clients:
+ *   post:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Create a new client
+ *     description: Creates a new client. Requires COMPANY_ADMIN role.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phone:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *               clientMetadata:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Client created successfully
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/clients', authMiddleware, companyContextMiddleware, asyncHandler(clientController.createClient));
+
+/**
+ * @swagger
+ * /api/v2/admin/clients:
+ *   get:
+ *     tags:
+ *       - Admin Clients
+ *     summary: List clients
+ *     description: Retrieves a paginated list of clients. Requires COMPANY_ADMIN role.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: Clients retrieved successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/clients', authMiddleware, companyContextMiddleware, asyncHandler(clientController.listClients));
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/{id}:
+ *   get:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Get client by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Client retrieved successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/clients/:id', authMiddleware, companyContextMiddleware, asyncHandler(clientController.getClientById));
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/{id}:
+ *   put:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Update client
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *               clientMetadata:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Client updated successfully
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put('/clients/:id', authMiddleware, companyContextMiddleware, asyncHandler(clientController.updateClient));
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/{id}:
+ *   delete:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Delete client
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Client deleted successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/clients/:id', authMiddleware, companyContextMiddleware, asyncHandler(clientController.deleteClient));
+
+// =====================================================
+// Project Management Routes
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/admin/projects:
+ *   post:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Create a new project
+ *     description: Creates a new project. Requires COMPANY_ADMIN role.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - clientId
+ *               - name
+ *             properties:
+ *               clientId:
+ *                 type: string
+ *                 format: uuid
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [PLANNING, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED]
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *               projectMetadata:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Project created successfully
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/projects', authMiddleware, companyContextMiddleware, asyncHandler(projectController.createProject));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: List projects
+ *     description: Retrieves a paginated list of projects. Company admins see all projects. Regular users see projects assigned to them.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: clientId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Projects retrieved successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/projects', authMiddleware, companyContextMiddleware, asyncHandler(projectController.listProjects));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{id}:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Get project by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Project retrieved successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/projects/:id', authMiddleware, companyContextMiddleware, asyncHandler(projectController.getProjectById));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{id}:
+ *   put:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Update project
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *               projectMetadata:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Project updated successfully
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put('/projects/:id', authMiddleware, companyContextMiddleware, asyncHandler(projectController.updateProject));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{id}:
+ *   delete:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Delete project
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Project deleted successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/projects/:id', authMiddleware, companyContextMiddleware, asyncHandler(projectController.deleteProject));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{projectId}/users:
+ *   post:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Assign user to project
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       201:
+ *         description: User assigned successfully
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/projects/:projectId/users', authMiddleware, companyContextMiddleware, asyncHandler(projectController.assignUser));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{projectId}/users:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: List assigned users for a project
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/projects/:projectId/users', authMiddleware, companyContextMiddleware, asyncHandler(projectController.listAssignedUsers));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{projectId}/users/{userId}:
+ *   delete:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Remove user from project
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: User removed successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/projects/:projectId/users/:userId', authMiddleware, companyContextMiddleware, asyncHandler(projectController.removeUser));
 
 export default router;

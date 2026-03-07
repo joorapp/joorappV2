@@ -1779,24 +1779,32 @@ const swaggerDefinition = {
   },
   tags: [
     {
-      name: 'Health',
-      description: 'System health monitoring and diagnostics endpoints'
-    },
-    {
       name: 'Auth',
       description: 'Authentication and company context management endpoints'
     },
     {
-      name: 'Users',
-      description: 'User management CRUD operations'
+      name: 'SuperAdmin',
+      description: 'Super administrator functions for system-wide management'
     },
     {
       name: 'Admin',
       description: 'Administrative functions and company-scoped user management'
     },
     {
-      name: 'SuperAdmin',
-      description: 'Super administrator functions for system-wide management'
+      name: 'Admin Clients',
+      description: 'Client management for company administrators'
+    },
+    {
+      name: 'Admin Projects',
+      description: 'Project management for company administrators'
+    },
+    {
+      name: 'Users',
+      description: 'User management CRUD operations'
+    },
+    {
+      name: 'Health',
+      description: 'System health monitoring and diagnostics endpoints'
     }
   ]
 };
