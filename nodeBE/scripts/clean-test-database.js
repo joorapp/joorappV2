@@ -68,6 +68,9 @@ const cleanTestDatabase = async () => {
       'companies',                 // Depends on users, plans
       'plans',                     // Depends on users (before companies due to FK)
       'demo_auditable_models',     // Depends on users
+      'project_users',             // Depends on users, projects
+      'projects',                  // Depends on users, clients
+      'clients',                   // Depends on users
       // ADD NEW MODEL TABLES HERE (in correct dependency order)
       'users'                      // Base table, referenced by others
     ];

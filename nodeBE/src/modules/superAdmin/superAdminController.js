@@ -7,7 +7,7 @@
 import { createModuleLogger, logPerformance, logBusiness, logSecurity } from '../../utils/logger.js';
 import { isSuperAdmin } from '../../constants/keycloakRoles.js';
 import { successResponse, paginatedResponse } from '../../utils/responseHelpers.js';
-import { UnauthorizedError, ForbiddenError } from '../../utils/errors.js';
+import { UnauthorizedError, ForbiddenError, ConflictError } from '../../utils/errors.js';
 import { validateUUID, validateRequired, validateString, validateEnum, validateEmail, validateNumber } from '../../utils/validators.js';
 import { ValidationError } from '../../utils/errors.js';
 import { COMPANY_STATUS_VALUES } from '../../constants/companyStatus.js';
@@ -195,15 +195,13 @@ export const createCompany = async (req, res) => {
       status
     } = req.body;
     
-    validateRequired({ name }, req.id);
+    validateRequired({ name, email }, req.id);
     validateString(name, 'name', { minLength: 1, maxLength: 255 }, req.id);
+    validateEmail(email, 'email', req.id);
     
     // Validate optional fields
     if (description !== undefined) {
       validateString(description, 'description', { required: false }, req.id);
-    }
-    if (email !== undefined) {
-      validateEmail(email, 'email', req.id);
     }
     if (phone !== undefined) {
       validateString(phone, 'phone', { maxLength: 50, required: false }, req.id);
@@ -233,6 +231,24 @@ export const createCompany = async (req, res) => {
       validateEnum(status, COMPANY_STATUS_VALUES, 'status', req.id);
     }
 
+    // Check if user or company already exists with this email
+    const existingCompany = await companyService.getCompanyByEmail(email);
+    if (existingCompany) {
+      throw new ConflictError('A company already exists with this email', { field: 'email', value: email });
+    }
+
+    const kcUser = await userService.checkUserExistsInKeycloak(email);
+    const existingUser = await userService.getUserByEmail(email);
+    if (kcUser || existingUser) {
+      throw new ConflictError('A user already exists with this email', { field: 'email', value: email });
+    }
+
+    // Check if COMPANY_ADMIN role exists
+    const adminRole = await roleService.getRoleByCode('COMPANY_ADMIN');
+    if (!adminRole) {
+      throw new ConflictError('COMPANY_ADMIN role not found in the system');
+    }
+
     // Create company via service
     const company = await companyService.createCompany(
       {
@@ -250,6 +266,43 @@ export const createCompany = async (req, res) => {
         logo,
         status
       },
+      { userId: req.user.id }
+    );
+
+    // Create the admin user
+    const userPassword = 'admin';
+    const userFirstName = name;
+    const userLastName = 'Admin';
+    const globalRole = 'COMPANY_ADMIN';
+
+    logger.info('Creating new admin user in Keycloak for company', {
+      requestId: req.id,
+      email,
+      companyId: company.id
+    });
+      
+    const keycloakUser = await userService.createUserInKeycloak({
+      email,
+      password: userPassword,
+      firstName: userFirstName,
+      lastName: userLastName,
+      keycloakGlobalRole: globalRole
+    });
+      
+    // Create user in DB
+    const newUser = await userService.createUserInDB({
+      keycloakId: keycloakUser.id,
+      email,
+      firstName: userFirstName,
+      lastName: userLastName,
+      keycloakGlobalRole: globalRole
+    }, { userId: req.user.id });
+    
+    // Assign user to the newly created company
+    await companyUserService.assignUserToCompany(
+      newUser.id,
+      company.id,
+      adminRole.id,
       { userId: req.user.id }
     );
 

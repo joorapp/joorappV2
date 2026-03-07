@@ -11,6 +11,9 @@ import CompanyRole from './CompanyRole.js';
 import CompanyUser from './CompanyUser.js';
 import UserCompanyContext from './UserCompanyContext.js';
 import Plan from './Plan.js';
+import Client from './Client.js';
+import Project from './Project.js';
+import ProjectUser from './ProjectUser.js';
 
 /**
  * Initialize model associations
@@ -26,7 +29,10 @@ const initializeAssociations = () => {
     CompanyUser,
     UserCompanyContext,
     DemoAuditableModel,
-    Plan
+    Plan,
+    Client,
+    Project,
+    ProjectUser
   };
 
   // Call each model's associate method if it exists
@@ -52,6 +58,15 @@ const initializeAssociations = () => {
   if (Plan.associate) {
     Plan.associate(models);
   }
+  if (Client.associate) {
+    Client.associate(models);
+  }
+  if (Project.associate) {
+    Project.associate(models);
+  }
+  if (ProjectUser.associate) {
+    ProjectUser.associate(models);
+  }
 };
 
 /**
@@ -64,7 +79,7 @@ export const initializeModels = () => {
 };
 
 // Export all models
-export { User, DemoAuditableModel, Company, CompanyRole, CompanyUser, UserCompanyContext, Plan };
+export { User, DemoAuditableModel, Company, CompanyRole, CompanyUser, UserCompanyContext, Plan, Client, Project, ProjectUser };
 
 // Export default object with all models
 export default {
@@ -75,6 +90,9 @@ export default {
   CompanyUser,
   UserCompanyContext,
   Plan,
+  Client,
+  Project,
+  ProjectUser,
   initializeModels
 };
 

@@ -155,6 +155,31 @@ export const createCompany = async (companyData, context) => {
 };
 
 /**
+ * Get company by email
+ * @param {string} email - Company email
+ * @returns {Promise<Object|null>} Company object if found, null otherwise
+ * 
+ * @example
+ * const company = await getCompanyByEmail('contact@acme.com');
+ */
+export const getCompanyByEmail = async (email) => {
+  logger.debug('Getting company by email', { email });
+  
+  if (!email) return null;
+  
+  const company = await companyRepository.findOne({ email });
+  
+  if (!company) return null;
+  
+  return {
+    id: company.id,
+    name: company.name,
+    email: company.email,
+    isActive: company.isActive
+  };
+};
+
+/**
  * Get company by ID
  * @param {string} companyId - Company UUID
  * @param {Object} [options] - Options

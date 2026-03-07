@@ -320,6 +320,47 @@ describe('Company Service', () => {
     });
   });
 
+  describe('getCompanyByEmail', () => {
+    it('should return company by email', async () => {
+      // Arrange
+      const email = 'contact@acme.com';
+      companyRepository.findOne.mockResolvedValue(mockCompany);
+
+      // Act
+      const result = await companyService.getCompanyByEmail(email);
+
+      // Assert
+      expect(companyRepository.findOne).toHaveBeenCalledWith({ email });
+      expect(result).toEqual({
+        id: mockCompany.id,
+        name: mockCompany.name,
+        email: mockCompany.email,
+        isActive: mockCompany.isActive
+      });
+    });
+
+    it('should return null when company does not exist', async () => {
+      // Arrange
+      const email = 'notfound@acme.com';
+      companyRepository.findOne.mockResolvedValue(null);
+
+      // Act
+      const result = await companyService.getCompanyByEmail(email);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it('should return null when email is empty', async () => {
+      // Act
+      const result = await companyService.getCompanyByEmail('');
+
+      // Assert
+      expect(result).toBeNull();
+      expect(companyRepository.findOne).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getCompanyById', () => {
     it('should return company DTO when company exists', async () => {
       // Arrange
