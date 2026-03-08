@@ -9,35 +9,63 @@ import API_ROUTES from "../constants/api";
 import HttpUtil from "../http-handler/http-util";
 
 export default class UserService {
-  static getUsers(pageNumber: number = 0, pageSize: number = 10, key: string = "") {
+  static getUsersList(page: number = 0, limit: number = 10, search: string = "") {
     return HttpUtil.get(
-      API_ROUTES.USER.GET_USERS
-        .replace("<pageNumber>", pageNumber.toString())
-        .replace("<pageSize>", pageSize.toString())
-        .replace("<key>", key)
+      API_ROUTES.SUPERADMIN.GET_USERS_LIST
+        .replace("<page>", page.toString())
+        .replace("<limit>", limit.toString())
+        .replace("<search>", search)
     );
   }
 
-  static getUserDetails(userId: string) {
+  static getUserById(userId: string) {
     return HttpUtil.get(
-      API_ROUTES.USER.GET_USER_DETAILS.replace("<userId>", userId)
+      API_ROUTES.SUPERADMIN.GET_USER_BY_ID.replace("<userId>", userId)
     );
   }
 
   static createUser(userData: any) {
-    return HttpUtil.post(API_ROUTES.USER.CREATE_USER, userData);
+    return HttpUtil.post(API_ROUTES.SUPERADMIN.CREATE_USER, userData);
   }
 
   static updateUser(userId: string, userData: any) {
     return HttpUtil.put(
-      API_ROUTES.USER.UPDATE_USER.replace("<userId>", userId),
+      API_ROUTES.SUPERADMIN.UPDATE_USER.replace("<userId>", userId),
       userData
     );
   }
 
   static deleteUser(userId: string) {
     return HttpUtil.delete(
-      API_ROUTES.USER.DELETE_USER.replace("<userId>", userId)
+      API_ROUTES.SUPERADMIN.DELETE_USER.replace("<userId>", userId)
+    );
+  }
+
+  static assignUserToCompany(userId: string, companyId: string, roleId: string) {
+    return HttpUtil.post(
+      API_ROUTES.SUPERADMIN.ASSIGN_USER_TO_COMPANY.replace("<userId>", userId),
+      { companyId, roleId }
+    );
+  }
+
+  static updateUserCompanyRole(userId: string, companyId: string, roleId: string) {
+    return HttpUtil.put(
+      API_ROUTES.SUPERADMIN.UPDATE_USER_COMPANY_ROLE
+        .replace("<userId>", userId)
+        .replace("<companyId>", companyId),
+      { roleId }
+    );
+  }
+
+  static enableUser(userId: string) {
+      return HttpUtil.put(
+        API_ROUTES.SUPERADMIN.ENABLE_USER.replace("<userId>", userId)
+    );
+  }
+
+  static disableUser(userId: string) {
+    return HttpUtil.put(
+      API_ROUTES.SUPERADMIN.DISABLE_USER.replace("<userId>", userId)
     );
   }
 }

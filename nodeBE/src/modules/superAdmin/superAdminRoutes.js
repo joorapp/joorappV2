@@ -32,6 +32,7 @@ import {
   getUserById,
   updateUser,
   disableUser,
+  enableUser,
   assignUserToCompany,
   updateUserCompanyRole
 } from './superAdminController.js';
@@ -1174,6 +1175,38 @@ router.delete('/plans/:id', authMiddleware, asyncHandler(deletePlan));
  *                 keycloakGlobalRole: "COMPANY_USER"
  *                 isActive: true
  *                 createdDate: "2024-11-23T12:00:00.000Z"
+ *                 companies:
+ *                   - id: "550e8400-e29b-41d4-a716-446655440000"
+ *                     name: "Company Name"
+ *                     description: "A leading technology company"
+ *                     isActive: true
+ *                     status: "ACTIVE"
+ *                     email: "contact@company.com"
+ *                     phone: "+1 234-567-8900"
+ *                     buildingAddress: "Suite 100"
+ *                     streetAddress: "123 Main Street"
+ *                     city: "New York"
+ *                     state: "NY"
+ *                     postalCode: "10001"
+ *                     country: "United States"
+ *                     plan:
+ *                       id: "550e8400-e29b-41d4-a716-446655440003"
+ *                       name: "Basic"
+ *                       code: "BASIC"
+ *                       description: "Basic subscription plan"
+ *                       price: 0
+ *                       isActive: true
+ *                       createdDate: "2024-11-23T12:00:00.000Z"
+ *                       updatedDate: "2024-11-23T12:00:00.000Z"
+ *                       version: 1
+ *                     role:
+ *                       id: "660e8400-e29b-41d4-a716-446655440001"
+ *                       name: "CompanyAdmin"
+ *                       code: "COMPANY_ADMIN"
+ *                       description: "Company administrator role"
+ *                     companyUser:
+ *                       id: "770e8400-e29b-41d4-a716-446655440002"
+ *                       isActive: true
  *               timestamp: "2024-11-23T12:00:00.000Z"
  *               meta:
  *                 requestId: "req-1234567898"
@@ -1234,235 +1267,15 @@ router.delete('/plans/:id', authMiddleware, asyncHandler(deletePlan));
  *                 endpoint: "/api/v2/superAdmin/users"
  *                 method: "POST"
  *       401:
- *         description: Authentication required
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 error:
- *                   type: string
- *                   example: "AUTHENTICATION_REQUIRED"
- *                 message:
- *                   type: string
- *                   example: "User not found in request"
- *                 timestamp:
- *                   type: string
- *                   format: date-time
- *                   example: "2024-11-23T12:00:00.000Z"
- *                 meta:
- *                   type: object
- *                   properties:
- *                     requestId:
- *                       type: string
- *                       example: "req-1234567898"
- *                     endpoint:
- *                       type: string
- *                       example: "/api/v2/superAdmin/users"
- *                     method:
- *                       type: string
- *                       example: "POST"
- *             example:
- *               success: false
- *               error: "AUTHENTICATION_REQUIRED"
- *               message: "User not found in request"
- *               timestamp: "2024-11-23T12:00:00.000Z"
- *               meta:
- *                 requestId: "req-1234567898"
- *                 endpoint: "/api/v2/superAdmin/users"
- *                 method: "POST"
+ *         $ref: '#/components/responses/AuthenticationRequired'
  *       403:
- *         description: Forbidden - Super admin access required
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 error:
- *                   type: string
- *                   example: "FORBIDDEN"
- *                 message:
- *                   type: string
- *                   example: "Super admin access required"
- *                 timestamp:
- *                   type: string
- *                   format: date-time
- *                   example: "2024-11-23T12:00:00.000Z"
- *                 meta:
- *                   type: object
- *                   properties:
- *                     requestId:
- *                       type: string
- *                       example: "req-1234567898"
- *                     endpoint:
- *                       type: string
- *                       example: "/api/v2/superAdmin/users"
- *                     method:
- *                       type: string
- *                       example: "POST"
- *             example:
- *               success: false
- *               error: "FORBIDDEN"
- *               message: "Super admin access required"
- *               timestamp: "2024-11-23T12:00:00.000Z"
- *               meta:
- *                 requestId: "req-1234567898"
- *                 endpoint: "/api/v2/superAdmin/users"
- *                 method: "POST"
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
- *         description: Company or role not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 error:
- *                   type: string
- *                   example: "NOT_FOUND"
- *                 message:
- *                   type: string
- *                   example: "Company not found"
- *                 details:
- *                   type: object
- *                   properties:
- *                     entity:
- *                       type: string
- *                       example: "Company"
- *                     id:
- *                       type: string
- *                       format: uuid
- *                       example: "550e8400-e29b-41d4-a716-446655440001"
- *                 timestamp:
- *                   type: string
- *                   format: date-time
- *                   example: "2024-11-23T12:00:00.000Z"
- *                 meta:
- *                   type: object
- *                   properties:
- *                     requestId:
- *                       type: string
- *                       example: "req-1234567898"
- *                     endpoint:
- *                       type: string
- *                       example: "/api/v2/superAdmin/users"
- *                     method:
- *                       type: string
- *                       example: "POST"
- *             example:
- *               success: false
- *               error: "NOT_FOUND"
- *               message: "Company not found"
- *               details:
- *                 entity: "Company"
- *                 id: "550e8400-e29b-41d4-a716-446655440001"
- *               timestamp: "2024-11-23T12:00:00.000Z"
- *               meta:
- *                 requestId: "req-1234567898"
- *                 endpoint: "/api/v2/superAdmin/users"
- *                 method: "POST"
+ *         $ref: '#/components/responses/NotFound'
  *       409:
- *         description: Conflict - Email already exists
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 error:
- *                   type: string
- *                   example: "CONFLICT"
- *                 message:
- *                   type: string
- *                   example: "User with this email already exists"
- *                 details:
- *                   type: object
- *                   properties:
- *                     field:
- *                       type: string
- *                       example: "email"
- *                     value:
- *                       type: string
- *                       example: "user@example.com"
- *                 timestamp:
- *                   type: string
- *                   format: date-time
- *                   example: "2024-11-23T12:00:00.000Z"
- *                 meta:
- *                   type: object
- *                   properties:
- *                     requestId:
- *                       type: string
- *                       example: "req-1234567898"
- *                     endpoint:
- *                       type: string
- *                       example: "/api/v2/superAdmin/users"
- *                     method:
- *                       type: string
- *                       example: "POST"
- *             example:
- *               success: false
- *               error: "CONFLICT"
- *               message: "User with this email already exists"
- *               details:
- *                 field: "email"
- *                 value: "user@example.com"
- *               timestamp: "2024-11-23T12:00:00.000Z"
- *               meta:
- *                 requestId: "req-1234567898"
- *                 endpoint: "/api/v2/superAdmin/users"
- *                 method: "POST"
+ *         $ref: '#/components/responses/Conflict'
  *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: false
- *                 error:
- *                   type: string
- *                   example: "INTERNAL_SERVER_ERROR"
- *                 message:
- *                   type: string
- *                   example: "An error occurred while creating user"
- *                 timestamp:
- *                   type: string
- *                   format: date-time
- *                   example: "2024-11-23T12:00:00.000Z"
- *                 meta:
- *                   type: object
- *                   properties:
- *                     requestId:
- *                       type: string
- *                       example: "req-1234567898"
- *                     endpoint:
- *                       type: string
- *                       example: "/api/v2/superAdmin/users"
- *                     method:
- *                       type: string
- *                       example: "POST"
- *             example:
- *               success: false
- *               error: "INTERNAL_SERVER_ERROR"
- *               message: "An error occurred while creating user"
- *               timestamp: "2024-11-23T12:00:00.000Z"
- *               meta:
- *                 requestId: "req-1234567898"
- *                 endpoint: "/api/v2/superAdmin/users"
- *                 method: "POST"
+ *         $ref: '#/components/responses/InternalServerError'
  */
 router.post('/users', authMiddleware, asyncHandler(createUserWithCompany));
 
@@ -1507,19 +1320,51 @@ router.post('/users', authMiddleware, asyncHandler(createUserWithCompany));
  *                   lastName: "Doe"
  *                   keycloakGlobalRole: "COMPANY_USER"
  *                   isActive: true
+ *                   companies:
+ *                     - id: "550e8400-e29b-41d4-a716-446655440000"
+ *                       name: "Company Name"
+ *                       description: "A leading technology company"
+ *                       isActive: true
+ *                       status: "ACTIVE"
+ *                       email: "contact@company.com"
+ *                       phone: "+1 234-567-8900"
+ *                       buildingAddress: "Suite 100"
+ *                       streetAddress: "123 Main Street"
+ *                       city: "New York"
+ *                       state: "NY"
+ *                       postalCode: "10001"
+ *                       country: "United States"
+ *                       plan:
+ *                         id: "550e8400-e29b-41d4-a716-446655440003"
+ *                         name: "Basic"
+ *                         code: "BASIC"
+ *                         description: "Basic subscription plan"
+ *                         price: 0
+ *                         isActive: true
+ *                         createdDate: "2024-11-23T12:00:00.000Z"
+ *                         updatedDate: "2024-11-23T12:00:00.000Z"
+ *                         version: 1
+ *                       role:
+ *                         id: "660e8400-e29b-41d4-a716-446655440001"
+ *                         name: "CompanyAdmin"
+ *                         code: "COMPANY_ADMIN"
+ *                         description: "Company administrator role"
+ *                       companyUser:
+ *                         id: "770e8400-e29b-41d4-a716-446655440002"
+ *                         isActive: true
  *               timestamp: "2024-11-23T12:00:00.000Z"
  *               meta:
  *                 requestId: "req-1234567899"
  *                 endpoint: "/api/v2/superAdmin/users"
  *                 method: "GET"
  *                 duration: 180
- *                 pagination:
- *                   page: 1
- *                   limit: 10
- *                   total: 50
- *                   totalPages: 5
- *                   hasNext: true
- *                   hasPrevious: false
+ *               pagination:
+ *                 page: 1
+ *                 limit: 10
+ *                 total: 50
+ *                 pages: 5
+ *                 hasNext: true
+ *                 hasPrev: false
  *       401:
  *         $ref: '#/components/responses/AuthenticationRequired'
  *       403:
@@ -1536,7 +1381,7 @@ router.get('/users', authMiddleware, asyncHandler(getUsers));
  *     tags:
  *       - SuperAdmin
  *     summary: Get user by ID
- *     description: Returns detailed information about a specific user
+ *     description: Returns detailed information about a specific user, including company details with logo
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -1564,6 +1409,39 @@ router.get('/users', authMiddleware, asyncHandler(getUsers));
  *                 lastName: "Doe"
  *                 keycloakGlobalRole: "COMPANY_USER"
  *                 isActive: true
+ *                 companies:
+ *                   - id: "550e8400-e29b-41d4-a716-446655440000"
+ *                     name: "Company Name"
+ *                     description: "A leading technology company"
+ *                     isActive: true
+ *                     status: "ACTIVE"
+ *                     email: "contact@company.com"
+ *                     phone: "+1 234-567-8900"
+ *                     buildingAddress: "Suite 100"
+ *                     streetAddress: "123 Main Street"
+ *                     city: "New York"
+ *                     state: "NY"
+ *                     postalCode: "10001"
+ *                     country: "United States"
+ *                     logo: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+ *                     plan:
+ *                       id: "550e8400-e29b-41d4-a716-446655440003"
+ *                       name: "Basic"
+ *                       code: "BASIC"
+ *                       description: "Basic subscription plan"
+ *                       price: 0
+ *                       isActive: true
+ *                       createdDate: "2024-11-23T12:00:00.000Z"
+ *                       updatedDate: "2024-11-23T12:00:00.000Z"
+ *                       version: 1
+ *                     role:
+ *                       id: "660e8400-e29b-41d4-a716-446655440001"
+ *                       name: "CompanyAdmin"
+ *                       code: "COMPANY_ADMIN"
+ *                       description: "Company administrator role"
+ *                     companyUser:
+ *                       id: "770e8400-e29b-41d4-a716-446655440002"
+ *                       isActive: true
  *               timestamp: "2024-11-23T12:00:00.000Z"
  *               meta:
  *                 requestId: "req-1234567900"
@@ -1618,12 +1496,45 @@ router.get('/users/:id', authMiddleware, asyncHandler(getUserById));
  *               message: "User updated successfully"
  *               data:
  *                 id: "550e8400-e29b-41d4-a716-446655440003"
+ *                 keycloakId: "7d3ea298-66dc-4ece-90de-c4de111e8b7f"
  *                 email: "newemail@example.com"
  *                 firstName: "Jane"
  *                 lastName: "Smith"
  *                 keycloakGlobalRole: "COMPANY_ADMIN"
  *                 isActive: true
- *                 lastModifiedDate: "2024-11-23T12:05:00.000Z"
+ *                 createdDate: "2024-11-23T12:00:00.000Z"
+ *                 companies:
+ *                   - id: "550e8400-e29b-41d4-a716-446655440000"
+ *                     name: "Company Name"
+ *                     description: "A leading technology company"
+ *                     isActive: true
+ *                     status: "ACTIVE"
+ *                     email: "contact@company.com"
+ *                     phone: "+1 234-567-8900"
+ *                     buildingAddress: "Suite 100"
+ *                     streetAddress: "123 Main Street"
+ *                     city: "New York"
+ *                     state: "NY"
+ *                     postalCode: "10001"
+ *                     country: "United States"
+ *                     plan:
+ *                       id: "550e8400-e29b-41d4-a716-446655440003"
+ *                       name: "Basic"
+ *                       code: "BASIC"
+ *                       description: "Basic subscription plan"
+ *                       price: 0
+ *                       isActive: true
+ *                       createdDate: "2024-11-23T12:00:00.000Z"
+ *                       updatedDate: "2024-11-23T12:00:00.000Z"
+ *                       version: 1
+ *                     role:
+ *                       id: "660e8400-e29b-41d4-a716-446655440001"
+ *                       name: "CompanyAdmin"
+ *                       code: "COMPANY_ADMIN"
+ *                       description: "Company administrator role"
+ *                     companyUser:
+ *                       id: "770e8400-e29b-41d4-a716-446655440002"
+ *                       isActive: true
  *               timestamp: "2024-11-23T12:05:00.000Z"
  *               meta:
  *                 requestId: "req-1234567901"
@@ -1692,6 +1603,54 @@ router.put('/users/:id', authMiddleware, asyncHandler(updateUser));
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.put('/users/:id/disable', authMiddleware, asyncHandler(disableUser));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/users/{id}/enable:
+ *   put:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Enable user by ID
+ *     description: Enables user in Keycloak and marks as active in database. Sets isActive to true in database and enabled to true in Keycloak.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: User enabled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: "null"
+ *                       example: null
+ *             example:
+ *               success: true
+ *               message: "User enabled successfully"
+ *               data: null
+ *               timestamp: "2024-11-23T12:10:00.000Z"
+ *               meta:
+ *                 requestId: "req-1234567902"
+ *                 endpoint: "/api/v2/superAdmin/users/550e8400-e29b-41d4-a716-446655440003/enable"
+ *                 method: "PUT"
+ *                 duration: 280
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put('/users/:id/enable', authMiddleware, asyncHandler(enableUser));
 
 /**
  * @swagger

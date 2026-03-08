@@ -82,9 +82,9 @@ export class CompanyRepository extends BaseRepository {
     
     const { limit = 10, offset = 0 } = pagination;
     
-    // Build search filter
+    // Build search filter (case-insensitive)
     const where = searchTerm ? {
-      name: { [Op.like]: `%${searchTerm}%` }
+      name: { [Op.iLike]: `%${searchTerm}%` }
     } : {};
     
     return await this.Model.findAndCountAll({

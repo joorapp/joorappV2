@@ -118,11 +118,13 @@
     "delete": "Löschen",
     "confirm": "Bestätigen",
     "confirmDelete": "Löschen bestätigen",
+    "confirmToDelete": "Löschen bestätigen",
     "back": "Zurück",
     "next": "Weiter",
     "previous": "Vorherige",
     "search": "Suchen...",
     "searchPlaceholder": "Suchen...",
+    "select": "Auswählen",
     "add": "Hinzufügen",
     "refresh": "Aktualisieren",
     "email": "E-Mail",
@@ -144,6 +146,8 @@
     "noDataAvailable": "Keine Daten verfügbar",
     "editPlan": "Plan bearbeiten",
     "deletePlan": "Plan löschen",
+    "StatusGeneral": "Allgemein",
+    "StatusSupplier": "Lieferant",
     "errors": {
       "fillAllFields": "Bitte füllen Sie alle Felder aus",
       "selectPlan": "Bitte wählen Sie einen Plan aus"
@@ -152,7 +156,11 @@
       "deleted": "Erfolgreich gelöscht",
       "saved": "Erfolgreich gespeichert",
       "updated": "Erfolgreich aktualisiert"
-    }
+    },
+    "showing": "Zeige",
+    "to": "bis",
+    "of": "von",
+    "results": "Ergebnisse"
   },
   "Validation": {
     "emailRequired": "Bitte geben Sie Ihre E-Mail-Adresse ein",
@@ -171,6 +179,10 @@
     "passwordRequired": "Bitte geben Sie ein Passwort ein",
     "passwordMinLength": "Das Passwort muss mindestens 8 Zeichen lang sein",
     "roleRequired": "Bitte wählen Sie eine Rolle aus",
+    "companyRequired": "Bitte wählen Sie ein Unternehmen aus",
+    "keycloakGlobalRoleRequired": "Bitte wählen Sie eine Keycloak globale Rolle aus",
+    "firstNameRequired": "Bitte geben Sie Ihren Vornamen ein",
+    "lastNameRequired": "Bitte geben Sie Ihren Nachnamen ein",
     "priceRequired": "Bitte geben Sie den Preis ein",
     "priceInvalid": "Bitte geben Sie einen gültigen Preis ein (muss eine positive Zahl sein)",
     "titleMaxLength": "Der Titel darf 200 Zeichen nicht überschreiten",
@@ -196,6 +208,9 @@
     "createClient": "Kunde erstellen",
     "editClient": "Kunde bearbeiten",
     "updateClient": "Kunde aktualisieren",
+    "clientCreatedSuccessfully": "Kunde erfolgreich erstellt",
+    "clientUpdatedSuccessfully": "Kunde erfolgreich aktualisiert",
+    "clientDeletedSuccessfully": "Kunde erfolgreich gelöscht",
     "profilePhoto": "Profilfoto",
     "uploadProfilePhoto": "Profilfoto hochladen und ändern",
     "enterClientName": "Kundenname eingeben",
@@ -328,6 +343,12 @@
       "description": "Beschreibung"
     }
   },
+  "CompanyRoles": {
+    "pageTitle": "ROLLEN",
+    "breadcrumbParent": "Benutzer",
+    "breadcrumbItem": "Rollen",
+    "addRole": "Rolle hinzufügen"
+  },
   "Footer": {
     "termsOfService": "Nutzungsbedingungen",
     "privacyPolicy": "Datenschutzrichtlinie",
@@ -411,6 +432,7 @@
     "firstName": "Vorname",
     "lastName": "Nachname",
     "role": "Rolle",
+    "jobTitle": "Berufsbezeichnung",
     "createdDate": "Erstellungsdatum",
     "lastLogin": "Letzte Anmeldung",
     "statusActive": "Aktiv",
@@ -429,7 +451,8 @@
     "enterPassword": "Passwort eingeben",
     "enterPhone": "Telefonnummer eingeben",
     "passwordHint": "Das Passwort muss mindestens 8 Zeichen lang sein",
-    "selectCompany": "Unternehmen auswählen (optional)",
+    "passwordOptional": "Leer lassen, um das aktuelle Passwort beizubehalten",
+    "selectCompany": "Unternehmen auswählen",
     "selectRole": "Rolle auswählen",
     "modal": {
       "employeeDetails": "Mitarbeiterdetails"
@@ -441,8 +464,13 @@
       "password": "Passwort",
       "phone": "Telefon",
       "company": "Unternehmen",
-      "role": "Rolle"
+      "role": "Rolle",
+      "keycloakGlobalRole": "Keycloak Globale Rolle"
     },
+    "createUser": "Benutzer erstellen",
+    "userCreatedSuccessfully": "Benutzer erfolgreich erstellt",
+    "keycloakGlobalRoleCOMPANY_USER": "Unternehmensbenutzer",
+    "keycloakGlobalRoleCOMPANY_ADMIN": "Unternehmensadministrator",
     "showing": "Anzeigen",
     "to": "bis",
     "of": "von",
@@ -647,6 +675,19 @@
       "reportsManagement": "Berichtsverwaltung"
     }
   },
+  "AssignRoles": {
+    "noAssignmentsFound": "Keine Rollen-Zuweisungen gefunden",
+    "updatedSuccessfully": "Rollenzuweisung erfolgreich aktualisiert",
+    "table": {
+      "applicationRole": "Anwendungsrolle",
+      "lastUpdated": "Zuletzt aktualisiert"
+    },
+    "modal": {
+      "title": "Rolle zuweisen",
+      "currentRole": "Aktuelle Rolle",
+      "selectRole": "Anwendungsrolle auswählen"
+    }
+  },
   "Tickets": {
     "title": "Tickets erstellen",
     "subtitle": "Support-Tickets erstellen und verwalten",
@@ -784,7 +825,7 @@
     "toggleMenu": "Menü umschalten",
     "notifications": "Benachrichtigungen",
     "settings": "Einstellungen",
-    "companyDashboard": "Unternehmens-Dashboard"
+    "companyDashboard": "Unternehmens Admin"
   },
   "CompanyFooter": {
     "companyName": "Ihr Unternehmen",
@@ -805,6 +846,297 @@
     "facebook": "Facebook",
     "twitter": "Twitter",
     "linkedIn": "LinkedIn"
+  },
+  "CompanyDashboard": {
+    "clients": "Kunden",
+    "projects": "Projekte",
+    "materials": "Materialien",
+    "rentalItems": "Mietartikel",
+    "staffs": "Mitarbeiter",
+    "suppliers": "Lieferanten",
+    "subcontractors": "Subunternehmer",
+    "reports": "Berichte",
+    "users": "Benutzer",
+    "pendingPayments": "{{count}} Ausstehende Zahlungen",
+    "completedPayments": "{{count}} Abgeschlossene Zahlungen",
+    "clientInvoices": "{{count}} Kundenrechnungen",
+    "upcomingProjects": "{{count}} Anstehende Projekte",
+    "ongoingProjects": "{{count}} Laufende Projekte",
+    "completedProjects": "{{count}} Abgeschlossene Projekte",
+    "onHold": "{{count}} Wartend",
+    "officeStaffs": "{{count}} Büromitarbeiter",
+    "freelancers": "{{count}} Freelancer",
+    "mSuppliers": "M - Lieferanten: {{amount}}",
+    "rSuppliers": "R - Lieferanten: {{amount}}",
+    "pendingContracts": "{{count}} Ausstehende Verträge",
+    "completedContracts": "{{count}} Abgeschlossene Verträge",
+    "cashInHand": "Bargeld: {{amount}}",
+    "cashInBank": "Bankguthaben: {{amount}}",
+    "totalCash": "Gesamtgeld: {{amount}}",
+    "projectId": "Projekt-ID",
+    "stageNameActivitySubactivity": "Stufe Nr. - Stufenname - Aktivität - Unteraktivität",
+    "startEndDates": "Start- und Enddaten",
+    "sq": "SQ",
+    "cq": "CQ",
+    "pq": "PQ",
+    "progress": "Fortschritt"
+  },
+  "CompanyClientsList": {
+    "pageTitle": "KUNDEN",
+    "clients": "Kunden",
+    "newClients": "Neue Kunden",
+    "planButton": "Plan"
+  },
+  "ClientPayment": {
+    "pageTitle": "KUNDENZAHLUNG",
+    "breadcrumbParent": "Kunden",
+    "breadcrumbItem": "Kundenzahlung",
+    "filters": {
+      "filter": "Filter",
+      "all": "Alle",
+      "pending": "Ausstehend",
+      "completed": "Abgeschlossen",
+      "overdue": "Überfällig"
+    },
+    "addPayment": "Zahlung",
+    "table": {
+      "client": "Kunde",
+      "project": "Projekt",
+      "invoice": "Rechnungsnr.",
+      "amount": "Betrag",
+      "dueDate": "Fälligkeitsdatum",
+      "status": "Status",
+      "action": "Aktion"
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "completed": "Abgeschlossen",
+      "overdue": "Überfällig"
+    },
+    "viewPayment": "Zahlung anzeigen",
+    "expandDetails": "Details anzeigen",
+    "noPaymentsFound": "Keine Kundenzahlungen gefunden"
+  },
+  "CompanyClientTypes": {
+    "pageTitle": "KUNDENTYPEN",
+    "breadcrumbParent": "Kunden",
+    "breadcrumbItem": "Kundentypen",
+    "addClientType": "Kundentyp hinzufügen",
+    "editClientType": "Kundentyp bearbeiten",
+    "createdSuccessfully": "Kundentyp wurde erfolgreich erstellt",
+    "updatedSuccessfully": "Kundentyp wurde erfolgreich aktualisiert",
+    "deletedSuccessfully": "Kundentyp wurde erfolgreich gelöscht",
+    "deleteConfirmation": "Möchten Sie diesen Kundentyp wirklich löschen",
+    "noClientTypesFound": "Keine Kundentypen gefunden",
+    "table": {
+      "id": "ID",
+      "name": "Kundentyp",
+      "description": "Beschreibung",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "fields": {
+      "name": "Name des Kundentyps",
+      "description": "Beschreibung",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Name des Kundentyps eingeben",
+      "description": "Beschreibung eingeben (optional)"
+    }
+  },
+  "CompanyProjectsList": {
+    "pageTitle": "PROJEKTLISTE",
+    "breadcrumbParent": "Projekte",
+    "breadcrumbItem": "Projektliste",
+    "addProject": "Projekt hinzufügen",
+    "createdSuccessfully": "Projekt erfolgreich erstellt",
+    "noProjectsFound": "Keine Projekte gefunden",
+    "form": {
+      "drawingFileType": "Zeichnungsdateityp",
+      "client": "Kunde",
+      "selectClient": "Kunde auswählen",
+      "addClient": "Kunde hinzufügen",
+      "clientName": "Kundenname",
+      "clientNamePlaceholder": "Kundenname eingeben",
+      "projectType": "Projekttyp",
+      "selectProjectType": "Projekttyp auswählen",
+      "addProjectType": "Projekttyp hinzufügen",
+      "projectCategory": "Projektkategorie",
+      "selectProjectCategory": "Projektkategorie auswählen",
+      "addProjectCategory": "Projektkategorie hinzufügen",
+      "projectStatus": "Projektstatus",
+      "selectProjectStatus": "Projektstatus auswählen",
+      "projectName": "Projektname",
+      "placeholderProjectName": "Projektname",
+      "projectCost": "Projektkosten",
+      "placeholderEstimatedCost": "Geschätzte Kosten",
+      "area": "Fläche",
+      "placeholderArea": "z. B.: 3500 qm / 2850 qm usw. ...",
+      "placeholderLocation": "Standort des Projekts",
+      "startDate": "Startdatum",
+      "finishDate": "Enddatum (kann später hinzugefügt werden)",
+      "assignProjectManager": "Projektmanager zuweisen",
+      "selectProjectManager": "Projektmanager für dieses Projekt auswählen",
+      "addProjectManager": "Projektmanager hinzufügen",
+      "assignStoreIncharge": "Lagerverantwortlichen zuweisen",
+      "addStoreIncharge": "Lagerverantwortlichen hinzufügen",
+      "selectOne": "Einen auswählen",
+      "optionName": "Name",
+      "optionNamePlaceholder": "Name eingeben",
+      "assignSiteOperations": "Baustellenoperationen zuweisen (Baustellenoperationen hinzufügen, die auch Lagerverantwortliche sind)",
+      "selectSiteOperations": "Baustellenoperationen auswählen",
+      "placeholderSiteOperations": "",
+      "remarks": "Anmerkungen",
+      "placeholderRemarks": "Anmerkungen (Notiz zu Ihrem Projekt)",
+      "drawingsLink": "Zeichnungslink",
+      "placeholderDrawingsLink": "https://example.com oder http://example.com",
+      "drawingsUpload": "Zeichnungen (PDF- / Bild-Upload)",
+      "drawingFileSizeError": "Dateigröße darf 30 KB nicht überschreiten",
+      "drawingFileHint": "Nur PDF oder Bild. Max. Größe: 30 KB"
+    },
+    "placeholders": {
+      "name": "Projektname eingeben",
+      "clientName": "Kundenname eingeben",
+      "projectManager": "Projektmanager eingeben",
+      "location": "Standort eingeben",
+      "drawing": "Zeichnungsreferenz eingeben",
+      "category": "Kategorie eingeben",
+      "projectCost": "Projektkosten eingeben"
+    },
+    "drawingPdf": "PDF",
+    "drawingImage": "Bild",
+    "viewDrawing": "Ansehen",
+    "statusActive": "Aktiv",
+    "statusCompleted": "Abgeschlossen",
+    "statusPending": "Ausstehend",
+    "statusOnHold": "Pausiert",
+    "table": {
+      "id": "ID",
+      "name": "Projektname",
+      "client": "Kunde",
+      "projectManager": "Projektmanager",
+      "location": "Standort",
+      "drawing": "Zeichnung",
+      "type": "Typ",
+      "category": "Kategorie",
+      "projectCost": "Projektkosten",
+      "startDate": "Startdatum",
+      "endDate": "Enddatum",
+      "progress": "Fortschritt"
+    }
+  },
+  "CompanyProjectTypes": {
+    "pageTitle": "PROJEKTTYPEN",
+    "breadcrumbParent": "Projekte",
+    "breadcrumbItem": "Projekttypen",
+    "addProjectType": "Projekttyp hinzufügen",
+    "editProjectType": "Projekttyp bearbeiten",
+    "createdSuccessfully": "Projekttyp wurde erfolgreich erstellt",
+    "updatedSuccessfully": "Projekttyp wurde erfolgreich aktualisiert",
+    "deletedSuccessfully": "Projekttyp wurde erfolgreich gelöscht",
+    "deleteConfirmation": "Möchten Sie diesen Projekttyp wirklich löschen",
+    "noProjectTypesFound": "Keine Projekttypen gefunden",
+    "table": {
+      "id": "ID",
+      "name": "Projekttyp",
+      "description": "Beschreibung",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "fields": {
+      "name": "Name des Projekttyps",
+      "description": "Beschreibung",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Name des Projekttyps eingeben",
+      "description": "Beschreibung eingeben (optional)"
+    }
+  },
+  "CompanyProjectCategories": {
+    "pageTitle": "PROJEKTKATEGORIEN",
+    "breadcrumbParent": "Projekte",
+    "breadcrumbItem": "Projektkategorien",
+    "addProjectCategory": "Projektkategorie hinzufügen",
+    "editProjectCategory": "Projektkategorie bearbeiten",
+    "createdSuccessfully": "Projektkategorie wurde erfolgreich erstellt",
+    "updatedSuccessfully": "Projektkategorie wurde erfolgreich aktualisiert",
+    "deletedSuccessfully": "Projektkategorie wurde erfolgreich gelöscht",
+    "deleteConfirmation": "Möchten Sie diese Projektkategorie wirklich löschen",
+    "noProjectCategoriesFound": "Keine Projektkategorien gefunden",
+    "table": {
+      "id": "ID",
+      "name": "Projektkategorie",
+      "description": "Beschreibung",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "fields": {
+      "name": "Name der Projektkategorie",
+      "description": "Beschreibung",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Name der Projektkategorie eingeben",
+      "description": "Beschreibung eingeben (optional)"
+    }
+  },
+  "CompanySidebar": {
+    "clients": "Kunden",
+    "manageClients": "Kunden verwalten",
+    "clientsList": "Kundenliste",
+    "clientPayment": "Kundenzahlungen",
+    "clientInvoice": "Kundenrechnungen",
+    "clientVisits": "Kundenbesuche",
+    "projects": "Projekte",
+    "projectTypes": "Projekttypen",
+    "projectCategories": "Projektkategorien",
+    "projectsList": "Projekte",
+    "estimations": "Kostenschätzungen",
+    "scheduleActivities": "Aktivitäten planen",
+    "stages": "Phasen",
+    "activities": "Aktivitäten",
+    "subActivities": "Unteraktivitäten",
+    "assignTasks": "Aufgaben zuweisen",
+    "manageMaterials": "Materialien verwalten",
+    "materialCategories": "Materialkategorien",
+    "units": "Einheiten",
+    "materials": "Materialien",
+    "manageInventory": "Inventar verwalten",
+    "inventory": "Inventar",
+    "materialTransfer": "Materialtransfer",
+    "materialReturn": "Materialrückgabe",
+    "newStores": "Neue Lager",
+    "manageRentals": "Mietobjekte verwalten",
+    "rentalCategories": "Mietkategorien",
+    "rentalItems": "Mietobjekte",
+    "manageStaffs": "Mitarbeiter verwalten",
+    "jobTitles": "Stellenbezeichnungen",
+    "staffs": "Mitarbeiter",
+    "salaries": "Gehälter",
+    "attendance": "Anwesenheit",
+    "teams": "Teams",
+    "cashBook": "Kassenbuch",
+    "openingBalance": "Anfangsbestand",
+    "transfers": "Überweisungen",
+    "otherIncomes": "Sonstige Einnahmen",
+    "otherExpenses": "Sonstige Ausgaben",
+    "manageSuppliers": "Lieferanten verwalten",
+    "suppliers": "Lieferanten",
+    "purchases": "Einkäufe",
+    "payMaterialSuppliers": "Materiallieferanten bezahlen",
+    "rentalBills": "Mietrechnungen",
+    "payRentalSuppliers": "Mietlieferanten bezahlen",
+    "subcontractors": "Subunternehmer",
+    "contractTypes": "Vertragsarten",
+    "paySubcontractors": "Subunternehmer bezahlen",
+    "downloadReports": "Berichte herunterladen",
+    "manageUsers": "Benutzer verwalten",
+    "roles": "Rollen",
+    "users": "Benutzer",
+    "rolePermissions": "Rollenberechtigungen",
+    "howItWorks": "Wie funktioniert es?"
   }
 }
 

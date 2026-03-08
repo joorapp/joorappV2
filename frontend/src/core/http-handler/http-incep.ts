@@ -12,10 +12,13 @@ import { showErrorToastFromError } from "../utils/toast";
 import API_ROUTES from "../constants/api";
 import LoginService from "../service/LoginService";
 
+// Get API timeout from environment variable (default: 10000ms = 10 seconds)
+const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT) || 10000;
+
 const mainAxios = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-type": "application/json" },
-  timeout: 10000,
+  timeout: API_TIMEOUT,
 });
 
 // Track if we're currently refreshing token to avoid multiple refresh calls

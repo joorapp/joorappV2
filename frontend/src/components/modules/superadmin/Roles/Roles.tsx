@@ -2,14 +2,16 @@
  * @author Auto-generated
  * Roles component for the application
  * This component is the roles management page for the application
- * TEMPORARY: Dummy data for table design preview only
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardBody, Row, Col, Table, Badge, Input, InputGroup, Button, Modal, ModalHeader, ModalBody, ModalFooter, Label, FormFeedback } from 'reactstrap';
+import { Card, CardBody, Row, Col, Table, Badge, Input, InputGroup, Button, Modal, ModalHeader, ModalBody, ModalFooter, Label, FormFeedback, Spinner } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
+import Pagination from '../../../common/Pagination/Pagination';
+import ConfirmModal from '../../../common/ConfirmModal/ConfirmModal';
 import { showSuccessToast } from '../../../../core/utils/toast';
+import RoleService from '../../../../core/service/RoleService';
 
 interface Role {
   id: string;
@@ -18,6 +20,7 @@ interface Role {
   description?: string;
   isActive: boolean;
   createdAt: string;
+  createdDate?: string; // API may return createdDate instead of createdAt
 }
 
 const Roles = () => {
@@ -28,76 +31,18 @@ const Roles = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // TEMPORARY: Dummy data for table design preview
-  const initialDummyRoles: Role[] = [
-    {
-      id: '1',
-      name: 'Super Admin',
-      code: 'SUPER_ADMIN',
-      description: 'Full system access with all permissions',
-      isActive: true,
-      createdAt: new Date('2024-01-01').toISOString(),
-    },
-    {
-      id: '2',
-      name: 'Site Manager',
-      code: 'SITE_MANAGER',
-      description: 'Manages site operations and staff',
-      isActive: true,
-      createdAt: new Date('2024-01-15').toISOString(),
-    },
-    {
-      id: '3',
-      name: 'Project Manager',
-      code: 'PROJECT_MANAGER',
-      description: 'Oversees project planning and execution',
-      isActive: true,
-      createdAt: new Date('2024-02-10').toISOString(),
-    },
-    {
-      id: '4',
-      name: 'Account Manager',
-      code: 'ACCOUNT_MANAGER',
-      description: 'Manages client accounts and relationships',
-      isActive: true,
-      createdAt: new Date('2024-02-20').toISOString(),
-    },
-    {
-      id: '5',
-      name: 'Site Engineer',
-      code: 'SITE_ENGINEER',
-      description: 'Technical oversight of site activities',
-      isActive: true,
-      createdAt: new Date('2024-03-05').toISOString(),
-    },
-    {
-      id: '6',
-      name: 'Finance Manager',
-      code: 'FINANCE_MANAGER',
-      description: 'Handles financial operations and reporting',
-      isActive: false,
-      createdAt: new Date('2024-03-15').toISOString(),
-    },
-    {
-      id: '7',
-      name: 'HR Manager',
-      code: 'HR_MANAGER',
-      description: 'Manages human resources and employee relations',
-      isActive: true,
-      createdAt: new Date('2024-04-01').toISOString(),
-    },
-    {
-      id: '8',
-      name: 'Viewer',
-      code: 'VIEWER',
-      description: 'Read-only access to system data',
-      isActive: true,
-      createdAt: new Date('2024-04-10').toISOString(),
-    },
-  ];
+  // Pagination state
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage] = useState(10);
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
-  const [roles, setRoles] = useState<Role[]>(initialDummyRoles);
   const [editFormData, setEditFormData] = useState<Role | null>(null);
   const [createFormData, setCreateFormData] = useState({
     name: '',
@@ -109,6 +54,91 @@ const Roles = () => {
     name?: string;
     code?: string;
   }>({});
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Fetch roles from API
+  const fetchRoles = useCallback(async (page: number, search: string) => {
+    setLoading(true);
+    try {
+      const response = await RoleService.getRoles({
+        page,
+        limit: itemsPerPage,
+        search,
+        sortBy: 'name',
+        sortOrder: 'ASC',
+      });
+
+      if (response?.data) {
+        // Map API response to Role interface
+        const rolesData = response.data.data || [];
+        const mappedRoles: Role[] = rolesData.map((role: any) => ({
+          id: role.id || '',
+          name: role.name || '',
+          code: role.code || '',
+          description: role.description || undefined,
+          isActive: role.isActive ?? true,
+          createdAt: role.createdDate || role.createdAt || new Date().toISOString(),
+          createdDate: role.createdDate,
+        }));
+
+        setRoles(mappedRoles);
+
+        // Extract pagination metadata
+        const pagination = response.data.pagination || {};
+        setTotalPages(pagination.pages || pagination.totalPages || 1);
+        setTotalItems(pagination.total || 0);
+        setCurrentPage(pagination.page || page);
+      }
+    } catch (error: any) {
+      // Error is already handled by interceptor
+      console.error('Error fetching roles:', error);
+      setRoles([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [itemsPerPage]);
+
+  // Fetch roles on component mount
+  useEffect(() => {
+    fetchRoles(1, '');
+  }, [fetchRoles]);
+
+  // Handle search with debouncing
+  useEffect(() => {
+    // Clear previous timer
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+
+    // Set new timer for debounced search
+    const timer = setTimeout(() => {
+      setCurrentPage(1); // Reset to first page on search
+      fetchRoles(1, searchTerm);
+    }, 500); // 500ms debounce
+
+    setSearchDebounceTimer(timer);
+
+    // Cleanup timer on unmount
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [searchTerm, fetchRoles]);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchRoles(page, searchTerm);
+  };
+
+  // Handle search input change
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+  };
 
   const getStatusBadge = (isActive: boolean) => {
     if (isActive) {
@@ -116,14 +146,6 @@ const Roles = () => {
     }
     return <Badge className="bg-danger">{t('Roles.statusInactive')}</Badge>;
   };
-
-  const filteredRoles = roles.filter(role => {
-    const name = role.name.toLowerCase();
-    const code = role.code.toLowerCase();
-    const description = role.description?.toLowerCase() || '';
-    const search = searchTerm.toLowerCase();
-    return name.includes(search) || code.includes(search) || description.includes(search);
-  });
 
   // View role handler
   const handleView = (role: Role) => {
@@ -139,39 +161,71 @@ const Roles = () => {
   };
 
   // Delete role handler
-  const handleDelete = (role: Role) => {
-    setSelectedRole(role);
+  const handleDeleteClick = (role: Role) => {
+    setRoleToDelete(role);
     setDeleteModalOpen(true);
   };
 
   // Confirm delete
-  const confirmDelete = () => {
-    if (selectedRole) {
-      setRoles(prev => prev.filter(role => role.id !== selectedRole.id));
-      showSuccessToast(t('Roles.roleDeletedSuccessfully') || 'Role deleted successfully');
+  const handleConfirmDelete = async () => {
+    if (!roleToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await RoleService.deleteRole(roleToDelete.id);
+      
+      // Refresh the list after successful delete
+      await fetchRoles(currentPage, searchTerm);
+      showSuccessToast(t('Roles.roleDeletedSuccessfully'));
+      
       setDeleteModalOpen(false);
-      setSelectedRole(null);
+      setRoleToDelete(null);
+    } catch (error: any) {
+      // Error is already handled by interceptor
+      console.error('Error deleting role:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   // Save edit
-  const handleSaveEdit = () => {
-    if (editFormData && selectedRole) {
-      // Basic validation
-      if (!editFormData.name.trim()) {
-        return;
-      }
-      if (!editFormData.code.trim()) {
-        return;
-      }
+  const handleSaveEdit = async () => {
+    if (!editFormData || !selectedRole) return;
 
-      setRoles(prev => prev.map(role => 
-        role.id === selectedRole.id ? editFormData : role
-      ));
-      showSuccessToast(t('Roles.roleUpdatedSuccessfully') || 'Role updated successfully');
-      setEditModalOpen(false);
-      setEditFormData(null);
-      setSelectedRole(null);
+    // Basic validation
+    if (!editFormData.name.trim()) {
+      return;
+    }
+    if (!editFormData.code.trim()) {
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      // Call API to update role
+      const data = {
+        name: editFormData.name.trim(),
+        code: editFormData.code.trim().toUpperCase(),
+        description: editFormData.description?.trim() || undefined,
+        isActive: editFormData.isActive,
+      };
+      
+      const response = await RoleService.updateRole(selectedRole.id, data);
+      
+      if (response.data.success) {
+        showSuccessToast(response.data.message || t('Roles.roleUpdatedSuccessfully'));
+        setEditModalOpen(false);
+        setEditFormData(null);
+        setSelectedRole(null);
+        
+        // Refresh roles list after successful update
+        await fetchRoles(currentPage, searchTerm);
+      }
+    } catch (error: any) {
+      // Error is already handled by interceptor
+      console.error('Error updating role:', error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -214,7 +268,7 @@ const Roles = () => {
   };
 
   // Create role handler
-  const handleCreateRole = () => {
+  const handleCreateRole = async () => {
     const errors: typeof createFormErrors = {};
     let isValid = true;
 
@@ -244,19 +298,28 @@ const Roles = () => {
       return;
     }
 
-    // Create new role
-    const newRole: Role = {
-      id: String(Date.now()), // Simple ID generation for dummy data
-      name: createFormData.name.trim(),
-      code: createFormData.code.trim().toUpperCase(),
-      description: createFormData.description.trim() || undefined,
-      isActive: createFormData.isActive,
-      createdAt: new Date().toISOString(),
-    };
-
-    setRoles(prev => [...prev, newRole]);
-    showSuccessToast(t('Roles.roleCreatedSuccessfully') || 'Role created successfully');
-    handleCloseCreateModal();
+    setIsCreating(true);
+    try {
+      // Call API to create role
+      const data = {
+        name: createFormData.name.trim(),
+        code: createFormData.code.trim().toUpperCase(),
+        description: createFormData.description.trim() || '',
+        isActive: createFormData.isActive,
+      };
+      const response = await RoleService.createRole(data);
+      if (response.data.success) {
+        showSuccessToast(response.data.message);
+        handleCloseCreateModal();
+        // Refresh roles list after successful creation
+        await fetchRoles(currentPage, searchTerm);
+      }
+    } catch (error: any) {
+      // Error is already handled by interceptor
+      console.error('Error creating role:', error);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -273,7 +336,7 @@ const Roles = () => {
                     type="text"
                     placeholder={t('Common.searchPlaceholder')}
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                   />
                 </InputGroup>
                 <Button
@@ -298,8 +361,15 @@ const Roles = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRoles.length > 0 ? (
-                      filteredRoles.map((role) => (
+                    {loading ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-4">
+                          <Spinner className="me-2" />
+                          <span>{t('Common.loading')}</span>
+                        </td>
+                      </tr>
+                    ) : roles.length > 0 ? (
+                      roles.map((role) => (
                         <tr key={role.id}>
                           <td>
                             <h5 className="mb-0 font-size-14">{role.name}</h5>
@@ -312,7 +382,7 @@ const Roles = () => {
                           </td>
                           <td>{getStatusBadge(role.isActive)}</td>
                           <td>
-                            {new Date(role.createdAt).toLocaleDateString('en-US', {
+                            {new Date(role.createdDate || role.createdAt).toLocaleDateString('en-US', {
                               year: 'numeric',
                               month: 'short',
                               day: 'numeric'
@@ -340,7 +410,7 @@ const Roles = () => {
                                 color="outline-danger"
                                 className="p-1 border-0"
                                 title={t('Common.delete')}
-                                onClick={() => handleDelete(role)}
+                                onClick={() => handleDeleteClick(role)}
                               >
                                 <i className="mdi mdi-delete"></i>
                               </Button>
@@ -358,6 +428,17 @@ const Roles = () => {
                   </tbody>
                 </Table>
               </div>
+              {!loading && totalItems > 0 && (
+                <div className="mt-3">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
+              )}
             </CardBody>
           </Card>
         </Col>
@@ -392,7 +473,7 @@ const Roles = () => {
               <div className="col-md-6 mb-3">
                 <label className="form-label fw-semibold text-muted">{t('Roles.createdDate')}</label>
                 <p className="mb-0">
-                  {new Date(selectedRole.createdAt).toLocaleDateString('en-US', {
+                  {new Date(selectedRole.createdDate || selectedRole.createdAt).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
@@ -469,38 +550,26 @@ const Roles = () => {
           )}
         </ModalBody>
         <ModalFooter>
-          <Button color="primary" onClick={handleSaveEdit}>
-            {t('Common.save')}
+          <Button color="primary" onClick={handleSaveEdit} disabled={isUpdating}>
+            {isUpdating ? t('Common.loading') : t('Common.save')}
           </Button>
-          <Button color="secondary" onClick={() => setEditModalOpen(false)}>
+          <Button color="secondary" onClick={() => setEditModalOpen(false)} disabled={isUpdating}>
             {t('Common.cancel')}
           </Button>
         </ModalFooter>
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={deleteModalOpen} toggle={() => setDeleteModalOpen(!deleteModalOpen)} centered>
-        <ModalHeader toggle={() => setDeleteModalOpen(!deleteModalOpen)}>
-          {t('Common.confirmDelete')}
-        </ModalHeader>
-        <ModalBody>
-          {selectedRole && (
-            <p>
-              {t('Roles.deleteConfirmation') || 'Are you sure you want to delete this role?'}
-              <br />
-              <strong>{selectedRole.name} ({selectedRole.code})</strong>
-            </p>
-          )}
-        </ModalBody>
-        <ModalFooter>
-          <Button color="danger" onClick={confirmDelete}>
-            {t('Common.delete')}
-          </Button>
-          <Button color="secondary" onClick={() => setDeleteModalOpen(false)}>
-            {t('Common.cancel')}
-          </Button>
-        </ModalFooter>
-      </Modal>
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        toggle={() => {
+          setDeleteModalOpen(false);
+          setRoleToDelete(null);
+        }}
+        message={roleToDelete ? `${t('Roles.deleteConfirmation')} ${roleToDelete.name} (${roleToDelete.code})?` : ''}
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeleting}
+      />
 
       {/* Create Role Modal */}
       <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="md" centered>
@@ -575,10 +644,10 @@ const Roles = () => {
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button color="primary" onClick={handleCreateRole}>
-            {t('Roles.createRole')}
+          <Button color="primary" onClick={handleCreateRole} disabled={isCreating}>
+            {isCreating ? t('Common.loading') : t('Roles.createRole')}
           </Button>
-          <Button color="secondary" onClick={handleCloseCreateModal}>
+          <Button color="secondary" onClick={handleCloseCreateModal} disabled={isCreating}>
             {t('Common.cancel')}
           </Button>
         </ModalFooter>

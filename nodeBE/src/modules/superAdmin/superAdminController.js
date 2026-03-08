@@ -1547,8 +1547,11 @@ export const createUserWithCompany = async (req, res) => {
       email
     });
 
+    // Get user with companies for response
+    const userWithCompanies = await userService.getUserByIdWithCompanies(newUser.id, { includeLogo: false });
+
     res.status(201).json(
-      successResponse('User created successfully', newUser, {}, req, startTime)
+      successResponse('User created successfully', userWithCompanies, {}, req, startTime)
     );
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -1600,8 +1603,8 @@ export const getUsers = async (req, res) => {
     const allowedSortFields = ['email', 'firstName', 'lastName', 'keycloakGlobalRole', 'isActive'];
     const order = buildSortQuery(sortBy, sortOrder, allowedSortFields, { defaultSort: 'email', defaultOrder: 'ASC' });
 
-    // Get users via service
-    const result = await userService.listUsers(
+    // Get users with companies via service
+    const result = await userService.listUsersWithCompanies(
       { search },
       { page, limit, offset },
       order
@@ -1677,8 +1680,8 @@ export const getUserById = async (req, res) => {
       throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
     }
 
-    // Get user via service
-    const user = await userService.getUserById(id);
+    // Get user with companies via service (include logo for single user view)
+    const user = await userService.getUserByIdWithCompanies(id, { includeLogo: true });
 
     const duration = Date.now() - startTime;
     
@@ -1778,13 +1781,16 @@ export const updateUser = async (req, res) => {
     }
 
     // Update user in database
-    const user = await userService.updateUserInDB(id, {
+    await userService.updateUserInDB(id, {
       email,
       firstName,
       lastName,
       keycloakGlobalRole,
       isActive
     }, { userId: req.user.id });
+
+    // Get updated user with companies for response
+    const user = await userService.getUserByIdWithCompanies(id, { includeLogo: false });
 
     const duration = Date.now() - startTime;
     
@@ -1826,6 +1832,7 @@ export const updateUser = async (req, res) => {
  * Disable user by ID (marks as inactive)
  * Requires SUPER_ADMIN role
  * Users are never deleted, only deactivated
+ * Sets isActive to false in database and enabled to false in Keycloak
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
@@ -1853,10 +1860,10 @@ export const disableUser = async (req, res) => {
     // Get user for logging
     const user = await userService.getUserById(id);
 
-    // Disable user in Keycloak
+    // Disable user in Keycloak (sets enabled: false)
     await userService.deleteUserFromKeycloak(user.keycloakId);
 
-    // Mark user as inactive in database (never delete)
+    // Mark user as inactive in database (sets isActive: false)
     await userService.deleteUserFromDB(id, { userId: req.user.id });
 
     const duration = Date.now() - startTime;
@@ -1896,7 +1903,86 @@ export const disableUser = async (req, res) => {
       },
       duration: `${duration}ms`
     });
+    
+    throw error;
+  }
+};
 
+/**
+ * Enable user by ID (marks as active)
+ * Requires SUPER_ADMIN role
+ * Sets isActive to true in database and enabled to true in Keycloak
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const enableUser = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const { id } = req.params;
+
+    // Validate UUID
+    validateUUID(id, 'id', req.id);
+
+    logger.info('Enable user requested', {
+      requestId: req.id,
+      userId: req.user?.id,
+      targetUserId: id,
+      ip: req.ip || req.socket?.remoteAddress
+    });
+
+    // Verify user is SUPER_ADMIN
+    if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+      throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+    }
+
+    // Get user for logging
+    const user = await userService.getUserById(id);
+
+    // Enable user in Keycloak (sets enabled: true)
+    await userService.enableUserInKeycloak(user.keycloakId);
+
+    // Mark user as active in database (sets isActive: true)
+    await userService.enableUserInDB(id, { userId: req.user.id });
+
+    const duration = Date.now() - startTime;
+    
+    logger.info('User enabled successfully', {
+      requestId: req.id,
+      userId: req.user.id,
+      targetUserId: id,
+      duration: `${duration}ms`
+    });
+
+    logBusiness('User enabled by Super Admin', {
+      requestId: req.id,
+      userId: req.user.id,
+      targetUserId: id
+    });
+
+    logSecurity('User account enabled', {
+      requestId: req.id,
+      userId: req.user.id,
+      targetUserId: id,
+      email: user.email
+    });
+
+    res.status(200).json(
+      successResponse('User enabled successfully', null, {}, req, startTime)
+    );
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    logger.error('Enable user failed', {
+      requestId: req.id,
+      userId: req.user?.id,
+      error: {
+        message: error.message,
+        stack: error.stack
+      },
+      duration: `${duration}ms`
+    });
+    
     throw error;
   }
 };

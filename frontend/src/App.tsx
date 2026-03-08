@@ -16,6 +16,10 @@ import "./assets/scss/theme.scss";
 // Import react-toastify CSS
 import 'react-toastify/dist/ReactToastify.css';
 
+// Get toast configuration from environment variables
+const TOAST_AUTO_CLOSE = Number(import.meta.env.VITE_TOAST_AUTO_CLOSE) || 5000;
+const TOAST_POSITION = (import.meta.env.VITE_TOAST_POSITION as any) || 'top-right';
+
 // Main App Component
 const App = () => {
   return (
@@ -27,8 +31,8 @@ const App = () => {
           </div>
         </Router>
         <ToastContainer
-          position="top-right"
-          autoClose={5000}
+          position={TOAST_POSITION}
+          autoClose={TOAST_AUTO_CLOSE}
           hideProgressBar={false}
           newestOnTop={false}
           closeOnClick

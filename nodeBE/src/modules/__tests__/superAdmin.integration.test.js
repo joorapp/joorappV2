@@ -787,7 +787,59 @@ describe('Super Admin API Integration', () => {
       expect(response.body.message).toBeDefined();
       expect(response.body.data).toBeDefined();
       expect(response.body.data.email).toBe(userData.email);
+      expect(response.body.data.companies).toBeDefined();
+      expect(Array.isArray(response.body.data.companies)).toBe(true);
       expect(response.body.meta).toBeDefined();
+    });
+
+    it('should create user with company assignment and return companies array', async () => {
+      // Create company and role first
+      const companyData = createCompanyData({ name: `Test Company ${Date.now()}` });
+      const companyResponse = await request(app)
+        .post('/api/v2/superAdmin/companies')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(companyData)
+        .expect(201);
+      const companyId = companyResponse.body.data.id;
+
+      const roleData = createRoleData({ name: `Test Role ${Date.now()}` });
+      const roleResponse = await request(app)
+        .post('/api/v2/superAdmin/roles')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(roleData)
+        .expect(201);
+      const roleId = roleResponse.body.data.id;
+
+      const userData = {
+        email: `newuserwithcompany-${Date.now()}@example.com`,
+        password: 'TestPassword123!',
+        firstName: 'New',
+        lastName: 'User',
+        keycloakGlobalRole: 'COMPANY_USER',
+        companyId,
+        roleId
+      };
+
+      const response = await request(app)
+        .post('/api/v2/superAdmin/users')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(userData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.companies).toBeDefined();
+      expect(Array.isArray(response.body.data.companies)).toBe(true);
+      expect(response.body.data.companies.length).toBeGreaterThan(0);
+      
+      const company = response.body.data.companies[0];
+      expect(company.id).toBe(companyId);
+      expect(company.name).toBe(companyData.name);
+      expect(company.role).toBeDefined();
+      expect(company.role.id).toBe(roleId);
+      expect(company.companyUser).toBeDefined();
+      expect(company.companyUser.isActive).toBe(true);
+      // Logo should not be included in POST response
+      expect(company.logo).toBeUndefined();
     });
 
     it('should return 400 when email is missing', async () => {
@@ -836,17 +888,19 @@ describe('Super Admin API Integration', () => {
         keycloakGlobalRole: 'COMPANY_USER'
       };
       
-      await request(app)
+      const createResponse1 = await request(app)
         .post('/api/v2/superAdmin/users')
         .set('Authorization', `Bearer ${authToken}`)
         .send(userData1)
         .expect(201);
+      const userId1 = createResponse1.body.data.id;
       
-      await request(app)
+      const createResponse2 = await request(app)
         .post('/api/v2/superAdmin/users')
         .set('Authorization', `Bearer ${authToken}`)
         .send(userData2)
         .expect(201);
+      const userId2 = createResponse2.body.data.id;
 
       const response = await request(app)
         .get('/api/v2/superAdmin/users')
@@ -856,6 +910,23 @@ describe('Super Admin API Integration', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBeDefined();
       expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThan(0);
+      
+      // Verify the created users are in the response
+      const returnedUserIds = response.body.data.map(user => user.id);
+      expect(returnedUserIds).toContain(userId1);
+      expect(returnedUserIds).toContain(userId2);
+      
+      // Verify each user has companies array
+      response.body.data.forEach(user => {
+        expect(user.companies).toBeDefined();
+        expect(Array.isArray(user.companies)).toBe(true);
+        // Logo should not be included in list response
+        if (user.companies.length > 0) {
+          expect(user.companies[0].logo).toBeUndefined();
+        }
+      });
+      
       expect(response.body.meta).toBeDefined();
       expect(response.body.pagination).toBeDefined(); // pagination at root level per cursor rules
     });
@@ -898,7 +969,63 @@ describe('Super Admin API Integration', () => {
       expect(response.body.message).toBeDefined();
       expect(response.body.data).toBeDefined();
       expect(response.body.data.id).toBe(userId);
+      expect(response.body.data.companies).toBeDefined();
+      expect(Array.isArray(response.body.data.companies)).toBe(true);
       expect(response.body.meta).toBeDefined();
+    });
+
+    it('should return user with companies including logo when getting by ID', async () => {
+      // Create company and role first
+      const companyData = createCompanyData({ name: `Test Company ${Date.now()}` });
+      const companyResponse = await request(app)
+        .post('/api/v2/superAdmin/companies')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(companyData)
+        .expect(201);
+      const companyId = companyResponse.body.data.id;
+
+      const roleData = createRoleData({ name: `Test Role ${Date.now()}` });
+      const roleResponse = await request(app)
+        .post('/api/v2/superAdmin/roles')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(roleData)
+        .expect(201);
+      const roleId = roleResponse.body.data.id;
+
+      // Create user with company assignment
+      const userData = {
+        email: `getuserwithcompany-${Date.now()}@example.com`,
+        password: 'TestPassword123!',
+        firstName: 'Get',
+        lastName: 'User',
+        keycloakGlobalRole: 'COMPANY_USER',
+        companyId,
+        roleId
+      };
+      
+      const createResponse = await request(app)
+        .post('/api/v2/superAdmin/users')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(userData)
+        .expect(201);
+      
+      const userId = createResponse.body.data.id;
+
+      const response = await request(app)
+        .get(`/api/v2/superAdmin/users/${userId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.companies).toBeDefined();
+      expect(Array.isArray(response.body.data.companies)).toBe(true);
+      if (response.body.data.companies.length > 0) {
+        // Logo should be included in single user GET response (can be null if not set)
+        expect(response.body.data.companies[0]).toHaveProperty('logo');
+        expect(response.body.data.companies[0].plan).toBeDefined();
+        expect(response.body.data.companies[0].role).toBeDefined();
+        expect(response.body.data.companies[0].companyUser).toBeDefined();
+      }
     });
 
     it('should return 404 when user not found', async () => {
@@ -956,6 +1083,8 @@ describe('Super Admin API Integration', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBeDefined();
       expect(response.body.data).toBeDefined();
+      expect(response.body.data.companies).toBeDefined();
+      expect(Array.isArray(response.body.data.companies)).toBe(true);
       expect(response.body.meta).toBeDefined();
     });
 
@@ -998,12 +1127,94 @@ describe('Super Admin API Integration', () => {
       expect(response.body.message).toBeDefined();
       expect(response.body.message).toContain('disabled');
       expect(response.body.meta).toBeDefined();
+
+      // Verify user is disabled (isActive = false)
+      const getUserResponse = await request(app)
+        .get(`/api/v2/superAdmin/users/${userId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+      
+      expect(getUserResponse.body.data.isActive).toBe(false);
     });
 
     it('should return 401 when not authenticated', async () => {
       const response = await request(app)
         .put(`/api/v2/superAdmin/users/${uuidv4()}/disable`)
         .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBeDefined();
+    });
+  });
+
+  describe('PUT /api/v2/superAdmin/users/:id/enable', () => {
+    it('should enable user when authenticated', async () => {
+      // Create user via API (ensures it exists in both Keycloak and DB)
+      const userData = {
+        email: `enableuser-${Date.now()}@example.com`,
+        password: 'TestPassword123!',
+        firstName: 'Enable',
+        lastName: 'User',
+        keycloakGlobalRole: 'COMPANY_USER'
+      };
+      
+      const createResponse = await request(app)
+        .post('/api/v2/superAdmin/users')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(userData)
+        .expect(201);
+      
+      const userId = createResponse.body.data.id;
+
+      // Disable user first
+      await request(app)
+        .put(`/api/v2/superAdmin/users/${userId}/disable`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      // Verify user is disabled
+      const getUserBeforeResponse = await request(app)
+        .get(`/api/v2/superAdmin/users/${userId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+      expect(getUserBeforeResponse.body.data.isActive).toBe(false);
+
+      // Enable user
+      const response = await request(app)
+        .put(`/api/v2/superAdmin/users/${userId}/enable`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toBeDefined();
+      expect(response.body.message).toContain('enabled');
+      expect(response.body.meta).toBeDefined();
+
+      // Verify user is enabled (isActive = true)
+      const getUserAfterResponse = await request(app)
+        .get(`/api/v2/superAdmin/users/${userId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+      
+      expect(getUserAfterResponse.body.data.isActive).toBe(true);
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const response = await request(app)
+        .put(`/api/v2/superAdmin/users/${uuidv4()}/enable`)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBeDefined();
+    });
+
+    it('should return 404 when user not found', async () => {
+      const nonExistentId = uuidv4();
+
+      const response = await request(app)
+        .put(`/api/v2/superAdmin/users/${nonExistentId}/enable`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBeDefined();

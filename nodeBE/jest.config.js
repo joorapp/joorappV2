@@ -23,6 +23,12 @@ export default {
       statements: 10,
     },
   },
+  coverageReporters: [
+    'text',         // Detailed table (already showing)
+    'text-summary', // Summary line (Coverage: 85% statements, 80% branches, ...)
+    'lcov',         // For coverage tools (e.g., Codecov)
+    'html'          // HTML report in coverage/ directory
+  ],
   moduleFileExtensions: ['js', 'json'],
   testMatch: [
     '**/__tests__/**/*.test.js',

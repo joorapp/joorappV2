@@ -1,56 +1,73 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../../../context/AuthContext';
-import './CompanyHeader.scss';
+import NotificationDropdown from '../../../common/NotificationDropdown/NotificationDropdown';
+import ProfileMenu from '../../../common/ProfileMenu/ProfileMenu';
+import LanguageDropdown from '../../../common/LanguageDropdown/LanguageDropdown';
 
 interface CompanyHeaderProps {
-  title?: string;
   onMenuClick?: () => void;
 }
 
-const CompanyHeader = ({ 
-  title,
-  onMenuClick 
-}: CompanyHeaderProps) => {
+const CompanyHeader: React.FC<CompanyHeaderProps> = ({ onMenuClick }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+
+  const toggleLeftmenu = () => {
+    onMenuClick?.();
+    document.body.classList.toggle('vertical-collpsed');
+    document.body.classList.toggle('sidebar-enable');
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.();
+    }
+  };
 
   return (
-    <header className="company-header">
-      <div className="company-header__container">
-        <div className="company-header__left">
-          <button 
-            className="company-header__menu-btn"
-            onClick={onMenuClick}
-            aria-label={t('CompanyHeader.toggleMenu')}
+    <header id="page-topbar">
+      <div className="navbar-header">
+        <div className="d-flex">
+          <button
+            type="button"
+            className="btn btn-sm px-3 font-size-16 header-item"
+            data-toggle="collapse"
+            onClick={() => toggleLeftmenu()}
+            data-target="#topnav-menu-content"
           >
-            ☰
+            <i className="fa fa-fw fa-bars" />
           </button>
-          <div className="company-header__logo">
-            <span className="company-header__logo-icon">🏢</span>
-            <h1 className="company-header__title">{title || t('CompanyHeader.companyDashboard')}</h1>
-          </div>
+
+          <form className="app-search d-none d-lg-block">
+            <div className="position-relative">
+              <input
+                type="text"
+                className="form-control"
+                placeholder={t('Common.searchPlaceholder')}
+              />
+              <span className="bx bx-search-alt" />
+            </div>
+          </form>
         </div>
-        
-        <div className="company-header__right">
-          <div className="company-header__user-info">
-            <div className="company-header__user-avatar">
-              <span>{user?.name?.charAt(0).toUpperCase()}</span>
-            </div>
-            <div className="company-header__user-details">
-              <span className="company-header__user-name">{user?.name}</span>
-              <span className="company-header__user-role">{t(`Roles.${user?.role}`)}</span>
-            </div>
-          </div>
-          
-          <div className="company-header__actions">
-            <button className="company-header__notification-btn" title={t('CompanyHeader.notifications')}>
-              🔔
-            </button>
-            <button className="company-header__settings-btn" title={t('CompanyHeader.settings')}>
-              ⚙️
+
+        <div className="d-flex">
+          <LanguageDropdown />
+
+          <div className="dropdown d-none d-lg-inline-block ms-1">
+            <button
+              type="button"
+              className="btn header-item noti-icon"
+              onClick={() => toggleFullscreen()}
+              data-toggle="fullscreen"
+            >
+              <i className="bx bx-fullscreen" />
             </button>
           </div>
+
+          <NotificationDropdown />
+
+          <ProfileMenu />
         </div>
       </div>
     </header>

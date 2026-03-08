@@ -110,6 +110,9 @@
     "pending": "Pending"
   },
   "Common": {
+    "id": "ID",
+    "name": "Name",
+    "streetAddress": "Street Address",
     "loading": "Loading...",
     "error": "Error",
     "cancel": "Cancel",
@@ -118,11 +121,13 @@
     "delete": "Delete",
     "confirm": "Confirm",
     "confirmDelete": "Confirm Delete",
+    "confirmToDelete": "Confirm to delete",
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
     "search": "Search...",
     "searchPlaceholder": "Search...",
+    "select": "Select",
     "add": "Add",
     "refresh": "Refresh",
     "email": "Email",
@@ -144,6 +149,24 @@
     "noDataAvailable": "No data available",
     "editPlan": "Edit Plan",
     "deletePlan": "Delete Plan",
+    "StatusNew": "New",
+    "StatusPending": "Pending",
+    "StatusInactive": "Inactive",
+    "StatusActive": "Active",
+    "StatusGeneral": "General",
+    "StatusSupplier": "Supplier",
+    "StatusDeleted": "Deleted",
+    "StatusBlocked": "Blocked",
+    "StatusUnblocked": "Unblocked",
+    "StatusVerified": "Verified",
+    "StatusUnverified": "Unverified",
+    "statusCompleted": "Completed",
+    "statusOverdue": "Overdue",
+    "statusNew": "New",
+    "settings": "Settings",
+    "create": "Create",
+    "salary": "Salary",
+    "jobTitle": "Job Title",
     "errors": {
       "fillAllFields": "Please fill in all fields",
       "selectPlan": "Please select a plan"
@@ -152,7 +175,11 @@
       "deleted": "Successfully deleted",
       "saved": "Successfully saved",
       "updated": "Successfully updated"
-    }
+    },
+    "showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "results": "results"
   },
   "Validation": {
     "emailRequired": "Please enter your email",
@@ -171,6 +198,10 @@
     "passwordRequired": "Please enter a password",
     "passwordMinLength": "Password must be at least 8 characters long",
     "roleRequired": "Please select a role",
+    "companyRequired": "Please select a company",
+    "keycloakGlobalRoleRequired": "Please select a Keycloak global role",
+    "firstNameRequired": "Please enter your first name",
+    "lastNameRequired": "Please enter your last name",
     "priceRequired": "Please enter the price",
     "priceInvalid": "Please enter a valid price (must be a positive number)",
     "titleMaxLength": "Title must not exceed 200 characters",
@@ -178,6 +209,7 @@
   },
   "NewClients": {
     "newClient": "New Client",
+    "clientId": "Client ID",
     "clientName": "Client Name",
     "status": "Status",
     "joinedDate": "Joined Date",
@@ -194,14 +226,21 @@
     "freeUsing": "Free Using",
     "daysRemaining": "days",
     "createClient": "Create Client",
+    "type": "Type",
+    "totalAmount": "Total Amount",
     "editClient": "Edit Client",
     "updateClient": "Update Client",
+    "clientCreatedSuccessfully": "Client created successfully",
+    "clientUpdatedSuccessfully": "Client updated successfully",
+    "clientDeletedSuccessfully": "Client deleted successfully",
     "profilePhoto": "Profile Photo",
     "uploadProfilePhoto": "Upload and change profile photo",
     "enterClientName": "Enter client name",
     "enterEmailAddress": "Enter email address",
     "enterPhoneNumber": "Enter phone number",
-    "enterAddress": "Enter address",
+    "enterBuildingAddress": "Enter building address",
+    "enterStreetAddress": "Enter street address",
+    "buildingAddress": "Building Address",
     "enterDescription": "Enter description (optional)",
     "confirmDelete": "Confirm Delete",
     "areYouSure": "Are you sure?",
@@ -238,17 +277,21 @@
       "email": "Email",
       "phone": "Phone",
       "address": "Address",
+      "buildingAddress": "Building Address",
       "description": "Description",
       "country": "Country",
       "state": "State",
       "city": "City",
-      "zipCode": "Zip Code"
+      "zipCode": "Zip Code",
+      "postalCode": "Postal Code",
+      "streetAddress": "Street Address"
     },
     "placeholders": {
       "enterCountry": "Enter country",
       "enterState": "Enter state",
       "enterCity": "Enter city",
-      "enterZipCode": "Enter zip code"
+      "enterZipCode": "Enter zip code",
+      "enterPostalCode": "Enter postal code"
     },
     "planFeatures": {
       "accessToAllBasic": "Access to all basic",
@@ -371,30 +414,9 @@
       "user": "User:",
       "email": "Email:",
       "role": "Role:"
-    },
-    "orders": {
-      "ordersManagement": "Orders Management",
-      "ordersManagementPage": "Orders management page - TODO: Implement orders functionality",
-      "completed": "Completed",
-      "processing": "Processing",
-      "shipped": "Shipped"
-    },
-    "products": {
-      "productsManagement": "Products Management",
-      "productsManagementPage": "Products management page - TODO: Implement products functionality"
-    },
-    "customers": {
-      "customersManagement": "Customers Management",
-      "customersManagementPage": "Customers management page - TODO: Implement customers functionality"
-    },
-    "analytics": {
-      "analyticsReports": "Analytics & Reports",
-      "analyticsPage": "Analytics page - TODO: Implement analytics functionality"
-    },
-    "settings": {
-      "companySettings": "Company Settings",
-      "settingsPage": "Settings page - TODO: Implement settings functionality"
+
     }
+    
   },
   "ActiveClients": {
     "clientDetails": "Client Details",
@@ -411,6 +433,8 @@
     "firstName": "First Name",
     "lastName": "Last Name",
     "role": "Role",
+    "assignRoles": "Assign Roles",
+    "jobTitle": "Job Title",
     "createdDate": "Created Date",
     "lastLogin": "Last Login",
     "statusActive": "Active",
@@ -429,7 +453,8 @@
     "enterPassword": "Enter password",
     "enterPhone": "Enter phone number",
     "passwordHint": "Password must be at least 8 characters long",
-    "selectCompany": "Select a company (optional)",
+    "passwordOptional": "Leave blank to keep current password",
+    "selectCompany": "Select a company",
     "selectRole": "Select a role",
     "modal": {
       "employeeDetails": "Employee Details"
@@ -441,8 +466,22 @@
       "password": "Password",
       "phone": "Phone",
       "company": "Company",
-      "role": "Role"
+      "role": "Role",
+      "keycloakGlobalRole": "Keycloak Global Role"
     },
+    "createUser": "Create User",
+    "userCreatedSuccessfully": "User created successfully",
+    "keycloakGlobalRoleCOMPANY_USER": "Company User",
+    "keycloakGlobalRoleCOMPANY_ADMIN": "Company Admin",
+    "keycloakGlobalRoleSUPER_ADMIN": "Super Admin",
+    "enableUser": "Enable User",
+    "disableUser": "Disable User",
+    "confirmEnableUser": "Confirm Enable User",
+    "confirmDisableUser": "Confirm Disable User",
+    "enableUserConfirmation": "Are you sure you want to enable this user?",
+    "disableUserConfirmation": "Are you sure you want to disable this user?",
+    "userEnabledSuccessfully": "User enabled successfully",
+    "userDisabledSuccessfully": "User disabled successfully",
     "showing": "Showing",
     "to": "to",
     "of": "of",
@@ -647,6 +686,19 @@
       "reportsManagement": "Reports Management"
     }
   },
+  "AssignRoles": {
+    "noAssignmentsFound": "No role assignments found",
+    "updatedSuccessfully": "Role assignment updated successfully",
+    "table": {
+      "applicationRole": "Application Role",
+      "lastUpdated": "Last Updated"
+    },
+    "modal": {
+      "title": "Assign Role",
+      "currentRole": "Current Role",
+      "selectRole": "Select application role"
+    }
+  },
   "Tickets": {
     "title": "Raising Tickets",
     "subtitle": "Create and manage support tickets",
@@ -784,7 +836,7 @@
     "toggleMenu": "Toggle menu",
     "notifications": "Notifications",
     "settings": "Settings",
-    "companyDashboard": "Company Dashboard"
+    "companyDashboard": "Company Admin"
   },
   "CompanyFooter": {
     "companyName": "Your Company",
@@ -805,5 +857,312 @@
     "facebook": "Facebook",
     "twitter": "Twitter",
     "linkedIn": "LinkedIn"
+  },
+  "CompanyDashboard": {
+    "clients": "Clients",
+    "projects": "Projects",
+    "materials": "Materials",
+    "rentalItems": "Rental Items",
+    "staffs": "Staffs",
+    "suppliers": "Suppliers",
+    "subcontractors": "Subcontractors",
+    "reports": "Reports",
+    "users": "Users",
+    "pendingPayments": "{{count}} Pending payments",
+    "completedPayments": "{{count}} Completed payments",
+    "clientInvoices": "{{count}} Client invoices",
+    "upcomingProjects": "{{count}} Upcoming projects",
+    "ongoingProjects": "{{count}} Ongoing projects",
+    "completedProjects": "{{count}} Completed projects",
+    "onHold": "{{count}} On hold",
+    "officeStaffs": "{{count}} Office staffs",
+    "freelancers": "{{count}} Freelancers",
+    "mSuppliers": "M - Suppliers: {{amount}}",
+    "rSuppliers": "R - Suppliers: {{amount}}",
+    "pendingContracts": "{{count}} Pending contracts",
+    "completedContracts": "{{count}} Completed contracts",
+    "cashInHand": "Cash in hand: {{amount}}",
+    "cashInBank": "Cash in bank: {{amount}}",
+    "totalCash": "Total cash: {{amount}}",
+    "projectId": "Project ID",
+    "stageNameActivitySubactivity": "Stage No. - Stage Name - Activity - Subactivity",
+    "startEndDates": "Start & End dates",
+    "sq": "SQ",
+    "cq": "CQ",
+    "pq": "PQ",
+    "progress": "Progress"
+  },
+  "CompanyClientsList": {
+    "pageTitle": "CLIENTS LIST",
+    "clients": "Clients",
+    "newClients": "New Clients",
+    "planButton": "Plan",
+    "viewList": "List view",
+    "viewGrid": "Grid view"
+  },
+  "CompanyClientTypes": {
+    "pageTitle": "CLIENT TYPES",
+    "breadcrumbParent": "Clients",
+    "breadcrumbItem": "Client Types",
+    "addClientType": "Add client type",
+    "editClientType": "Edit client type",
+    "createdSuccessfully": "Client type created successfully",
+    "updatedSuccessfully": "Client type updated successfully",
+    "deletedSuccessfully": "Client type deleted successfully",
+    "deleteConfirmation": "Do you really want to delete client type",
+    "noClientTypesFound": "No client types found",
+    "table": {
+      "id": "ID",
+      "name": "Client type",
+      "description": "Description",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "fields": {
+      "name": "Client type name",
+      "description": "Description",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Enter client type name",
+      "description": "Enter description (optional)"
+    }
+  },
+  "CompanyProjectsList": {
+    "pageTitle": "PROJECTS LIST",
+    "breadcrumbParent": "Projects",
+    "breadcrumbItem": "Projects List",
+    "addProject": "Add Project",
+    "createdSuccessfully": "Project created successfully",
+    "noProjectsFound": "No projects found",
+    "form": {
+      "drawingFileType": "Drawing file type",
+      "client": "Client",
+      "selectClient": "Select client",
+      "addClient": "Add client",
+      "clientName": "Client name",
+      "clientNamePlaceholder": "Enter client name",
+      "projectType": "Project type",
+      "selectProjectType": "Select project type",
+      "addProjectType": "Add project type",
+      "projectCategory": "Project category",
+      "selectProjectCategory": "Select project category",
+      "addProjectCategory": "Add project category",
+      "projectStatus": "Project status",
+      "selectProjectStatus": "Select project status",
+      "projectName": "Project name",
+      "placeholderProjectName": "Project name",
+      "projectCost": "Project cost",
+      "placeholderEstimatedCost": "Estimated cost",
+      "area": "Area",
+      "placeholderArea": "Eg: 3500 Sq.ft / 2850 Sq.mt etc ...",
+      "placeholderLocation": "Location of the project",
+      "startDate": "Start date",
+      "finishDate": "Finish date (Can be added later)",
+      "assignProjectManager": "Assign a project manager",
+      "selectProjectManager": "Select a project manager for this project",
+      "addProjectManager": "Add project manager",
+      "assignStoreIncharge": "Assign store incharge",
+      "addStoreIncharge": "Add store incharge",
+      "selectOne": "Select one",
+      "optionName": "Name",
+      "optionNamePlaceholder": "Enter name",
+      "assignSiteOperations": "Assign site operations (Add site operations who is in store incharge also)",
+      "selectSiteOperations": "Select site operations",
+      "placeholderSiteOperations": "",
+      "remarks": "Remarks",
+      "placeholderRemarks": "Remarks (Something about your project as a note)",
+      "drawingsLink": "Drawings link",
+      "placeholderDrawingsLink": "https://example.com or http://example.com",
+      "drawingsUpload": "Drawings (PDF / Image upload)",
+      "drawingFileSizeError": "File size must not exceed 30 KB",
+      "drawingFileHint": "PDF or image only. Max size: 30 KB"
+    },
+    "placeholders": {
+      "name": "Enter project name",
+      "clientName": "Enter client name",
+      "projectManager": "Enter project manager name",
+      "location": "Enter location",
+      "drawing": "Enter drawing reference",
+      "category": "Enter category",
+      "projectCost": "Enter project cost"
+    },
+    "drawingPdf": "PDF",
+    "drawingImage": "Image",
+    "viewDrawing": "View",
+    "statusActive": "Active",
+    "statusCompleted": "Completed",
+    "statusPending": "Pending",
+    "statusOnHold": "On Hold",
+    "table": {
+      "id": "ID",
+      "name": "Project Name",
+      "client": "Client",
+      "projectManager": "Project Manager",
+      "location": "Location",
+      "drawing": "Drawing",
+      "type": "Type",
+      "category": "Category",
+      "projectCost": "Project Cost",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "progress": "Progress"
+    }
+  },
+  "CompanyProjectTypes": {
+    "pageTitle": "PROJECT TYPES",
+    "breadcrumbParent": "Projects",
+    "breadcrumbItem": "Project Types",
+    "addProjectType": "Add project type",
+    "editProjectType": "Edit project type",
+    "createdSuccessfully": "Project type created successfully",
+    "updatedSuccessfully": "Project type updated successfully",
+    "deletedSuccessfully": "Project type deleted successfully",
+    "deleteConfirmation": "Do you really want to delete project type",
+    "noProjectTypesFound": "No project types found",
+    "table": {
+      "id": "ID",
+      "name": "Project type",
+      "description": "Description",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "fields": {
+      "name": "Project type name",
+      "description": "Description",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Enter project type name",
+      "description": "Enter description (optional)"
+    }
+  },
+  "CompanyProjectCategories": {
+    "pageTitle": "PROJECT CATEGORIES",
+    "breadcrumbParent": "Projects",
+    "breadcrumbItem": "Project Categories",
+    "addProjectCategory": "Add project category",
+    "editProjectCategory": "Edit project category",
+    "createdSuccessfully": "Project category created successfully",
+    "updatedSuccessfully": "Project category updated successfully",
+    "deletedSuccessfully": "Project category deleted successfully",
+    "deleteConfirmation": "Do you really want to delete project category",
+    "noProjectCategoriesFound": "No project categories found",
+    "table": {
+      "id": "ID",
+      "name": "Project category",
+      "description": "Description",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "fields": {
+      "name": "Project category name",
+      "description": "Description",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Enter project category name",
+      "description": "Enter description (optional)"
+    }
+  },
+  "CompanyRoles": {
+    "pageTitle": "ROLES",
+    "breadcrumbParent": "Users",
+    "breadcrumbItem": "Roles",
+    "addRole": "Add role"
+  },
+  "ClientPayment": {
+    "pageTitle": "CLIENT PAYMENT",
+    "breadcrumbParent": "Clients",
+    "breadcrumbItem": "Client Payment",
+    "filters": {
+      "filter": "Filter",
+      "all": "All",
+      "pending": "Pending",
+      "completed": "Completed",
+      "overdue": "Overdue"
+    },
+    "addPayment": "Payment",
+    "table": {
+      "client": "Client",
+      "project": "Project",
+      "invoice": "Invoice No.",
+      "amount": "Amount",
+      "dueDate": "Due Date",
+      "status": "Status",
+      "action": "Action",
+      "projectCost": "Project Cost",
+      "paidAmount": "Paid Amount",
+      "balanceAmount": "Balance Amount"
+
+
+    },
+    "status": {
+      "pending": "Pending",
+      "completed": "Completed",
+      "overdue": "Overdue"
+    },
+    "viewPayment": "View payment",
+    "expandDetails": "Show details",
+    "noPaymentsFound": "No client payments found"
+  },
+  "CompanySidebar": {
+    "clients": "Clients",
+    "manageClients": "Manage Clients",
+    "clientsList": "Clients List",
+    "clientPayment": "Client Payment",
+    "clientInvoice": "Client Invoice",
+    "clientVisits": "Client Visits",
+    "clientTypes": "Client Types",
+    "projects": "Projects",
+    "projectTypes": "Project Types",
+    "projectCategories": "Project Categories",
+    "projectsList": "Projects List",
+    "estimations": "Estimations",
+    "scheduleActivities": "Schedule Activities",
+    "stages": "Stages",
+    "activities": "Activities",
+    "subActivities": "Sub Activities",
+    "assignTasks": "Assign Tasks",
+    "manageMaterials": "Manage Materials",
+    "materialCategories": "Material Categories",
+    "units": "Units",
+    "materials": "Materials",
+    "manageInventory": "Manage Inventory",
+    "inventory": "Inventory",
+    "materialTransfer": "Material Transfer",
+    "materialReturn": "Material Return",
+    "newStores": "New Stores",
+    "manageRentals": "Manage Rentals",
+    "rentalCategories": "Rental Categories",
+    "rentalItems": "Rental Items",
+    "manageStaffs": "Manage Staffs",
+    "jobTitles": "Job Titles",
+    "staffs": "Staffs",
+    "salaries": "Salaries",
+    "attendance": "Attendance",
+    "teams": "Teams",
+    "cashBook": "Cash Book",
+    "openingBalance": "Opening Balance",
+    "transfers": "Transfers",
+    "otherIncomes": "Other Incomes",
+    "otherExpenses": "Other Expenses",
+    "manageSuppliers": "Manage Suppliers",
+    "suppliers": "Suppliers",
+    "purchases": "Purchases",
+    "payMaterialSuppliers": "Pay Material Suppliers",
+    "rentalBills": "Rental Bills",
+    "payRentalSuppliers": "Pay Rental Suppliers",
+    "subcontractors": "Subcontractors",
+    "contractTypes": "Contract Types",
+    "paySubcontractors": "Pay Subcontractors",
+    "downloadReports": "Download Reports",
+    "manageUsers": "Manage Users",
+    "manageEmployees": "Manage Employees",
+    "roles": "Roles",
+    "assignRoles": "Assign Roles",
+    "employees": "Employees",
+    "rolePermissions": "Role Permissions",
+    "howItWorks": "How it Works?"
   }
 }
