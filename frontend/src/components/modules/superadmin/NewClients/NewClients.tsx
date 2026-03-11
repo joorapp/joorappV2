@@ -864,7 +864,7 @@ const NewClients = () => {
                             <div className="d-flex gap-2">
                               <Button
                                 color="outline-primary"
-                                className="p-1 border-0"
+                               className="btn-sm border-0"
                                 title={t('Common.view')}
                                 onClick={() => handleViewClient(client)}
                               >
@@ -872,7 +872,7 @@ const NewClients = () => {
                               </Button>
                               <Button
                                 color="outline-secondary"
-                                className="p-1 border-0"
+                                className="border-0 btn-sm"
                                 title={t('Common.edit')}
                                 onClick={() => handleEditClient(client)}
                               >
@@ -880,7 +880,7 @@ const NewClients = () => {
                               </Button>
                               <Button
                                 color="outline-danger"
-                                className="p-1 border-0"
+                                className="border-0"
                                 title={t('Common.delete')}
                                 onClick={() => handleDeleteClick(client)}
                               >
@@ -960,21 +960,21 @@ const NewClients = () => {
                 <hr />
               </div>
 
-              <div className="col-md-6 mb-3">
+              <div className="col-md-4 mb-3">
                 <label className="form-label fw-semibold text-muted">{t('NewClients.labels.email')}</label>
                 <p className="mb-0">{selectedClient.email}</p>
               </div>
-              <div className="col-md-6 mb-3">
+              <div className="col-md-8 mb-3">
                 <label className="form-label fw-semibold text-muted">{t('NewClients.labels.phone')}</label>
                 <p className="mb-0">{selectedClient.phone}</p>
               </div>
 
-              <div className="col-md-6 mb-3">
+              <div className="col-md-4 mb-3">
                 <label className="form-label fw-semibold text-muted">{t('NewClients.labels.buildingAddress')}</label>
                 <p className="mb-0">{selectedClient.buildingAddress}</p>
               </div>
 
-              <div className="col-md-6 mb-3">
+              <div className="col-md-4 mb-3">
                 <label className="form-label fw-semibold text-muted">{t('Common.streetAddress')}</label>
                 <p className="mb-0">{selectedClient.streetAddress}</p>
               </div>
@@ -994,17 +994,12 @@ const NewClients = () => {
                 <p className="mb-0">{selectedClient.city}</p>
               </div>
 
-              <div className="col-md-6 mb-3">
+              <div className="col-md-4 mb-3">
                 <label className="form-label fw-semibold text-muted">{t('NewClients.labels.postalCode')}</label>
                 <p className="mb-0">{selectedClient.postalCode}</p>
               </div>
 
-              {selectedClient.description && (
-                <div className="col-md-6 mb-3">
-                  <label className="form-label fw-semibold text-muted">{t('NewClients.labels.description')}</label>
-                  <p className="mb-0">{selectedClient.description}</p>
-                </div>
-              )}
+              
 
               <div className="col-md-4 mb-3">
                 <label className="form-label fw-semibold text-muted">{t('Common.status')}</label>
@@ -1034,6 +1029,12 @@ const NewClients = () => {
                   })}
                 </p>
               </div>
+              {selectedClient.description && (
+                <div className="col-md-6 mb-3">
+                  <label className="form-label fw-semibold text-muted">{t('NewClients.labels.description')}</label>
+                  <p className="mb-0">{selectedClient.description}</p>
+                </div>
+              )}
             </div>
           ) : null}
         </ModalBody>
@@ -1256,7 +1257,7 @@ const NewClients = () => {
       </Modal>
 
       {/* Edit Client Modal */}
-      <Modal isOpen={editModalOpen} toggle={handleCloseEditModal} size="md" centered>
+      <Modal isOpen={editModalOpen} toggle={handleCloseEditModal} size="lg" centered>
         <ModalHeader toggle={handleCloseEditModal}>
           {t('NewClients.editClient')}
         </ModalHeader>

@@ -14,5 +14,29 @@ export default class CompanyService {
       companyData
     );
   }
+
+  static getClientPayments(params: {
+    companyId: string;
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+  }) {
+    const {
+      companyId,
+      page = 1,
+      limit = 10,
+      status = '',
+      search = '',
+    } = params;
+
+    return HttpUtil.get(
+      API_ROUTES.COMPANY.GET_CLIENT_PAYMENTS.replace('<companyId>', companyId)
+        .replace('<page>', String(page))
+        .replace('<limit>', String(limit))
+        .replace('<status>', status)
+        .replace('<search>', encodeURIComponent(search))
+    );
+  }
 }
 

@@ -89,6 +89,8 @@ export const STATUS = {
   DELETED: 'DELETED',
   DRAFT: 'DRAFT',
   PUBLISHED: 'PUBLISHED',
+  GENERAL: 'GENERAL',
+  SUPPLIER: 'SUPPLIER',
 } as const;
 
 // ============================================
