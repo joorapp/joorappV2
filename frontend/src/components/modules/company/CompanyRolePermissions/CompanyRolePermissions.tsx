@@ -179,7 +179,7 @@ const CompanyRolePermissions = () => {
   }, [rolePermissions, selectedRole]);
 
   return (
-    <div className="companyPageContentInner">
+    <>
       <Breadcrumbs
         title={t('RolePermissions.title')}
         breadcrumbItem={t('RolePermissions.title')}
@@ -327,7 +327,7 @@ const CompanyRolePermissions = () => {
           </Card>
         </Col>
       </Row>
-    </div>
+    </>
   );
 };
 

@@ -1,16 +1,15 @@
 /**
- * Company clients – same design as superadmin NewClient.
- * Lists company clients with search, create, view, edit and delete modals.
+ * Company clients – Zoho-style master/detail layout.
+ * Left list of clients, right-side detailed view + create modal.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
   CardBody,
   Row,
   Col,
-  Table,
   Button,
   Badge,
   Input,
@@ -281,20 +280,13 @@ const CompanyClientsList = () => {
   const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newClient, setNewClient] = useState(emptyNewClient);
   const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
 
-  const handleViewClient = (client: Client) => {
+  const handleSelectClient = (client: Client) => {
     setSelectedClient(client);
-    setViewModalOpen(true);
-  };
-
-  const handleCloseViewModal = () => {
-    setViewModalOpen(false);
-    setSelectedClient(null);
   };
 
   const handleOpenCreateModal = () => {
@@ -383,6 +375,17 @@ const CompanyClientsList = () => {
     return filteredClients.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredClients, currentPage]);
 
+  useEffect(() => {
+    if (filteredClients.length === 0) {
+      setSelectedClient(null);
+      return;
+    }
+
+    if (!selectedClient || !filteredClients.some((client) => client.id === selectedClient.id)) {
+      setSelectedClient(filteredClients[0]);
+    }
+  }, [filteredClients, selectedClient]);
+
   const getTypeBadge = (type: string) => {
     switch (type) {
       case STATUS.GENERAL:
@@ -414,318 +417,303 @@ const CompanyClientsList = () => {
         breadcrumbParent={t('CompanyClientsList.clients')}
       />
 
-      <Row>
+      <Row className="mb-3">
         <Col lg="12">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-                <InputGroup className="search-input-group">
-                  <Input
-                    type="text"
-                    placeholder={t('Common.searchPlaceholder')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </InputGroup>
-                <div className="d-flex align-items-center gap-2">
-                  <ButtonGroup className="rounded">
-                    <Button
-                      color={viewMode === 'list' ? 'primary' : 'outline-primary'}
-                      className="d-inline-flex align-items-center rounded-start"
-                      onClick={() => setViewMode('list')}
-                      title={t('CompanyClientsList.viewList')}
-                    >
-                      <i className="bx bx-list-ul" />
-                    </Button>
-                    <Button
-                      color={viewMode === 'grid' ? 'primary' : 'outline-primary'}
-                      className="d-inline-flex align-items-center rounded-end"
-                      onClick={() => setViewMode('grid')}
-                      title={t('CompanyClientsList.viewGrid')}
-                    >
-                      <i className="bx bx-grid-alt" />
-                    </Button>
-                  </ButtonGroup>
-                  <Button
-                    color="primary"
-                    className="btn-rounded waves-effect d-inline-flex align-items-center waves-light"
-                    onClick={handleOpenCreateModal}
-                  >
-                    <i className="bx bx-plus me-1"></i>
-                    {t('NewClients.createClient')}
-                  </Button>
-                </div>
-              </div>
-         
-              {viewMode === 'list' && (
-         
-          <Card className="mb-0">
-            <CardBody className="p-1">
-            
-
-                <div className="table-responsive">
-                  <Table className="table-nowrap align-middle mb-0">
-                    <thead className="table-light">
-                      <tr>
-                        <th></th>
-                        <th>{t('Common.id')}</th>
-                        <th>{t('Common.name')}</th>
-                        <th>{t('Common.phone')}</th>
-                        <th>{t('NewClients.type')}</th>
-                        <th>{t('NewClients.joinedDate')}</th>
-                        {/* <th>{t('NewClients.totalAmount')}</th>
-                        <th>{t('NewClients.status')}</th> */}
-                        <th>{t('NewClients.action')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedClients.length > 0 ? (
-                        paginatedClients.map((client) => (
-                          <tr key={client.id}>
-                            <td>
-                              <div className="avatar-xs">
-                                <span className={`avatar-title rounded-circle ${getAvatarColor(client.name)}`}>
-                                  {getInitials(client.name)}
-                                </span>
-                              </div>
-                            </td>
-                            <td>{client.id}</td>
-                            <td>
-                              <strong>{client.name}</strong>
-                              <p className="text-muted d-block mb-0">{client.email}</p>
-                            </td>
-                            <td>{client.phone}</td>
-                            <td>{getTypeBadge(client.type)}</td>
-                            <td>
-                              {new Date(client.createdAt).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                              })}
-                            </td>
-                            {/* <td>
-                              <Badge color="primary" className="d-inline-flex align-items-center">
-                                <i className="bx bx-rupee me-1" />
-                                {client.totalAmount.toLocaleString('en-IN', {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </Badge>
-                            </td>
-                            <td>{getStatusBadge(client.status)}</td> */}
-                            <td>
-                              <div className="d-flex gap-1">
-                                <Button
-                                  color="outline-primary"
-                                  className="btn-sm border-0"
-                                  title={t('Common.view')}
-                                  onClick={() => handleViewClient(client)}
-                                >
-                                  <i className="mdi mdi-eye"></i>
-                                </Button>
-                                <Button
-                                  color="outline-secondary"
-                                  className="btn-sm border-0"
-                                  title={t('Common.edit')}
-                                  onClick={handleOpenCreateModal}
-                                >
-                                  <i className="mdi mdi-pencil"></i>
-                                </Button>
-                                <Button
-                                  color="outline-danger"
-                                  className="btn-sm border-0"
-                                  title={t('Common.delete')}
-                                  onClick={() => {}}
-                                >
-                                  <i className="mdi mdi-delete"></i>
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={9} className="text-center py-4">
-                            <p className="text-muted mb-0">{t('NewClients.noClientsFound')}</p>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </Table>
-                </div>
-              </CardBody>
-              </Card>
-              )}
-
-              {viewMode === 'grid' && (
-                <Row className="g-3">
-                  {paginatedClients.length > 0 ? (
-                    paginatedClients.map((client) => (
-                      <Col key={client.id} lg="4" md="6">
-                        <Card className="h-100">
-                          <CardBody>
-                            <div className="d-flex align-items-center mb-3">
-                              <div className="avatar-md me-3">
-                                <span className={`avatar-title rounded-circle ${getAvatarColor(client.name)}`}>
-                                  {getInitials(client.name)}
-                                </span>
-                              </div>
-                              <div className="flex-grow-1">
-                                <h5 className="mb-1">{client.name}</h5>
-                                <p className="text-muted mb-0">{client.email}</p>
-                              </div>
-                            </div>
-
-                            <div className="d-flex justify-content-between align-items-center mb-2">
-                              <span className="text-muted small">{t('Common.phone')}</span>
-                              <span className="fw-semibold">{client.phone}</span>
-                            </div>
-                            <div className="d-flex justify-content-between align-items-center mb-2">
-                              <span className="text-muted small">{t('NewClients.totalAmount')}</span>
-                              <Badge color="primary" className="d-inline-flex align-items-center">
-                                <i className="bx bx-rupee me-1" />
-                                {client.totalAmount.toLocaleString('en-IN', {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </Badge>
-                            </div>
-                            <div className="d-flex justify-content-between align-items-center mb-3">
-                              <span className="text-muted small">{t('NewClients.status')}</span>
-                              {getStatusBadge(client.status)}
-                            </div>
-
-                            <div className="d-flex justify-content-between align-items-center">
-                              <Button
-                                color="primary"
-                                size="sm"
-                                className="d-inline-flex align-items-center"
-                                onClick={() => handleViewClient(client)}
-                              >
-                                <i className="mdi mdi-eye me-1" />
-                                {t('Common.view')}
-                              </Button>
-                              <small className="text-muted">
-                                {new Date(client.createdAt).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                })}
-                              </small>
-                            </div>
-                          </CardBody>
-                        </Card>
-                      </Col>
-                    ))
-                  ) : (
-                    <Col xs="12">
-                      <div className="text-center py-4">
-                        <p className="text-muted mb-0">{t('NewClients.noClientsFound')}</p>
-                      </div>
-                    </Col>
-                  )}
-                </Row>
-              )}
-
-              
-            
-          {filteredClients.length > 0 && (
-                <Pagination
-                  className="mt-0"
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalItems={filteredClients.length}
-                  itemsPerPage={ITEMS_PER_PAGE}
-                  onPageChange={setCurrentPage}
-                />
-              )}
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <InputGroup className="search-input-group">
+              <Input
+                type="text"
+                placeholder={t('Common.searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </InputGroup>
+            <div className="d-flex align-items-center gap-2">
+              <ButtonGroup className="rounded me-2">
+                <Button
+                  color={viewMode === 'list' ? 'primary' : 'outline-primary'}
+                  className="d-inline-flex align-items-center rounded-start"
+                  onClick={() => setViewMode('list')}
+                  title={t('CompanyClientsList.viewList')}
+                >
+                  <i className="bx bx-list-ul" />
+                </Button>
+                <Button
+                  color={viewMode === 'grid' ? 'primary' : 'outline-primary'}
+                  className="d-inline-flex align-items-center rounded-end"
+                  onClick={() => setViewMode('grid')}
+                  title={t('CompanyClientsList.viewGrid')}
+                >
+                  <i className="bx bx-grid-alt" />
+                </Button>
+              </ButtonGroup>
+              <Button
+                color="primary"
+                className="btn-rounded waves-effect d-inline-flex align-items-center waves-light"
+                onClick={handleOpenCreateModal}
+              >
+                <i className="bx bx-plus me-1"></i>
+                {t('NewClients.createClient')}
+              </Button>
+            </div>
+          </div>
         </Col>
       </Row>
 
-      <Modal isOpen={viewModalOpen} toggle={handleCloseViewModal} size="lg" className="client-details-modal" centered>
-        <ModalHeader toggle={handleCloseViewModal}>
-          {t('NewClients.modal.clientDetails')}
-        </ModalHeader>
-        <ModalBody>
-          {selectedClient && (() => {
-            const fullAddress = [
-              selectedClient.buildingAddress,
-              selectedClient.streetAddress,
-              selectedClient.city,
-              selectedClient.state,
-              selectedClient.country,
-            ]
-              .filter(Boolean)
-              .join(', ');
-            const startDate = new Date(selectedClient.createdAt);
-            const endDate = new Date(startDate);
-            endDate.setFullYear(endDate.getFullYear() + 1);
-            
-            return (
-              <>
+      <Row>
+        {viewMode === 'list' && (
+          <>
+            <Col lg="4" md="5" className="mb-3">
+              <Card className="h-100">
+                <CardBody className="p-0">
+                  {paginatedClients.length > 0 ? (
+                    <div className="list-group list-group-flush">
+                      {paginatedClients.map((client) => {
+                        const createdDate = new Date(client.createdAt);
+                        const isActive = selectedClient?.id === client.id;
 
-
-                <Row className="m-0">
-                  <Col md="12">
-                    <div className="d-flex align-items-center gap-3">
-                      <div
-                        className="avatar-lg rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
-                        style={{ backgroundColor: '#34c38f', minWidth: 56, minHeight: 56 }}
-                      >
-                        {getInitials(selectedClient.name)}
-                      </div>
-                      <div>
-                        <h5 className="mb-1 fw-bold">{selectedClient.name}</h5>
-                        {getTypeBadge(selectedClient.type)}
-                      </div>
-                    </div>
-                  </Col>
-                  <Col md="12">
-                    <hr />
-                  </Col>
-                  <Col md="4">
-                    <label className="form-label fw-semibold text-muted">{t('NewClients.clientId')}</label>
-                    <p className="mb-3 text-dark">{selectedClient.id}</p>
-                  </Col>
-
-                  <Col md="4">
-                    <label className="form-label fw-semibold text-muted">{t('Common.address')}</label>
-                    <p className="mb-3 text-dark">{fullAddress || '—'}</p>
-                  </Col>
-                  <Col md="4">
-                    <label className="form-label fw-semibold text-muted">{t('Common.email')}</label>
-                    <p className="mb-3 text-dark">{selectedClient.email}</p>
-                  </Col>
-                  <Col md="4">
-                    <label className="form-label fw-semibold text-muted">{t('Common.phone')}</label>
-                    <p className="mb-3 text-dark">{selectedClient.phone}</p>
-                  </Col>
-                  <Col md="4">
-                    <label className="form-label fw-semibold text-muted">{t('NewClients.joinedDate')}</label>
-                    <p className="mb-3 text-dark">
-                      {startDate.toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
+                        return (
+                          <button
+                            key={client.id}
+                            type="button"
+                            className={`list-group-item list-group-item-action d-flex align-items-center gap-3 ${
+                              isActive ? 'active' : ''
+                            }`}
+                            onClick={() => handleSelectClient(client)}
+                          >
+                            <div className="avatar-xs flex-shrink-0">
+                              <span
+                                className={`avatar-title rounded-circle ${getAvatarColor(client.name)} ${
+                                  isActive ? 'border border-2 border-white' : ''
+                                }`}
+                              >
+                                {getInitials(client.name)}
+                              </span>
+                            </div>
+                            <div className="flex-grow-1 text-start">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                  <h6 className="mb-0 text-truncate">{client.name}</h6>
+                                  <small className="text-muted d-block text-truncate">{client.email}</small>
+                                </div>
+                                <small className="text-muted ms-2">
+                                  {createdDate.toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })}
+                                </small>
+                              </div>
+                              <div className="d-flex justify-content-between align-items-center mt-1">
+                                <small className="text-muted">{client.phone}</small>
+                                <div>{getStatusBadge(client.status)}</div>
+                              </div>
+                            </div>
+                          </button>
+                        );
                       })}
-                    </p>
-                  </Col>
-                  
-                  <Col md="12">
-                    <label className="form-label fw-semibold text-muted">{t('NewClients.labels.description')}</label>
-                    <p className="mb-3 text-dark">{selectedClient.description}</p>
-                  </Col>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted mb-0">{t('NewClients.noClientsFound')}</p>
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+            </Col>
 
-                </Row>
+            <Col lg="8" md="7" className="mb-3">
+              <Card className="h-100">
+                <CardBody>
+                  {selectedClient ? (
+                    (() => {
+                      const fullAddress = [
+                        selectedClient.buildingAddress,
+                        selectedClient.streetAddress,
+                        selectedClient.city,
+                        selectedClient.state,
+                        selectedClient.country,
+                      ]
+                        .filter(Boolean)
+                        .join(', ');
+                      const startDate = new Date(selectedClient.createdAt);
 
-              </>
-            );
-          })()}
-        </ModalBody>
-        <ModalFooter className="border-0 pt-0">
-          <Button color="secondary" className="rounded" onClick={handleCloseViewModal}>
-            {t('Common.close')}
-          </Button>
-        </ModalFooter>
-      </Modal>
+                      return (
+                        <>
+                          <div className="d-flex justify-content-between align-items-start mb-4">
+                            <div className="d-flex align-items-center gap-3">
+                              <div
+                                className="avatar-lg rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                style={{ backgroundColor: '#34c38f', minWidth: 56, minHeight: 56 }}
+                              >
+                                {getInitials(selectedClient.name)}
+                              </div>
+                              <div>
+                                <h4 className="mb-1">{selectedClient.name}</h4>
+                                <div className="d-flex align-items-center gap-2">
+                                  {getTypeBadge(selectedClient.type)}
+                                  <span className="text-muted">#{selectedClient.id}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="d-flex gap-2">
+                              <Button
+                                color="secondary"
+                                size="sm"
+                                className="d-inline-flex align-items-center"
+                                onClick={handleOpenCreateModal}
+                              >
+                                <i className="mdi mdi-pencil me-1" />
+                                {t('Common.edit')}
+                              </Button>
+                              <Button
+                                color="danger"
+                                size="sm"
+                                outline
+                                className="d-inline-flex align-items-center"
+                              >
+                                <i className="mdi mdi-delete me-1" />
+                                {t('Common.delete')}
+                              </Button>
+                            </div>
+                          </div>
+
+                          <Row className="mb-4">
+                            <Col md="4" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">{t('NewClients.clientId')}</Label>
+                              <p className="mb-0 text-dark">{selectedClient.id}</p>
+                            </Col>
+                            <Col md="4" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">{t('Common.email')}</Label>
+                              <p className="mb-0 text-dark">{selectedClient.email}</p>
+                            </Col>
+                            <Col md="4" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">{t('Common.phone')}</Label>
+                              <p className="mb-0 text-dark">{selectedClient.phone}</p>
+                            </Col>
+                            <Col md="4" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">{t('Common.address')}</Label>
+                              <p className="mb-0 text-dark">{fullAddress || '—'}</p>
+                            </Col>
+                            <Col md="4" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">{t('NewClients.joinedDate')}</Label>
+                              <p className="mb-0 text-dark">
+                                {startDate.toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                })}
+                              </p>
+                            </Col>
+                          </Row>
+
+                          <Row>
+                            <Col md="12" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">
+                                {t('NewClients.labels.description')}
+                              </Label>
+                              <p className="mb-0 text-dark">
+                                {selectedClient.description || t('Common.noDataAvailable')}
+                              </p>
+                            </Col>
+                          </Row>
+                        </>
+                      );
+                    })()
+                  ) : (
+                    <div className="text-center py-5">
+                      <h5 className="mb-2">{t('CompanyClientsList.selectClientTitle')}</h5>
+                      <p className="text-muted mb-0">{t('CompanyClientsList.selectClientDescription')}</p>
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+            </Col>
+          </>
+        )}
+
+        {viewMode === 'grid' && (
+          <Col lg="12">
+            <Row className="g-3">
+              {paginatedClients.length > 0 ? (
+                paginatedClients.map((client) => (
+                  <Col key={client.id} lg="4" md="6">
+                    <Card className="h-100">
+                      <CardBody>
+                        <div className="d-flex align-items-center mb-3">
+                          <div className="avatar-md me-3">
+                            <span className={`avatar-title rounded-circle ${getAvatarColor(client.name)}`}>
+                              {getInitials(client.name)}
+                            </span>
+                          </div>
+                          <div className="flex-grow-1">
+                            <h5 className="mb-1">{client.name}</h5>
+                            <p className="text-muted mb-0">{client.email}</p>
+                          </div>
+                        </div>
+
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <span className="text-muted small">{t('Common.phone')}</span>
+                          <span className="fw-semibold">{client.phone}</span>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <span className="text-muted small">{t('NewClients.totalAmount')}</span>
+                          <Badge color="primary" className="d-inline-flex align-items-center">
+                            <i className="bx bx-rupee me-1" />
+                            {client.totalAmount.toLocaleString('en-IN', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </Badge>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                          <span className="text-muted small">{t('NewClients.status')}</span>
+                          {getStatusBadge(client.status)}
+                        </div>
+
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Button
+                            color="primary"
+                            size="sm"
+                            className="d-inline-flex align-items-center"
+                            onClick={() => handleSelectClient(client)}
+                          >
+                            <i className="mdi mdi-eye me-1" />
+                            {t('Common.view')}
+                          </Button>
+                          <small className="text-muted">
+                            {new Date(client.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </small>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  </Col>
+                ))
+              ) : (
+                <Col xs="12">
+                  <div className="text-center py-4">
+                    <p className="text-muted mb-0">{t('NewClients.noClientsFound')}</p>
+                  </div>
+                </Col>
+              )}
+            </Row>
+          </Col>
+        )}
+      </Row>
+
+      {filteredClients.length > 0 && (
+        <Pagination
+          className="mt-0"
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredClients.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
       <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="lg">
         <ModalHeader toggle={handleCloseCreateModal}>

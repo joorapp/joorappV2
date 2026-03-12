@@ -455,7 +455,7 @@ const CompanyDashboard = () => {
       <CompanyHeader onMenuClick={toggleSidebar} />
       <CompanySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="main-content">
-        <div className="page-content companyPageContent">
+        <div className="page-content">
           <div className="container-fluid p-0">
             <Outlet />
           </div>

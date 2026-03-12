@@ -149,7 +149,7 @@ const CompanyClientTypes = () => {
   };
 
   return (
-    <div className="companyPageContentInner">
+    <>
       <Breadcrumbs
         title={t('CompanyClientTypes.pageTitle')}
         breadcrumbItem={t('CompanyClientTypes.breadcrumbItem')}
@@ -306,7 +306,7 @@ const CompanyClientTypes = () => {
         </ModalFooter>
       </Modal>
 
-    </div>
+    </>
   );
 };
 

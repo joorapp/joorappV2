@@ -172,7 +172,7 @@ const CompanyProjectTypes = () => {
   };
 
   return (
-    <div className="companyPageContentInner">
+    <>
       <Breadcrumbs
         title={t('CompanyProjectTypes.pageTitle')}
         breadcrumbItem={t('CompanyProjectTypes.breadcrumbItem')}
@@ -325,7 +325,7 @@ const CompanyProjectTypes = () => {
           </Button>
         </ModalFooter>
       </Modal>
-    </div>
+    </>
   );
 };
 
