@@ -898,7 +898,45 @@
     "newClients": "New Clients",
     "planButton": "Plan",
     "viewList": "List view",
-    "viewGrid": "Grid view"
+    "viewGrid": "Grid view",
+    "allCustomers": "All Customers",
+    "overview": "Overview",
+    "comments": "Comments",
+    "transactions": "Transactions",
+    "mails": "Mails",
+    "statement": "Statement",
+    "edit": "Edit",
+    "newTransaction": "New Transaction",
+    "more": "More",
+    "inviteToPortal": "Invite to Portal",
+    "paymentDuePeriod": "Payment Due Period",
+    "dueOnReceipt": "Due on Receipt",
+    "receivables": "Receivables",
+    "currency": "Currency",
+    "outstandingReceivables": "Outstanding Receivables",
+    "unusedCredits": "Unused Credits",
+    "incomeAndExpense": "Income and Expense",
+    "chartBaseCurrency": "This chart is displayed in the organization's base currency.",
+    "last6Months": "Last 6 Months",
+    "totalIncomeLast6Months": "Total Income (Last 6 Months)",
+    "address": "Address",
+    "billingAddress": "Billing Address",
+    "shippingAddress": "Shipping Address",
+    "noBillingAddress": "No Billing Address",
+    "noShippingAddress": "No Shipping Address",
+    "newAddress": "New Address",
+    "otherDetails": "Other Details",
+    "customerType": "Customer Type",
+    "customerNumber": "Customer Number",
+    "defaultCurrency": "Default Currency",
+    "portalStatus": "Portal Status",
+    "disabled": "Disabled",
+    "enabled": "Enabled",
+    "customerLanguage": "Customer Language",
+    "contactPersons": "Contact Persons",
+    "noCustomersSelected": "Select a customer to view details",
+    "business": "Business",
+    "english": "English"
   },
   "CompanyClientTypes": {
     "pageTitle": "CLIENT TYPES",
@@ -1062,6 +1100,30 @@
     },
     "placeholders": {
       "name": "Enter project category name",
+      "description": "Enter description (optional)"
+    }
+  },
+  "CompanyJobTitles": {
+    "pageTitle": "JOB TITLES",
+    "breadcrumbParent": "Employees",
+    "breadcrumbItem": "Job Titles",
+    "addJobTitle": "Add job title",
+    "createdSuccessfully": "Job title created successfully",
+    "noJobTitlesFound": "No job titles found",
+    "table": {
+      "id": "ID",
+      "name": "Job title",
+      "description": "Description",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "fields": {
+      "name": "Job title name",
+      "description": "Description",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Enter job title name",
       "description": "Enter description (optional)"
     }
   },

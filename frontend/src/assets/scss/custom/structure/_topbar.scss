@@ -110,6 +110,12 @@
 
 .page-content {
     padding: calc(#{$header-height} + #{$grid-gutter-width}) calc(#{$grid-gutter-width} * 0.75) $footer-height calc(#{$grid-gutter-width} * 0.75);
+    &.companyPageContent {
+        padding: calc(46px + #{$grid-gutter-width}) 0px $footer-height 0px;
+        .companyPageContentInner {
+            padding: 20px;
+        }
+    }
 }
 
 .header-item {

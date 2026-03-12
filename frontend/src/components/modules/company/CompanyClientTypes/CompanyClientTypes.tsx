@@ -149,7 +149,7 @@ const CompanyClientTypes = () => {
   };
 
   return (
-    <>
+    <div className="companyPageContentInner">
       <Breadcrumbs
         title={t('CompanyClientTypes.pageTitle')}
         breadcrumbItem={t('CompanyClientTypes.breadcrumbItem')}
@@ -159,7 +159,11 @@ const CompanyClientTypes = () => {
 
       <Row>
         <Col lg="12">
-          <div className="d-flex justify-content-between align-items-center mb-4">
+          
+
+          <Card>
+            <CardBody>
+            <div className="d-flex justify-content-between align-items-center mb-4">
             <InputGroup className="search-input-group">
               <Input
                 type="text"
@@ -177,9 +181,6 @@ const CompanyClientTypes = () => {
               {t('CompanyClientTypes.addClientType')}
             </Button>
           </div>
-
-          <Card>
-            <CardBody className="p-0">
               <div className="table-responsive">
                 <Table className="table-nowrap mb-0 align-middle">
                   <thead className="table-light">
@@ -305,7 +306,7 @@ const CompanyClientTypes = () => {
         </ModalFooter>
       </Modal>
 
-    </>
+    </div>
   );
 };
 

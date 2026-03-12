@@ -166,7 +166,7 @@ const CompanyProjectCategories = () => {
   };
 
   return (
-    <>
+    <div className="companyPageContentInner">
       <Breadcrumbs
         title={t('CompanyProjectCategories.pageTitle')}
         breadcrumbItem={t('CompanyProjectCategories.breadcrumbItem')}
@@ -176,7 +176,11 @@ const CompanyProjectCategories = () => {
 
       <Row>
         <Col lg="12">
-          <div className="d-flex justify-content-between align-items-center mb-4">
+          
+
+          <Card>
+            <CardBody>
+              <div className="d-flex justify-content-between align-items-center mb-4">
             <InputGroup className="search-input-group">
               <Input
                 type="text"
@@ -194,9 +198,6 @@ const CompanyProjectCategories = () => {
               {t('CompanyProjectCategories.addProjectCategory')}
             </Button>
           </div>
-
-          <Card>
-            <CardBody className="p-0">
               <div className="table-responsive">
                 <Table className="table-nowrap mb-0 align-middle">
                   <thead className="table-light">
@@ -322,7 +323,7 @@ const CompanyProjectCategories = () => {
           </Button>
         </ModalFooter>
       </Modal>
-    </>
+    </div>
   );
 };
 

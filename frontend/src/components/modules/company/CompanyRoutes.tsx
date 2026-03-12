@@ -15,6 +15,8 @@ import CompanyProjectCategories from './CompanyProjectCategories/CompanyProjectC
 import CompanyEmployeesList from './CompanyEmployeesList/CompanyEmployeesList';
 import CompanyAssignRolesList from './CompanyAssignRolesList/CompanyAssignRolesList';
 import CompanyProjectsList from './CompanyProjectsList/CompanyProjectsList';
+import CompanyJobTitles from './CompanyJobTitles/CompanyJobTitles';
+import CompanyRolePermissions from './CompanyRolePermissions/CompanyRolePermissions';
 
 const CompanyRoutes = () => {
   return (
@@ -25,6 +27,8 @@ const CompanyRoutes = () => {
         <Route path="clients" element={<CompanyClientsList />} />
         <Route path="clients/types" element={<CompanyClientTypes />} />
         <Route path="employees" element={<CompanyEmployeesList />} />
+        <Route path="employees/job-titles" element={<CompanyJobTitles />} />
+        <Route path="employees/role-permissions" element={<CompanyRolePermissions />} />
         <Route path="staffs/assignRoles" element={<CompanyAssignRolesList />} />
         <Route path="projects" element={<CompanyProjectsList />} />
         <Route path="projects/types" element={<CompanyProjectTypes />} />

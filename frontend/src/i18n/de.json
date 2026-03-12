@@ -885,7 +885,45 @@
     "pageTitle": "KUNDEN",
     "clients": "Kunden",
     "newClients": "Neue Kunden",
-    "planButton": "Plan"
+    "planButton": "Plan",
+    "allCustomers": "Alle Kunden",
+    "overview": "Übersicht",
+    "comments": "Kommentare",
+    "transactions": "Transaktionen",
+    "mails": "E-Mails",
+    "statement": "Kontoauszug",
+    "edit": "Bearbeiten",
+    "newTransaction": "Neue Transaktion",
+    "more": "Mehr",
+    "inviteToPortal": "Zum Portal einladen",
+    "paymentDuePeriod": "Zahlungsfrist",
+    "dueOnReceipt": "Bei Erhalt fällig",
+    "receivables": "Forderungen",
+    "currency": "Währung",
+    "outstandingReceivables": "Ausstehende Forderungen",
+    "unusedCredits": "Ungenutzte Guthaben",
+    "incomeAndExpense": "Einnahmen und Ausgaben",
+    "chartBaseCurrency": "Dieses Diagramm wird in der Basiswährung der Organisation angezeigt.",
+    "last6Months": "Letzte 6 Monate",
+    "totalIncomeLast6Months": "Gesamteinnahmen (letzte 6 Monate)",
+    "address": "Adresse",
+    "billingAddress": "Rechnungsadresse",
+    "shippingAddress": "Lieferadresse",
+    "noBillingAddress": "Keine Rechnungsadresse",
+    "noShippingAddress": "Keine Lieferadresse",
+    "newAddress": "Neue Adresse",
+    "otherDetails": "Weitere Details",
+    "customerType": "Kundentyp",
+    "customerNumber": "Kundennummer",
+    "defaultCurrency": "Standardwährung",
+    "portalStatus": "Portal-Status",
+    "disabled": "Deaktiviert",
+    "enabled": "Aktiviert",
+    "customerLanguage": "Kundensprache",
+    "contactPersons": "Ansprechpartner",
+    "noCustomersSelected": "Wählen Sie einen Kunden, um Details anzuzeigen",
+    "business": "Geschäft",
+    "english": "Englisch"
   },
   "ClientPayment": {
     "pageTitle": "KUNDENZAHLUNG",
@@ -1079,6 +1117,30 @@
     },
     "placeholders": {
       "name": "Name der Projektkategorie eingeben",
+      "description": "Beschreibung eingeben (optional)"
+    }
+  },
+  "CompanyJobTitles": {
+    "pageTitle": "STELLENBEZEICHNUNGEN",
+    "breadcrumbParent": "Mitarbeiter",
+    "breadcrumbItem": "Stellenbezeichnungen",
+    "addJobTitle": "Stellenbezeichnung hinzufügen",
+    "createdSuccessfully": "Stellenbezeichnung erfolgreich erstellt",
+    "noJobTitlesFound": "Keine Stellenbezeichnungen gefunden",
+    "table": {
+      "id": "ID",
+      "name": "Stellenbezeichnung",
+      "description": "Beschreibung",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "fields": {
+      "name": "Name der Stellenbezeichnung",
+      "description": "Beschreibung",
+      "status": "Status"
+    },
+    "placeholders": {
+      "name": "Name der Stellenbezeichnung eingeben",
       "description": "Beschreibung eingeben (optional)"
     }
   },
