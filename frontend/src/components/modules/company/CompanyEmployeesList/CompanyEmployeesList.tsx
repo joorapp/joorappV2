@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import {
   Card,
   CardBody,
@@ -393,14 +394,25 @@ const CompanyEmployeesList = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </InputGroup>
-                <Button
-                  color="primary"
-                  className="btn-rounded waves-effect d-inline-flex align-items-center waves-light"
-                  onClick={() => setCreateModalOpen(true)}
-                >
-                  <i className="bx bx-plus me-1"></i>
-                  {t('EmployeeLists.newEmployee')}
-                </Button>
+                <div className="d-flex align-items-center gap-2">
+                  <Button
+                    tag={Link}
+                    to="/company/employees/job-titles"
+                    color="light"
+                    className="btn-rounded waves-effect d-inline-flex align-items-center waves-light"
+                  >
+                    <i className="bx bx-briefcase-alt-2 me-1"></i>
+                    {t('CompanySidebar.jobTitles')}
+                  </Button>
+                  <Button
+                    color="primary"
+                    className="btn-rounded waves-effect d-inline-flex align-items-center waves-light"
+                    onClick={() => setCreateModalOpen(true)}
+                  >
+                    <i className="bx bx-plus me-1"></i>
+                    {t('EmployeeLists.newEmployee')}
+                  </Button>
+                </div>
               </div>
 
               <div className="table-responsive">
@@ -682,10 +694,10 @@ const CompanyEmployeesList = () => {
                 <Label className="form-label fw-semibold">
                   {t('EmployeeLists.jobTitle')} <span className="text-danger">*</span>
                 </Label>
-                <a href="/company/staffs/job-titles" className="p-0 text-primary d-inline-flex align-items-center">
+                <Link to="/company/employees/job-titles" className="p-0 text-primary d-inline-flex align-items-center">
                   <i className="bx bx-plus me-1" />
                   {t('Common.add')}
-                </a>
+                </Link>
               </div>
               <Input
                 type="select"
