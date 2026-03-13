@@ -1,9 +1,9 @@
 /**
- * Company clients – Dashboard layout: left sidebar client list, right panel client details.
+ * Company clients – Zoho-style master/detail layout.
+ * Left list of clients, right-side detailed view + create modal.
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import './CompanyClientsList.scss';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -13,16 +13,13 @@ import {
   Button,
   Badge,
   Input,
+  InputGroup,
   Modal,
   ModalHeader,
   ModalBody,
   ModalFooter,
   Label,
   FormFeedback,
-  Nav,
-  NavItem,
-  NavLink,
-  Table,
 } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
 import Pagination from '../../../common/Pagination/Pagination';
@@ -282,10 +279,6 @@ const CompanyClientsList = () => {
   const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'comments' | 'transactions' | 'mails' | 'statement'>('overview');
-  const [overviewAddressOpen, setOverviewAddressOpen] = useState(true);
-  const [overviewOtherOpen, setOverviewOtherOpen] = useState(true);
-  const [overviewContactsOpen, setOverviewContactsOpen] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newClient, setNewClient] = useState(emptyNewClient);
   const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
@@ -391,9 +384,14 @@ const CompanyClientsList = () => {
     }
   }, [filteredClients, selectedClient]);
 
-  useEffect(() => {
-    setActiveDetailTab('overview');
-  }, [selectedClient?.id]);
+  const getTypeBadge = (type: string) => {
+    switch (type) {
+      case STATUS.GENERAL:
+        return <Badge className="bg-primary d-none">{t('Common.StatusGeneral')}</Badge>;
+      case STATUS.SUPPLIER:
+        return <Badge className="bg-danger">{t('Common.StatusSupplier')}</Badge>;
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -404,10 +402,7 @@ const CompanyClientsList = () => {
       case 'PENDING':
         return <Badge color="warning">{t('Common.StatusPending')}</Badge>;
       case 'New':
-      case 'NEW':
         return <Badge color="info">{t('Common.statusNew')}</Badge>;
-      default:
-        return <Badge color="secondary">{status}</Badge>;
     }
   };
 
@@ -420,355 +415,211 @@ const CompanyClientsList = () => {
         breadcrumbParent={t('CompanyClientsList.clients')}
       />
 
-      <div className="company-clients-list">
-        {/* Left sidebar: client list */}
-        <aside className="company-clients-sidebar">
-          <div className="sidebar-header">
-            <Input
-              type="text"
-              className="sidebar-search-input"
-              placeholder={t('Common.searchPlaceholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Button
-              color="primary"
-              size="sm"
-              className="sidebar-btn-add"
-              onClick={handleOpenCreateModal}
-              title={t('NewClients.createClient')}
-            >
-              <i className="bx bx-plus" />
-            </Button>
-          </div>
-          <div className="client-list">
-            {paginatedClients.length > 0 ? (
-              paginatedClients.map((client) => {
-                const createdDate = new Date(client.createdAt);
-                const isActive = selectedClient?.id === client.id;
-                return (
-                  <button
-                    key={client.id}
-                    type="button"
-                    className={`client-list-item ${isActive ? 'selected' : ''}`}
-                    onClick={() => handleSelectClient(client)}
-                  >
-                    <div className={`avatar-xs flex-shrink-0 avatar-title rounded-circle ${getAvatarColor(client.name)}`}>
-                      {getInitials(client.name)}
-                    </div>
-                    <div className="client-list-item-body">
-                      <div className="client-name">{client.name}</div>
-                      <div className="client-meta text-muted text-truncate small">{client.email}</div>
-                      <div className="client-meta text-muted text-truncate small">{client.phone}</div>
-                      <div className="d-flex justify-content-between align-items-center mt-1 flex-wrap gap-1">
-                        <span>{getStatusBadge(client.status)}</span>
-                        <span className="client-date text-muted small">
-                          {createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })
-            ) : (
-              <div className="detail-placeholder">
-                <p className="mb-0">{t('NewClients.noClientsFound')}</p>
-              </div>
-            )}
-          </div>
-          {filteredClients.length > 0 && (
-            <div className="sidebar-footer p-2 border-top">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredClients.length}
-                itemsPerPage={ITEMS_PER_PAGE}
-                onPageChange={setCurrentPage}
+      <Row className="mb-3">
+        <Col lg="12">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <InputGroup className="search-input-group">
+              <Input
+                type="text"
+                placeholder={t('Common.searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
+            </InputGroup>
+            <div className="d-flex align-items-center gap-2">
+              <Button
+                color="primary"
+                className="btn-rounded waves-effect d-inline-flex align-items-center waves-light"
+                onClick={handleOpenCreateModal}
+              >
+                <i className="bx bx-plus me-1"></i>
+                {t('NewClients.createClient')}
+              </Button>
             </div>
-          )}
-        </aside>
+          </div>
+        </Col>
+      </Row>
 
-        {/* Right panel: client details */}
-        <div className="company-clients-detail">
-          {selectedClient ? (
-            <Card className="h-100 border-0 shadow-none rounded-0 d-flex flex-column">
-              <div className="detail-header-bar">
-                <div className="d-flex align-items-center gap-3">
-                  <div
-                    className={`detail-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0 ${getAvatarColor(selectedClient.name)}`}
-                  >
-                    {getInitials(selectedClient.name)}
-                  </div>
-                  <div>
-                    <h4 className="detail-client-name mb-1">{selectedClient.name}</h4>
-                    <span className="text-muted">#{selectedClient.id}</span>
-                  </div>
-                </div>
-                <div className="d-flex gap-2">
-                  <Button
-                    color="secondary"
-                    size="sm"
-                    outline
-                    className="d-inline-flex align-items-center"
-                    onClick={handleOpenCreateModal}
-                  >
-                    <i className="mdi mdi-pencil me-1" />
-                    {t('Common.edit')}
-                  </Button>
-                  <Button color="danger" size="sm" outline className="d-inline-flex align-items-center">
-                    <i className="mdi mdi-delete me-1" />
-                    {t('Common.delete')}
-                  </Button>
-                </div>
-              </div>
+      <Row>
+        <>
+          <Col lg="4" md="5" className="mb-3">
+              <Card className="h-100">
+                <CardBody className="p-0">
+                  {paginatedClients.length > 0 ? (
+                    <div className="list-group list-group-flush">
+                      {paginatedClients.map((client) => {
+                        const createdDate = new Date(client.createdAt);
+                        const isActive = selectedClient?.id === client.id;
 
-              <Nav tabs className="detail-tabs">
-                <NavItem>
-                  <NavLink
-                    tag="button"
-                    type="button"
-                    className={activeDetailTab === 'overview' ? 'active' : ''}
-                    onClick={() => setActiveDetailTab('overview')}
-                  >
-                    {t('CompanyClientsList.overview')}
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    tag="button"
-                    type="button"
-                    className={activeDetailTab === 'comments' ? 'active' : ''}
-                    onClick={() => setActiveDetailTab('comments')}
-                  >
-                    {t('CompanyClientsList.comments')}
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    tag="button"
-                    type="button"
-                    className={activeDetailTab === 'transactions' ? 'active' : ''}
-                    onClick={() => setActiveDetailTab('transactions')}
-                  >
-                    {t('CompanyClientsList.transactions')}
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    tag="button"
-                    type="button"
-                    className={activeDetailTab === 'mails' ? 'active' : ''}
-                    onClick={() => setActiveDetailTab('mails')}
-                  >
-                    {t('CompanyClientsList.mails')}
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    tag="button"
-                    type="button"
-                    className={activeDetailTab === 'statement' ? 'active' : ''}
-                    onClick={() => setActiveDetailTab('statement')}
-                  >
-                    {t('CompanyClientsList.statement')}
-                  </NavLink>
-                </NavItem>
-              </Nav>
-
-              <CardBody className="detail-card-body flex-grow-1 overflow-auto">
-                {activeDetailTab === 'overview' && selectedClient && (
-                  <div className="overview-content">
-                    <div className="overview-two-col">
-                      {/* Left column: Contact, Address, Other details, Contact persons */}
-                      <div className="overview-left">
-                        <div className="overview-contact-card">
-                          <div className="d-flex align-items-center gap-3">
-                            <div className={`overview-contact-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0 ${getAvatarColor(selectedClient.name)}`}>
-                              {getInitials(selectedClient.name)}
-                            </div>
-                            <div className="flex-grow-1 min-w-0">
-                              <div className="overview-contact-name">{selectedClient.name}</div>
-                              <a href="#invite" className="overview-invite-link">{t('CompanyClientsList.inviteToPortal')}</a>
-                            </div>
-                            <Button color="light" size="sm" className="btn-icon-sm p-1" title={t('Common.settings')}>
-                              <i className="bx bx-cog" />
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="overview-section">
+                        return (
                           <button
+                            key={client.id}
                             type="button"
-                            className="overview-section-toggle d-flex align-items-center justify-content-between w-100"
-                            onClick={() => setOverviewAddressOpen((o) => !o)}
+                            className={`list-group-item list-group-item-action d-flex align-items-center gap-3 ${
+                              isActive ? 'active' : ''
+                            }`}
+                            onClick={() => handleSelectClient(client)}
                           >
-                            <span className="overview-section-title">{t('CompanyClientsList.address')}</span>
-                            <i className={`bx ${overviewAddressOpen ? 'bx-chevron-up' : 'bx-chevron-down'} text-primary`} />
+                            <div className="avatar-xs flex-shrink-0">
+                              <span
+                                className={`avatar-title rounded-circle ${getAvatarColor(client.name)} ${
+                                  isActive ? 'border border-2 border-white' : ''
+                                }`}
+                              >
+                                {getInitials(client.name)}
+                              </span>
+                            </div>
+                            <div className="flex-grow-1 text-start">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                  <h6 className="mb-0 text-truncate">{client.name}</h6>
+                                  <small className="text-muted d-block text-truncate">{client.email}</small>
+                                </div>
+                                <small className="text-muted ms-2">
+                                  {createdDate.toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })}
+                                </small>
+                              </div>
+                              <div className="d-flex justify-content-between align-items-center mt-1">
+                                <small className="text-muted">{client.phone}</small>
+                                <div>{getStatusBadge(client.status)}</div>
+                              </div>
+                            </div>
                           </button>
-                          {overviewAddressOpen && (
-                            <div className="overview-section-body">
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.billingAddress')}</span>
-                                <span className="overview-kv-value">
-                                  {t('CompanyClientsList.noBillingAddress')} — <a href="#new-address" className="overview-link">{t('CompanyClientsList.newAddress')}</a>
-                                </span>
-                              </div>
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.shippingAddress')}</span>
-                                <span className="overview-kv-value">
-                                  {t('CompanyClientsList.noShippingAddress')} — <a href="#new-address" className="overview-link">{t('CompanyClientsList.newAddress')}</a>
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="overview-section">
-                          <button
-                            type="button"
-                            className="overview-section-toggle d-flex align-items-center justify-content-between w-100"
-                            onClick={() => setOverviewOtherOpen((o) => !o)}
-                          >
-                            <span className="overview-section-title">{t('CompanyClientsList.otherDetails')}</span>
-                            <i className={`bx ${overviewOtherOpen ? 'bx-chevron-up' : 'bx-chevron-down'} text-primary`} />
-                          </button>
-                          {overviewOtherOpen && (
-                            <div className="overview-section-body">
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.customerType')}</span>
-                                <span className="overview-kv-value">{t('CompanyClientsList.business')}</span>
-                              </div>
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.customerNumber')}</span>
-                                <span className="overview-kv-value">CUS-{selectedClient.id}</span>
-                              </div>
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.defaultCurrency')}</span>
-                                <span className="overview-kv-value">AED</span>
-                              </div>
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.portalStatus')}</span>
-                                <span className="overview-kv-value">
-                                  <span className="portal-status-dot disabled" /> {t('CompanyClientsList.disabled')}
-                                </span>
-                              </div>
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.customerLanguage')}</span>
-                                <span className="overview-kv-value">{t('CompanyClientsList.english')}</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="overview-section">
-                          <button
-                            type="button"
-                            className="overview-section-toggle d-flex align-items-center justify-content-between w-100"
-                            onClick={() => setOverviewContactsOpen((o) => !o)}
-                          >
-                            <span className="overview-section-title">{t('CompanyClientsList.contactPersons')}</span>
-                            <span className="d-flex align-items-center gap-1">
-                              <i className="bx bx-plus text-primary small" />
-                              <i className={`bx ${overviewContactsOpen ? 'bx-chevron-up' : 'bx-chevron-down'} text-primary`} />
-                            </span>
-                          </button>
-                          {overviewContactsOpen && (
-                            <div className="overview-section-body">
-                              <p className="text-muted small mb-0">{t('Common.noDataAvailable')}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Right column: Payment due, Receivables, Income and Expense */}
-                      <div className="overview-right">
-                        <div className="overview-block">
-                          <Label className="overview-label">{t('CompanyClientsList.paymentDuePeriod')}</Label>
-                          <p className="overview-value mb-0">{t('CompanyClientsList.dueOnReceipt')}</p>
-                        </div>
-
-                        <div className="overview-block">
-                          <div className="overview-heading">{t('CompanyClientsList.receivables')}</div>
-                          <div className="table-responsive">
-                            <Table className="overview-receivables-table mb-0">
-                              <thead>
-                                <tr>
-                                  <th>{t('CompanyClientsList.currency')}</th>
-                                  <th className="text-end">{t('CompanyClientsList.outstandingReceivables')}</th>
-                                  <th className="text-end">{t('CompanyClientsList.unusedCredits')}</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr>
-                                  <td>AED - UAE Dirham</td>
-                                  <td className="text-end">
-                                    AED{selectedClient.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </td>
-                                  <td className="text-end">AED0.00</td>
-                                </tr>
-                              </tbody>
-                            </Table>
-                          </div>
-                        </div>
-
-                        <div className="overview-block">
-                          <div className="overview-heading">{t('CompanyClientsList.incomeAndExpense')}</div>
-                          <p className="overview-chart-desc small text-muted">{t('CompanyClientsList.chartBaseCurrency')}</p>
-                          <a href="#period" className="overview-link d-inline-block mb-2">{t('CompanyClientsList.last6Months')} <i className="bx bx-chevron-down small" /></a>
-                          <div className="overview-chart-placeholder">
-                            <div className="overview-chart-bars">
-                              {[40, 55, 45, 60, 50, 55, 48].map((h, i) => (
-                                <div key={i} className="overview-chart-bar" style={{ height: `${h}%` }} />
-                              ))}
-                            </div>
-                            <div className="overview-chart-labels d-flex justify-content-between small text-muted mt-1">
-                              <span>Sep 2025</span>
-                              <span>Mar 2026</span>
-                            </div>
-                          </div>
-                          <p className="overview-total-income small text-muted mb-0 mt-2">
-                            {t('CompanyClientsList.totalIncomeLast6Months')} — AED{selectedClient.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                      </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted mb-0">{t('NewClients.noClientsFound')}</p>
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+            </Col>
 
-                {activeDetailTab === 'comments' && (
-                  <div className="detail-tab-placeholder">
-                    <p className="text-muted mb-0">{t('CompanyClientsList.comments')}</p>
-                  </div>
-                )}
+            <Col lg="8" md="7" className="mb-3">
+              <Card className="h-100">
+                <CardBody>
+                  {selectedClient ? (
+                    (() => {
+                      const fullAddress = [
+                        selectedClient.buildingAddress,
+                        selectedClient.streetAddress,
+                        selectedClient.city,
+                        selectedClient.state,
+                        selectedClient.country,
+                      ]
+                        .filter(Boolean)
+                        .join(', ');
+                      const startDate = new Date(selectedClient.createdAt);
 
-                {activeDetailTab === 'transactions' && (
-                  <div className="detail-tab-placeholder">
-                    <p className="text-muted mb-0">{t('CompanyClientsList.transactions')}</p>
-                  </div>
-                )}
+                      return (
+                        <>
+                          <div className="d-flex justify-content-between align-items-start mb-4">
+                            <div className="d-flex align-items-center gap-3">
+                              <div
+                                className="avatar-lg rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                style={{ backgroundColor: '#34c38f', minWidth: 56, minHeight: 56 }}
+                              >
+                                {getInitials(selectedClient.name)}
+                              </div>
+                              <div>
+                                <h4 className="mb-1">{selectedClient.name}</h4>
+                                <div className="d-flex align-items-center gap-2">
+                                  {getTypeBadge(selectedClient.type)}
+                                  <span className="text-muted">#{selectedClient.id}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="d-flex gap-2">
+                              <Button
+                                color="secondary"
+                                size="sm"
+                                className="d-inline-flex align-items-center"
+                                onClick={handleOpenCreateModal}
+                              >
+                                <i className="mdi mdi-pencil me-1" />
+                                {t('Common.edit')}
+                              </Button>
+                              <Button
+                                color="danger"
+                                size="sm"
+                                outline
+                                className="d-inline-flex align-items-center"
+                              >
+                                <i className="mdi mdi-delete me-1" />
+                                {t('Common.delete')}
+                              </Button>
+                            </div>
+                          </div>
 
-                {activeDetailTab === 'mails' && (
-                  <div className="detail-tab-placeholder">
-                    <p className="text-muted mb-0">{t('CompanyClientsList.mails')}</p>
-                  </div>
-                )}
+                          <Row className="mb-4">
+                            <Col md="4" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">{t('NewClients.clientId')}</Label>
+                              <p className="mb-0 text-dark">{selectedClient.id}</p>
+                            </Col>
+                            <Col md="4" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">{t('Common.email')}</Label>
+                              <p className="mb-0 text-dark">{selectedClient.email}</p>
+                            </Col>
+                            <Col md="4" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">{t('Common.phone')}</Label>
+                              <p className="mb-0 text-dark">{selectedClient.phone}</p>
+                            </Col>
+                            <Col md="4" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">{t('Common.address')}</Label>
+                              <p className="mb-0 text-dark">{fullAddress || '—'}</p>
+                            </Col>
+                            <Col md="4" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">{t('NewClients.joinedDate')}</Label>
+                              <p className="mb-0 text-dark">
+                                {startDate.toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                })}
+                              </p>
+                            </Col>
+                          </Row>
 
-                {activeDetailTab === 'statement' && (
-                  <div className="detail-tab-placeholder">
-                    <p className="text-muted mb-0">{t('CompanyClientsList.statement')}</p>
-                  </div>
-                )}
-              </CardBody>
-            </Card>
-          ) : (
-            <div className="detail-placeholder">
-              <h5 className="mb-2">{t('CompanyClientsList.selectClientTitle')}</h5>
-              <p className="text-muted mb-0">{t('CompanyClientsList.selectClientDescription')}</p>
-            </div>
-          )}
-        </div>
-      </div>
+                          <Row>
+                            <Col md="12" className="mb-3">
+                              <Label className="form-label fw-semibold text-muted">
+                                {t('NewClients.labels.description')}
+                              </Label>
+                              <p className="mb-0 text-dark">
+                                {selectedClient.description || t('Common.noDataAvailable')}
+                              </p>
+                            </Col>
+                          </Row>
+                        </>
+                      );
+                    })()
+                  ) : (
+                    <div className="text-center py-5">
+                      <h5 className="mb-2">{t('CompanyClientsList.selectClientTitle')}</h5>
+                      <p className="text-muted mb-0">{t('CompanyClientsList.selectClientDescription')}</p>
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+            </Col>
+        </>
+      </Row>
+
+      {filteredClients.length > 0 && (
+        <Pagination
+          className="mt-0"
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredClients.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
       <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="lg">
         <ModalHeader toggle={handleCloseCreateModal}>

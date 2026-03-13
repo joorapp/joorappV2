@@ -886,6 +886,9 @@
     "clients": "Kunden",
     "newClients": "Neue Kunden",
     "planButton": "Plan",
+    "viewTable": "Tabellenansicht",
+    "viewList": "Listenansicht",
+    "viewGrid": "Rasteransicht",
     "allCustomers": "Alle Kunden",
     "overview": "Übersicht",
     "comments": "Kommentare",
@@ -923,7 +926,17 @@
     "contactPersons": "Ansprechpartner",
     "noCustomersSelected": "Wählen Sie einen Kunden, um Details anzuzeigen",
     "business": "Geschäft",
-    "english": "Englisch"
+    "english": "Englisch",
+    "contactInformation": "Kontaktinformationen",
+    "portalInvitationNotAccepted": "Portaleinladung nicht angenommen",
+    "reInvite": "Erneut einladen",
+    "contactUpdated": "Kontakt aktualisiert",
+    "contactsEnabled": "{{count}} von {{total}} Kontakten",
+    "newBtn": "Neu",
+    "companyName": "Firmenname",
+    "workPhone": "Geschäftstelefon",
+    "receivablesBcy": "Forderungen (BCY)",
+    "unusedCreditsBcy": "Unbenutzte Guthaben (BCY)"
   },
   "ClientPayment": {
     "pageTitle": "KUNDENZAHLUNG",

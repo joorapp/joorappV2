@@ -897,6 +897,7 @@
     "clients": "Clients",
     "newClients": "New Clients",
     "planButton": "Plan",
+    "viewTable": "Table view",
     "viewList": "List view",
     "viewGrid": "Grid view",
     "allCustomers": "All Customers",
@@ -936,7 +937,17 @@
     "contactPersons": "Contact Persons",
     "noCustomersSelected": "Select a customer to view details",
     "business": "Business",
-    "english": "English"
+    "english": "English",
+    "contactInformation": "Contact Information",
+    "portalInvitationNotAccepted": "Portal invitation not accepted",
+    "reInvite": "Re-invite",
+    "contactUpdated": "Contact updated",
+    "contactsEnabled": "{{count}} of {{total}} Contacts",
+    "newBtn": "New",
+    "companyName": "Company Name",
+    "workPhone": "Work Phone",
+    "receivablesBcy": "Receivables (BCY)",
+    "unusedCreditsBcy": "Unused Credits (BCY)"
   },
   "CompanyClientTypes": {
     "pageTitle": "CLIENT TYPES",

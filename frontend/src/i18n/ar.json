@@ -886,6 +886,9 @@
     "clients": "العملاء",
     "newClients": "عملاء جدد",
     "planButton": "الخطة",
+    "viewTable": "عرض الجدول",
+    "viewList": "عرض القائمة",
+    "viewGrid": "عرض الشبكة",
     "allCustomers": "جميع العملاء",
     "overview": "نظرة عامة",
     "comments": "التعليقات",
@@ -923,7 +926,17 @@
     "contactPersons": "جهات الاتصال",
     "noCustomersSelected": "اختر عميلاً لعرض التفاصيل",
     "business": "أعمال",
-    "english": "الإنجليزية"
+    "english": "الإنجليزية",
+    "contactInformation": "معلومات الاتصال",
+    "portalInvitationNotAccepted": "دعوة البوابة غير مقبولة",
+    "reInvite": "إعادة الدعوة",
+    "contactUpdated": "تم تحديث جهة الاتصال",
+    "contactsEnabled": "{{count}} من {{total}} جهات اتصال",
+    "newBtn": "جديد",
+    "companyName": "اسم الشركة",
+    "workPhone": "هاتف العمل",
+    "receivablesBcy": "المستحقات (BCY)",
+    "unusedCreditsBcy": "الائتمانات غير المستخدمة (BCY)"
   },
   "ClientPayment": {
     "pageTitle": "مدفوعات العملاء",
