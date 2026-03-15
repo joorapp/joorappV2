@@ -225,6 +225,7 @@ const CompanyClientsList = () => {
     fetchClients();
   }, [fetchClients]);
 
+  
   useEffect(() => {
     if (!selectedClient?.id) {
       setSelectedClientDetails(null);
