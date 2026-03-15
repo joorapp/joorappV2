@@ -46,6 +46,13 @@ const API_ROUTES = {
     GET_COMPANY_PROFILE: API_PATH + "/companies/<companyId>",
     UPDATE_COMPANY_PROFILE: API_PATH + "/companies/<companyId>",
   },
+  COMPANYADMIN: {
+   CREATE_CLIENT: API_PATH + "/admin/clients",
+   GET_CLIENTS: API_PATH + "/admin/clients",
+   GET_CLIENT_BY_ID: API_PATH + "/admin/clients/<clientId>",
+   UPDATE_CLIENT: API_PATH + "/admin/clients/<clientId>",
+   DELETE_CLIENT: API_PATH + "/admin/clients/<clientId>",
+  },
   DASHBOARD: {
     GET_SUPERADMIN_DASHBOARD: API_PATH + "/dashboard/superadmin",
     GET_COMPANY_DASHBOARD: API_PATH + "/dashboard/company/<companyId>",
