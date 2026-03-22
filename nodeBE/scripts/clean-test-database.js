@@ -63,8 +63,10 @@ const cleanTestDatabase = async () => {
     //
     const tables = [
       'user_company_context',      // No dependencies
+      'employees',                 // Depends on job_titles, companies; optional FK to company_users (truncate before company_users)
       'company_users',             // Depends on users, companies, company_roles
       'company_roles',             // Depends on users
+      'job_titles',                // Depends on users, companies (before companies)
       'companies',                 // Depends on users, plans
       'plans',                     // Depends on users (before companies due to FK)
       'demo_auditable_models',     // Depends on users

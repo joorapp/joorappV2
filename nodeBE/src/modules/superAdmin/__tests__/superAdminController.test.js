@@ -56,6 +56,7 @@ const mockValidateRequired = jest.fn();
 const mockValidateString = jest.fn();
 const mockValidateEnum = jest.fn();
 const mockValidateNumber = jest.fn();
+const mockValidateBoolean = jest.fn();
 
 jest.unstable_mockModule('../../../utils/validators.js', () => ({
   validateUUID: mockValidateUUID,
@@ -63,7 +64,8 @@ jest.unstable_mockModule('../../../utils/validators.js', () => ({
   validateRequired: mockValidateRequired,
   validateString: mockValidateString,
   validateEnum: mockValidateEnum,
-  validateNumber: mockValidateNumber
+  validateNumber: mockValidateNumber,
+  validateBoolean: mockValidateBoolean
 }));
 
 // Mock businessHelpers
@@ -168,6 +170,26 @@ jest.unstable_mockModule('../../../services/planService.js', () => ({
   deletePlan: mockDeletePlan
 }));
 
+const mockJobTitleCreate = jest.fn();
+const mockJobTitleList = jest.fn();
+const mockJobTitleGetById = jest.fn();
+const mockJobTitleUpdate = jest.fn();
+const mockJobTitleDelete = jest.fn();
+
+jest.unstable_mockModule('../../../services/jobTitleService.js', () => ({
+  createJobTitle: mockJobTitleCreate,
+  listJobTitlesForCompany: mockJobTitleList,
+  getJobTitleByIdForCompany: mockJobTitleGetById,
+  updateJobTitleForCompany: mockJobTitleUpdate,
+  deleteJobTitleForCompany: mockJobTitleDelete
+}));
+
+const mockGetSuperAdminCompanyId = jest.fn();
+
+jest.unstable_mockModule('../../../services/systemCompanyService.js', () => ({
+  getSuperAdminCompanyId: mockGetSuperAdminCompanyId
+}));
+
 let superAdminController;
 let loggerUtils;
 let responseHelpers;
@@ -192,6 +214,8 @@ beforeAll(async () => {
   userService = await import('../../../services/userService.js');
   companyUserService = await import('../../../services/companyUserService.js');
   planService = await import('../../../services/planService.js');
+  await import('../../../services/jobTitleService.js');
+  await import('../../../services/systemCompanyService.js');
 });
 
 describe('Super Admin Controller', () => {
@@ -1157,6 +1181,62 @@ describe('Super Admin Controller', () => {
 
       // Assert
       expect(mockDeletePlan).toHaveBeenCalledWith(planId, { deletedUserId: req.user.id });
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+  });
+
+  describe('Super admin job titles', () => {
+    const saCompanyId = uuidv4();
+
+    beforeEach(() => {
+      mockIsSuperAdmin.mockReturnValue(true);
+      mockValidateRequired.mockImplementation(() => {});
+      mockValidateString.mockImplementation(() => {});
+      mockValidateBoolean.mockImplementation((v) => v);
+      mockValidateUUID.mockImplementation(() => {});
+      mockBuildPaginationQuery.mockReturnValue({ page: 1, limit: 10, offset: 0 });
+      mockBuildSortQuery.mockReturnValue([['jobTitle', 'ASC']]);
+      mockGetSuperAdminCompanyId.mockResolvedValue(saCompanyId);
+    });
+
+    it('createSuperAdminJobTitle should create with system company context', async () => {
+      req.body = { jobTitle: 'CTO', description: 'Lead tech', isActive: true };
+      const dto = { id: uuidv4(), jobTitle: 'CTO', isActive: true };
+      mockJobTitleCreate.mockResolvedValue(dto);
+
+      await superAdminController.createSuperAdminJobTitle(req, res);
+
+      expect(mockGetSuperAdminCompanyId).toHaveBeenCalledWith({ requestId: req.id });
+      expect(mockJobTitleCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ jobTitle: 'CTO' }),
+        { userId: req.user.id, companyId: saCompanyId }
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('createSuperAdminJobTitle should forbid non-super-admin', async () => {
+      mockIsSuperAdmin.mockReturnValue(false);
+      req.body = { jobTitle: 'X' };
+
+      await expect(superAdminController.createSuperAdminJobTitle(req, res)).rejects.toThrow(ForbiddenError);
+    });
+
+    it('listSuperAdminJobTitles should return paginated list', async () => {
+      mockJobTitleList.mockResolvedValue({
+        jobTitles: [{ id: uuidv4(), jobTitle: 'Dev' }],
+        total: 1
+      });
+
+      await superAdminController.listSuperAdminJobTitles(req, res);
+
+      expect(mockJobTitleList).toHaveBeenCalledWith(
+        saCompanyId,
+        expect.any(Object),
+        { page: 1, limit: 10, offset: 0 },
+        [['jobTitle', 'ASC']],
+        { requestId: req.id, workspace: 'superAdmin' }
+      );
+      expect(mockPaginatedResponse).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });

@@ -15,6 +15,7 @@ Before writing any backend code, ALWAYS check and follow:
 - `nodeBE/.cursor/rules/error-handling.mdc` - Error handling
 - `nodeBE/.cursor/rules/module-structure.mdc` - Module creation
 - `nodeBE/.cursor/rules/controller-splitting.mdc` - Controller splitting patterns
+- `nodeBE/.cursor/rules/swagger.mdc` - Swagger documentation standards (CRITICAL for entity schemas)
 - `nodeBE/.cursor/rules/model-creation.mdc` - Model creation guidelines (AuditableEntity)
 - `nodeBE/.cursor/rules/master-data-entity.mdc` - Master data patterns (MasterDataEntity vs AuditableEntity)
 - `nodeBE/.cursor/rules/repository-service-pattern.mdc` - Repository and service patterns

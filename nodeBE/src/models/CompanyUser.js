@@ -144,6 +144,10 @@ CompanyUser.associate = (models) => {
     foreignKey: 'createdCompanyId', 
     as: 'createdByCompany' 
   });
+  CompanyUser.hasOne(models.Employee, {
+    foreignKey: 'companyUserId',
+    as: 'employee'
+  });
 
   // Audit field associations (User hasMany CompanyUser)
   // These are defined in User.associate() but listed here for reference

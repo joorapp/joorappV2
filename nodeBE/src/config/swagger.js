@@ -1021,6 +1021,189 @@ const swaggerDefinition = {
           }
         }
       },
+      JobTitle: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Job title UUID',
+            example: '550e8400-e29b-41d4-a716-446655440030'
+          },
+          jobTitle: {
+            type: 'string',
+            maxLength: 255,
+            description: 'Job title name',
+            example: 'Software Engineer'
+          },
+          description: {
+            type: 'string',
+            nullable: true,
+            description: 'Optional description',
+            example: 'Builds and maintains software'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the job title is active',
+            example: true
+          },
+          createdDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          updatedDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          version: {
+            type: 'integer',
+            description: 'Optimistic locking version',
+            example: 1
+          }
+        },
+        required: ['id', 'jobTitle', 'isActive']
+      },
+      JobTitleCompanyWorkspace: {
+        allOf: [
+          { $ref: '#/components/schemas/JobTitle' },
+          {
+            type: 'object',
+            description:
+              'Job title in company-admin context. Platform-managed titles (super admin company) include canEdit and canDelete false.',
+            properties: {
+              canEdit: {
+                type: 'boolean',
+                description: 'True when the title was created by the current company (tenant may edit)',
+                example: true
+              },
+              canDelete: {
+                type: 'boolean',
+                description: 'True when the title was created by the current company (tenant may delete)',
+                example: false
+              }
+            },
+            required: ['canEdit', 'canDelete']
+          }
+        ]
+      },
+      JobTitleCreateRequest: {
+        type: 'object',
+        required: ['jobTitle'],
+        properties: {
+          jobTitle: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Job title name',
+            example: 'Product Manager'
+          },
+          description: {
+            type: 'string',
+            description: 'Optional description',
+            example: 'Owns product roadmap'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the job title is active',
+            example: true
+          }
+        }
+      },
+      JobTitleUpdateRequest: {
+        type: 'object',
+        properties: {
+          jobTitle: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Job title name',
+            example: 'Senior Product Manager'
+          },
+          description: {
+            type: 'string',
+            description: 'Optional description',
+            example: 'Updated description'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the job title is active',
+            example: false
+          }
+        }
+      },
+      EmployeeJobTitleSummary: {
+        type: 'object',
+        nullable: true,
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          jobTitle: { type: 'string' },
+          description: { type: 'string', nullable: true },
+          isActive: { type: 'boolean' }
+        }
+      },
+      Employee: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          firstName: { type: 'string', maxLength: 100 },
+          lastName: { type: 'string', maxLength: 100 },
+          email: { type: 'string', format: 'email' },
+          phone: { type: 'string', nullable: true, maxLength: 50 },
+          employeeMetadata: { type: 'object', additionalProperties: true },
+          jobTitleId: { type: 'string', format: 'uuid' },
+          salary: { type: 'number', format: 'double', nullable: true },
+          isActive: { type: 'boolean' },
+          companyUserId: {
+            type: 'string',
+            format: 'uuid',
+            nullable: true,
+            description: 'Set when employee can log in for this company (links to company_users)'
+          },
+          createdDate: { type: 'string', format: 'date-time' },
+          updatedDate: { type: 'string', format: 'date-time' },
+          version: { type: 'integer' },
+          jobTitle: { $ref: '#/components/schemas/EmployeeJobTitleSummary' }
+        },
+        required: ['id', 'firstName', 'lastName', 'email', 'jobTitleId', 'isActive']
+      },
+      EmployeeCreateRequest: {
+        type: 'object',
+        required: ['firstName', 'lastName', 'email', 'jobTitleId'],
+        properties: {
+          firstName: { type: 'string', minLength: 1, maxLength: 100 },
+          lastName: { type: 'string', minLength: 1, maxLength: 100 },
+          email: { type: 'string', format: 'email' },
+          phone: { type: 'string', maxLength: 50 },
+          employeeMetadata: { type: 'object', additionalProperties: true },
+          jobTitleId: { type: 'string', format: 'uuid' },
+          salary: { type: 'number', format: 'double' },
+          isActive: { type: 'boolean', default: true }
+        }
+      },
+      EmployeeUpdateRequest: {
+        type: 'object',
+        properties: {
+          firstName: { type: 'string', minLength: 1, maxLength: 100 },
+          lastName: { type: 'string', minLength: 1, maxLength: 100 },
+          email: { type: 'string', format: 'email' },
+          phone: { type: 'string', nullable: true, maxLength: 50 },
+          employeeMetadata: { type: 'object', additionalProperties: true },
+          jobTitleId: { type: 'string', format: 'uuid' },
+          salary: { type: 'number', format: 'double', nullable: true },
+          isActive: { type: 'boolean' }
+        }
+      },
+      EmployeeStatusPatchRequest: {
+        type: 'object',
+        required: ['isActive'],
+        properties: {
+          isActive: { type: 'boolean', description: 'Whether the employee record is active' }
+        }
+      },
       // Role create request schema (for superAdmin/roles POST)
       RoleCreateRequest: {
         type: 'object',
@@ -1362,6 +1545,134 @@ const swaggerDefinition = {
             example: 'eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ...'
           }
         }
+      },
+      // Client entity schema
+      Client: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Client UUID',
+            example: '550e8400-e29b-41d4-a716-446655440010'
+          },
+          name: {
+            type: 'string',
+            maxLength: 255,
+            description: 'Client name',
+            example: 'Acme Corp'
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            nullable: true,
+            description: 'Client email address',
+            example: 'contact@acme.com'
+          },
+          phone: {
+            type: 'string',
+            maxLength: 50,
+            nullable: true,
+            description: 'Client phone number',
+            example: '+1 234-567-8900'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the client is active',
+            example: true
+          },
+          clientMetadata: {
+            type: 'object',
+            nullable: true,
+            description: 'Additional flexible metadata for the client',
+            example: { industry: 'Tech', region: 'NA' }
+          },
+          createdDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          updatedDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          }
+        },
+        required: ['id', 'name', 'isActive']
+      },
+      // Project entity schema
+      Project: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Project UUID',
+            example: '550e8400-e29b-41d4-a716-446655440020'
+          },
+          clientId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Associated Client UUID',
+            example: '550e8400-e29b-41d4-a716-446655440010'
+          },
+          name: {
+            type: 'string',
+            maxLength: 255,
+            description: 'Project name',
+            example: 'Website Redesign'
+          },
+          description: {
+            type: 'string',
+            nullable: true,
+            description: 'Project description',
+            example: 'Complete overhaul of the corporate website'
+          },
+          status: {
+            type: 'string',
+            enum: ['PLANNING', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED'],
+            description: 'Project status',
+            example: 'IN_PROGRESS'
+          },
+          startDate: {
+            type: 'string',
+            format: 'date',
+            nullable: true,
+            description: 'Project start date',
+            example: '2024-01-01'
+          },
+          endDate: {
+            type: 'string',
+            format: 'date',
+            nullable: true,
+            description: 'Project end date',
+            example: '2024-12-31'
+          },
+          projectMetadata: {
+            type: 'object',
+            nullable: true,
+            description: 'Additional flexible metadata for the project',
+            example: { budget: 50000, priority: 'High' }
+          },
+          client: {
+            $ref: '#/components/schemas/Client'
+          },
+          createdDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          updatedDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          }
+        },
+        required: ['id', 'clientId', 'name', 'status']
       },
       // =====================================================
       // Parameter Schemas

@@ -8,7 +8,7 @@ import { createModuleLogger, logPerformance, logBusiness, logSecurity } from '..
 import { isSuperAdmin } from '../../constants/keycloakRoles.js';
 import { successResponse, paginatedResponse } from '../../utils/responseHelpers.js';
 import { UnauthorizedError, ForbiddenError, ConflictError } from '../../utils/errors.js';
-import { validateUUID, validateRequired, validateString, validateEnum, validateEmail, validateNumber } from '../../utils/validators.js';
+import { validateUUID, validateRequired, validateString, validateEnum, validateEmail, validateNumber, validateBoolean } from '../../utils/validators.js';
 import { ValidationError } from '../../utils/errors.js';
 import { COMPANY_STATUS_VALUES } from '../../constants/companyStatus.js';
 import { buildPaginationQuery, buildSortQuery } from '../../utils/businessHelpers.js';
@@ -17,6 +17,8 @@ import * as roleService from '../../services/roleService.js';
 import * as planService from '../../services/planService.js';
 import * as userService from '../../services/userService.js';
 import * as companyUserService from '../../services/companyUserService.js';
+import * as jobTitleService from '../../services/jobTitleService.js';
+import { getSuperAdminCompanyId } from '../../services/systemCompanyService.js';
 import { KEYCLOAK_GLOBAL_ROLE_VALUES } from '../../constants/keycloakRoles.js';
 
 // Create module-specific logger
@@ -2198,5 +2200,191 @@ export const updateUserCompanyRole = async (req, res) => {
     
     throw error;
   }
+};
+
+// =====================================================
+// Job title management (system company defaults)
+// =====================================================
+
+/**
+ * Create job title owned by super admin company
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ */
+export const createSuperAdminJobTitle = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  const { jobTitle, description, isActive } = req.body;
+  validateRequired({ jobTitle }, req.id);
+  validateString(jobTitle, 'jobTitle', { minLength: 1, maxLength: 255 }, req.id);
+  if (description !== undefined && description !== null) {
+    validateString(description, 'description', { required: false, maxLength: 5000 }, req.id);
+  }
+  let resolvedActive = true;
+  if (isActive !== undefined && isActive !== null) {
+    resolvedActive = validateBoolean(isActive, 'isActive', { required: true }, req.id);
+  }
+
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const created = await jobTitleService.createJobTitle(
+    { jobTitle, description, isActive: resolvedActive },
+    { userId: req.user.id, companyId }
+  );
+
+  logBusiness('Job title created (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    jobTitleId: created.id
+  });
+
+  res.status(201).json(successResponse('Job title created successfully', created, {}, req, startTime));
+};
+
+/**
+ * List job titles for super admin company (paginated)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const listSuperAdminJobTitles = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  const { page, limit, offset } = buildPaginationQuery(req.query, { defaultLimit: 10, maxLimit: 100 }, req.id);
+  const isActive = req.query.isActive !== undefined ? req.query.isActive === 'true' : undefined;
+  const search = req.query.search ? String(req.query.search).trim() : undefined;
+  if (search) {
+    validateString(search, 'search', { minLength: 1, maxLength: 255 }, req.id);
+  }
+
+  const sortBy = req.query.sortBy || 'jobTitle';
+  const sortOrder = req.query.sortOrder || 'ASC';
+  const allowedSortFields = ['jobTitle', 'createdDate', 'isActive'];
+  const order = buildSortQuery(sortBy, sortOrder, allowedSortFields, {
+    defaultSort: 'jobTitle',
+    defaultOrder: 'ASC'
+  });
+
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const result = await jobTitleService.listJobTitlesForCompany(
+    companyId,
+    { isActive, search },
+    { page, limit, offset },
+    order,
+    { requestId: req.id, workspace: 'superAdmin' }
+  );
+
+  res.status(200).json(
+    paginatedResponse(
+      'Job titles retrieved successfully',
+      result.jobTitles,
+      { page, limit, total: result.total },
+      {},
+      req,
+      startTime
+    )
+  );
+};
+
+/**
+ * Get job title by id (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const getSuperAdminJobTitleById = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const row = await jobTitleService.getJobTitleByIdForCompany(req.params.id, companyId, {
+    requestId: req.id,
+    workspace: 'superAdmin'
+  });
+
+  res.status(200).json(successResponse('Job title retrieved successfully', row, {}, req, startTime));
+};
+
+/**
+ * Update job title (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const updateSuperAdminJobTitle = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+
+  const { jobTitle, description, isActive } = req.body;
+  const payload = {};
+  if (jobTitle !== undefined) {
+    validateString(jobTitle, 'jobTitle', { minLength: 1, maxLength: 255 }, req.id);
+    payload.jobTitle = jobTitle;
+  }
+  if (description !== undefined) {
+    validateString(description, 'description', { required: false, maxLength: 5000 }, req.id);
+    payload.description = description;
+  }
+  if (isActive !== undefined) {
+    payload.isActive = validateBoolean(isActive, 'isActive', { required: true }, req.id);
+  }
+
+  const updated = await jobTitleService.updateJobTitleForCompany(
+    req.params.id,
+    payload,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Job title updated (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    jobTitleId: updated.id
+  });
+
+  res.status(200).json(successResponse('Job title updated successfully', updated, {}, req, startTime));
+};
+
+/**
+ * Delete job title (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const deleteSuperAdminJobTitle = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+
+  await jobTitleService.deleteJobTitleForCompany(req.params.id, { userId: req.user.id, requestId: req.id }, companyId);
+
+  logBusiness('Job title deleted (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    jobTitleId: req.params.id
+  });
+
+  res.status(200).json(successResponse('Job title deleted successfully', null, {}, req, startTime));
 };
 

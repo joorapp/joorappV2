@@ -160,6 +160,15 @@ export default {
 - All routes are relative to `/api/v2/{module}`
 - **All routes MUST have Swagger annotations** using JSDoc `@swagger` tags
 
+## Paginated list and `/all` companion route
+
+**MANDATORY**: For every **paginated listing** endpoint (`GET` with `page` / `limit`, returning `paginatedResponse`), add a companion **`GET .../all`** route when consumers need the **full unpaginated set** (dropdowns, selects, typeahead).
+
+- **List**: `GET /api/v2/{module}/...` — pagination, filters, sorting; use `paginatedResponse`.
+- **`/all`**: `GET /api/v2/{module}/.../all` — returns `successResponse` with `data` as a **plain array** (no `pagination` object). Same auth/middleware as the list route unless documented otherwise.
+- **Route order**: Register **`/all` before** any `/:id` route on the same path prefix so `all` is not captured as an id.
+- **Swagger**: Document both endpoints; examples must match actual response shapes (`meta` on both per **api-responses.mdc**).
+
 ## Endpoint Conflict Prevention
 
 **CRITICAL**: No endpoint should conflict with health endpoints.
