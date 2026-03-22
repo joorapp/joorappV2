@@ -19,6 +19,7 @@ import {
 } from './adminController.js';
 import * as clientController from './clientController.js';
 import * as projectController from './projectController.js';
+import * as employeeController from './employeeController.js';
 import { authMiddleware } from '../../middleware/authMiddleware.js';
 import { companyContextMiddleware } from '../../middleware/companyContextMiddleware.js';
 import { asyncHandler } from '../../middleware/errorHandler.js';
@@ -875,6 +876,15 @@ router.put('/users/:id/role', authMiddleware, companyContextMiddleware, asyncHan
  *     responses:
  *       201:
  *         description: Client created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Client'
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       401:
@@ -918,6 +928,17 @@ router.post('/clients', authMiddleware, companyContextMiddleware, asyncHandler(c
  *     responses:
  *       200:
  *         description: Clients retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Client'
  *       401:
  *         $ref: '#/components/responses/AuthenticationRequired'
  *       403:
@@ -941,6 +962,15 @@ router.get('/clients', authMiddleware, companyContextMiddleware, asyncHandler(cl
  *     responses:
  *       200:
  *         description: Client retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Client'
  *       401:
  *         $ref: '#/components/responses/AuthenticationRequired'
  *       403:
@@ -983,6 +1013,15 @@ router.get('/clients/:id', authMiddleware, companyContextMiddleware, asyncHandle
  *     responses:
  *       200:
  *         description: Client updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Client'
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       401:
@@ -1022,6 +1061,652 @@ router.put('/clients/:id', authMiddleware, companyContextMiddleware, asyncHandle
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.delete('/clients/:id', authMiddleware, companyContextMiddleware, asyncHandler(clientController.deleteClient));
+
+// =====================================================
+// Employees (job titles and future employee APIs)
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles/all:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: List all job titles for dropdowns
+ *     description: Returns active job titles from the super admin company plus the current company, sorted by name. Requires company context and COMPANY_ADMIN.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *     responses:
+ *       200:
+ *         description: Job titles retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/JobTitle'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees/job-titles/all',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.listAllJobTitles)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles:
+ *   post:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Create job title for current company
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/JobTitleCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/JobTitle'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post(
+  '/employees/job-titles',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.createJobTitle)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: List job titles for current company (paginated)
+ *     description: Returns job titles owned by the super admin company (platform defaults) plus the current company. Each item includes canEdit and canDelete (false for platform-managed titles).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Paginated job titles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/JobTitleCompanyWorkspace'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees/job-titles',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.listJobTitles)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles/{id}:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Get job title by ID (tenant or platform default)
+ *     description: Returns a title if it belongs to the current company or the super admin company. Includes canEdit and canDelete.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Job title
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/JobTitleCompanyWorkspace'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees/job-titles/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.getJobTitleById)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles/{id}:
+ *   put:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Update job title (current company)
+ *     description: Forbidden when the job title is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/JobTitleUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/JobTitle'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or job title is platform-managed and cannot be changed from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put(
+  '/employees/job-titles/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.updateJobTitle)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles/{id}:
+ *   delete:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Delete job title (current company)
+ *     description: Forbidden when the job title is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or job title is platform-managed and cannot be deleted from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete(
+  '/employees/job-titles/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.deleteJobTitle)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/all:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: List all employees (no pagination)
+ *     description: Filter by search, jobTitleId, and isActive. Sorted by last name, first name.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: jobTitleId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by job title id
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: Employees retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Employee'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees/all',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.listAllEmployees)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: List employees (paginated)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: jobTitleId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Paginated employees
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Employee'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ *   post:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Create employee
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/EmployeeCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Employee'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.listEmployees)
+);
+router.post(
+  '/employees',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.createEmployee)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/assign-role:
+ *   post:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Assign company role to employee (enable login or update role)
+ *     description: >
+ *       If the employee has no companyUserId, creates Keycloak user (default password `admin`), DB user,
+ *       company assignment with the given role, and sets employee.companyUserId.
+ *       If companyUserId is set, updates only the company role on that assignment.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - employeeId
+ *               - roleId
+ *             properties:
+ *               employeeId:
+ *                 type: string
+ *                 format: uuid
+ *               roleId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: company_roles.id (master role)
+ *     responses:
+ *       200:
+ *         description: Role assigned or updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         employee:
+ *                           $ref: '#/components/schemas/Employee'
+ *                         companyUser:
+ *                           type: object
+ *                         provisioned:
+ *                           type: boolean
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post(
+  '/employees/assign-role',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.assignEmployeeCompanyRole)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/{id}/status:
+ *   patch:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Set employee active or inactive
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/EmployeeStatusPatchRequest'
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Employee'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch(
+  '/employees/:id/status',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.patchEmployeeStatus)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/{id}:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Get employee by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Employee
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Employee'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ *   put:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Update employee
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/EmployeeUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Employee'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ *   delete:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Soft-delete employee
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.getEmployeeById)
+);
+router.put(
+  '/employees/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.updateEmployee)
+);
+router.delete(
+  '/employees/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.deleteEmployee)
+);
 
 // =====================================================
 // Project Management Routes
@@ -1068,6 +1753,15 @@ router.delete('/clients/:id', authMiddleware, companyContextMiddleware, asyncHan
  *     responses:
  *       201:
  *         description: Project created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Project'
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       401:
@@ -1114,6 +1808,17 @@ router.post('/projects', authMiddleware, companyContextMiddleware, asyncHandler(
  *     responses:
  *       200:
  *         description: Projects retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Project'
  *       401:
  *         $ref: '#/components/responses/AuthenticationRequired'
  *       500:
@@ -1135,6 +1840,15 @@ router.get('/projects', authMiddleware, companyContextMiddleware, asyncHandler(p
  *     responses:
  *       200:
  *         description: Project retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Project'
  *       401:
  *         $ref: '#/components/responses/AuthenticationRequired'
  *       403:
@@ -1181,6 +1895,15 @@ router.get('/projects/:id', authMiddleware, companyContextMiddleware, asyncHandl
  *     responses:
  *       200:
  *         description: Project updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Project'
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       401:

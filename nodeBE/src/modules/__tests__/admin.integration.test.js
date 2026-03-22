@@ -16,8 +16,16 @@ import { Op } from 'sequelize';
 import { createTestApp, closeTestApp } from '../../../__tests__/helpers/integration.js';
 import { getAuthToken, getAuthTokens } from '../../../__tests__/helpers/auth.js';
 import { cleanDatabase } from '../../../__tests__/helpers/database.js';
-import { User, Company, CompanyRole, CompanyUser } from '../../../src/models/index.js';
-import { createUserData, createCompanyData, createRoleData, createCompanyUserData } from '../../../__tests__/helpers/factories.js';
+import { User, Company, CompanyRole, CompanyUser, JobTitle } from '../../../src/models/index.js';
+import {
+  createUserData,
+  createCompanyData,
+  createRoleData,
+  createCompanyUserData,
+  createJobTitleData,
+  createAuditContext
+} from '../../../__tests__/helpers/factories.js';
+import { SUPER_ADMIN_COMPANY_NAME } from '../../../src/constants/superAdmin.js';
 import { v4 as uuidv4 } from 'uuid';
 
 describe('Admin API Integration', () => {
@@ -432,6 +440,68 @@ describe('Admin API Integration', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBeDefined();
+    });
+  });
+
+  describe('Job titles (/api/v2/admin/employees/job-titles)', () => {
+    it('should create company job title, list paginated, and merge system + tenant in /all', async () => {
+      let systemCompany = await Company.findOne({ where: { name: SUPER_ADMIN_COMPANY_NAME } });
+      if (!systemCompany) {
+        systemCompany = await Company.create(
+          createCompanyData({ name: SUPER_ADMIN_COMPANY_NAME, description: 'Integration system company' }),
+          { context: { userId: testUser.id } }
+        );
+      }
+
+      const sysTitle = `SysJob-${Date.now()}`;
+      await JobTitle.create(createJobTitleData({ jobTitle: sysTitle }), {
+        context: createAuditContext(testUser.id, systemCompany.id)
+      });
+
+      const tenantTitle = `TenJob-${Date.now()}`;
+      const postRes = await request(app)
+        .post('/api/v2/admin/employees/job-titles')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ jobTitle: tenantTitle, isActive: true })
+        .expect(201);
+
+      expect(postRes.body.success).toBe(true);
+      expect(postRes.body.data.jobTitle).toBe(tenantTitle);
+      expect(postRes.body.meta).toBeDefined();
+
+      const listRes = await request(app)
+        .get('/api/v2/admin/employees/job-titles?page=1&limit=10')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(listRes.body.pagination).toBeDefined();
+      expect(listRes.body.data.some((t) => t.jobTitle === tenantTitle)).toBe(true);
+      expect(listRes.body.data.some((t) => t.jobTitle === sysTitle)).toBe(true);
+
+      const sysItem = listRes.body.data.find((t) => t.jobTitle === sysTitle);
+      const tenItem = listRes.body.data.find((t) => t.jobTitle === tenantTitle);
+      expect(sysItem).toBeDefined();
+      expect(tenItem).toBeDefined();
+      expect(sysItem.canEdit).toBe(false);
+      expect(sysItem.canDelete).toBe(false);
+      expect(tenItem.canEdit).toBe(true);
+      expect(tenItem.canDelete).toBe(true);
+
+      const patchSys = await request(app)
+        .put(`/api/v2/admin/employees/job-titles/${sysItem.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ jobTitle: 'Hacked' })
+        .expect(403);
+      expect(patchSys.body.success).toBe(false);
+
+      const allRes = await request(app)
+        .get('/api/v2/admin/employees/job-titles/all')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      const names = allRes.body.data.map((t) => t.jobTitle);
+      expect(names).toContain(tenantTitle);
+      expect(names).toContain(sysTitle);
     });
   });
 });

@@ -34,7 +34,12 @@ import {
   disableUser,
   enableUser,
   assignUserToCompany,
-  updateUserCompanyRole
+  updateUserCompanyRole,
+  createSuperAdminJobTitle,
+  listSuperAdminJobTitles,
+  getSuperAdminJobTitleById,
+  updateSuperAdminJobTitle,
+  deleteSuperAdminJobTitle
 } from './superAdminController.js';
 import { authMiddleware } from '../../middleware/authMiddleware.js';
 import { asyncHandler } from '../../middleware/errorHandler.js';
@@ -879,6 +884,205 @@ router.put('/roles/:id', authMiddleware, asyncHandler(updateRole));
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.delete('/roles/:id', authMiddleware, asyncHandler(deleteRole));
+
+// =====================================================
+// Job titles (system company defaults)
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/job-titles:
+ *   post:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Create job title (system company)
+ *     description: Creates a default job title owned by the super admin company. Requires SUPER_ADMIN.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/JobTitleCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Job title created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/JobTitle'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/job-titles', authMiddleware, asyncHandler(createSuperAdminJobTitle));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/job-titles:
+ *   get:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: List job titles (system company, paginated)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Job titles retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/JobTitle'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/job-titles', authMiddleware, asyncHandler(listSuperAdminJobTitles));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/job-titles/{id}:
+ *   get:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Get job title by ID (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Job title retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/JobTitle'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/job-titles/:id', authMiddleware, asyncHandler(getSuperAdminJobTitleById));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/job-titles/{id}:
+ *   put:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Update job title (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/JobTitleUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Job title updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/JobTitle'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put('/job-titles/:id', authMiddleware, asyncHandler(updateSuperAdminJobTitle));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/job-titles/{id}:
+ *   delete:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Delete job title (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Job title deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/job-titles/:id', authMiddleware, asyncHandler(deleteSuperAdminJobTitle));
 
 // =====================================================
 // Plan Management Routes

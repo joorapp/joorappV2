@@ -9,6 +9,7 @@ import { BaseRepository } from './base/BaseRepository.js';
 import { Company, User, CompanyUser, CompanyRole } from '../models/index.js';
 import { Op } from 'sequelize';
 import { NotFoundError } from '../utils/errors.js';
+import { SUPER_ADMIN_COMPANY_NAME } from '../constants/superAdmin.js';
 
 /**
  * CompanyRepository class
@@ -132,6 +133,19 @@ export class CompanyRepository extends BaseRepository {
         ...filters,
         isActive: true
       },
+      ...options
+    });
+  }
+
+  /**
+   * Find the super admin (system) company by configured name
+   * @param {Object} options - Sequelize query options
+   * @returns {Promise<Object|null>} Company row or null
+   */
+  async findSuperAdminCompany(options = {}) {
+    this.logger.debug('Finding super admin company by name', { name: SUPER_ADMIN_COMPANY_NAME });
+    return await this.Model.findOne({
+      where: { name: SUPER_ADMIN_COMPANY_NAME },
       ...options
     });
   }

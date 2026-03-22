@@ -142,12 +142,18 @@ All schemas are defined in `src/config/swagger.js` under `components.schemas`:
 - **`MetaField`** - Meta field structure (used by response schemas)
   - Use: `$ref: '#/components/schemas/MetaField'` (usually referenced automatically)
 
-#### Entity Schemas
+#### Entity Schemas (CRITICAL FOR RESPONSES)
+
+**CRITICAL**: Whenever a new database model or entity is created, you MUST add its corresponding OpenAPI schema definition to `nodeBE/src/config/swagger.js` under `components.schemas` (e.g., `Client`, `Project`).
+- Include all fields, their types, formats (e.g., `uuid`, `date-time`), and realistic `example` values.
+- Mark required fields appropriately.
+- **NEVER** leave the response `content` block empty or generic for `200` or `201` responses. You MUST reference this entity schema.
+
 - **`User`** - User entity
 - **`Company`** - Company entity
 - **`CompanyRole`** - Company role entity
 - **`CompanyUser`** - Company user assignment entity
-- **Note**: New entity schemas should follow the same pattern as existing ones
+- **Note**: New entity schemas MUST be added here and follow the same pattern.
 
 #### Model-Based Request Schemas (PATTERN)
 
@@ -539,7 +545,7 @@ All parameters are defined in `src/config/swagger.js` under `components.paramete
 
 ### Response Schema Pattern
 
-**ALWAYS** use this pattern for success responses:
+**ALWAYS** use this pattern for success responses (Single Entity):
 
 ```javascript
 responses:
@@ -553,8 +559,7 @@ responses:
             - type: object
               properties:
                 data:
-                  type: object  # or array, or specific schema
-                  # Define specific data structure here
+                  $ref: '#/components/schemas/YourEntityName'  # CRITICAL: Always reference the entity schema
         example:
           success: true
           message: "Success message"
@@ -828,6 +833,43 @@ router.get('/list', authMiddleware, asyncHandler(getUsers));
 ```
 
 ## Anti-Patterns (DO NOT DO)
+
+### ❌ Empty or Generic Response Content
+
+```javascript
+// ❌ WRONG - Missing content block or generic object
+responses:
+  200:
+    description: Entity retrieved successfully
+
+// ❌ WRONG - Generic object instead of schema reference
+responses:
+  200:
+    description: Entity retrieved successfully
+    content:
+      application/json:
+        schema:
+          allOf:
+            - $ref: '#/components/schemas/SuccessResponse'
+            - type: object
+              properties:
+                data:
+                  type: object  # Missing actual entity schema reference
+
+// ✅ CORRECT - Reference the specific entity schema
+responses:
+  200:
+    description: Entity retrieved successfully
+    content:
+      application/json:
+        schema:
+          allOf:
+            - $ref: '#/components/schemas/SuccessResponse'
+            - type: object
+              properties:
+                data:
+                  $ref: '#/components/schemas/YourEntityName'
+```
 
 ### ❌ Defining Inline What Should Use `$ref`
 

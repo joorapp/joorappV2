@@ -144,6 +144,7 @@ export const getPublicKey = async () => {
 
     // Update cache
     publicKeyCache = {
+      ...publicKeyCache,
       key: jwk,
       pem: pem,
       expiresAt: Date.now() + publicKeyCache.ttl
