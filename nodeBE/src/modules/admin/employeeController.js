@@ -136,8 +136,14 @@ export const listAllJobTitles = async (req, res) => {
     validateString(search, 'search', { minLength: 1, maxLength: 255 }, req.id);
   }
 
+  const isActive =
+    req.query.isActive !== undefined && req.query.isActive !== ''
+      ? req.query.isActive === 'true'
+      : undefined;
+
   const items = await jobTitleService.listAllJobTitlesForDropdown(companyId, {
     search,
+    isActive,
     requestId: req.id
   });
 
@@ -201,6 +207,37 @@ export const updateJobTitle = async (req, res) => {
   });
 
   res.status(200).json(successResponse('Job title updated successfully', updated, {}, req, startTime));
+};
+
+/**
+ * PATCH active / inactive for job title (current company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const patchJobTitleStatus = async (req, res) => {
+  const startTime = Date.now();
+  checkAdminPermission(req);
+  const companyId = requireCompanyContext(req);
+  validateUUID(req.params.id, 'id', req.id);
+
+  const isActive = validateBoolean(req.body.isActive, 'isActive', { required: true }, req.id);
+
+  const updated = await jobTitleService.setJobTitleActiveStatusForCompany(
+    req.params.id,
+    isActive,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Job title status updated (company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    jobTitleId: updated.id,
+    isActive
+  });
+
+  res.status(200).json(successResponse('Job title status updated successfully', updated, {}, req, startTime));
 };
 
 /**

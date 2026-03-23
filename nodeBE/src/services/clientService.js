@@ -6,7 +6,7 @@
 
 import { createModuleLogger } from '../utils/logger.js';
 import { clientRepository } from '../repositories/clientRepository.js';
-import { ConflictError } from '../utils/errors.js';
+import { ConflictError, NotFoundError } from '../utils/errors.js';
 
 const logger = createModuleLogger('clientService');
 
@@ -18,26 +18,32 @@ const logger = createModuleLogger('clientService');
  * @param {string} [clientData.phone] - Client phone
  * @param {boolean} [clientData.isActive] - Client active status
  * @param {Object} [clientData.clientMetadata] - Additional metadata
- * @param {Object} context - Audit context { userId }
+ * @param {Object} context - Audit context { userId, companyId? }
  * @returns {Promise<Object>} Created client
  */
 export const createClient = async (clientData, context) => {
   const { name, email, phone, isActive = true, clientMetadata = {} } = clientData;
-  
-  logger.debug('Creating client', { name, email });
-  
-  const existingClient = await clientRepository.findOne({ name });
+  const { companyId } = context;
+
+  logger.debug('Creating client', { name, email, companyId });
+
+  const existingClient = await clientRepository.findOne(
+    companyId ? { name, createdCompanyId: companyId } : { name }
+  );
   if (existingClient) {
     throw new ConflictError('Client with this name already exists', { field: 'name', value: name });
   }
 
-  const client = await clientRepository.create({
-    name,
-    email: email || null,
-    phone: phone || null,
-    isActive,
-    clientMetadata
-  }, context);
+  const client = await clientRepository.create(
+    {
+      name,
+      email: email || null,
+      phone: phone || null,
+      isActive,
+      clientMetadata
+    },
+    context
+  );
 
   logger.info('Client created', { clientId: client.id, name });
   
@@ -166,4 +172,66 @@ export const deleteClient = async (clientId, context) => {
   logger.debug('Deleting client', { clientId });
   await clientRepository.delete(clientId, context);
   logger.info('Client deleted', { clientId });
+};
+
+/**
+ * Full list for dropdowns: clients created by the given company, sorted by name.
+ * @param {string} companyId
+ * @param {Object} [opts]
+ * @param {string} [opts.search]
+ * @param {boolean} [opts.isActive] - Omit for all; true/false to filter
+ * @returns {Promise<Object[]>}
+ */
+export const listAllClientsForCompany = async (companyId, opts = {}) => {
+  const { search, isActive } = opts;
+  const filterPayload = {};
+  if (search) filterPayload.search = search;
+  if (isActive !== undefined) filterPayload.isActive = isActive;
+
+  const rows = await clientRepository.findAllForCompany(companyId, filterPayload);
+  return rows.map((client) => ({
+    id: client.id,
+    name: client.name,
+    email: client.email,
+    phone: client.phone,
+    isActive: client.isActive,
+    clientMetadata: client.clientMetadata,
+    createdDate: client.createdDate
+  }));
+};
+
+/**
+ * Update only active flag; client must belong to the company.
+ * @param {string} clientId
+ * @param {boolean} isActive
+ * @param {Object} context - { userId }
+ * @param {string} companyId
+ * @returns {Promise<Object>}
+ */
+export const setClientActiveStatusForCompany = async (clientId, isActive, context, companyId) => {
+  const client = await clientRepository.findByIdOrFail(clientId);
+  if (client.createdCompanyId !== companyId) {
+    throw new NotFoundError('Client', clientId);
+  }
+
+  const updatedClient = await clientRepository.update(
+    clientId,
+    { isActive: Boolean(isActive) },
+    context
+  );
+
+  logger.info('Client status updated', { clientId, isActive });
+
+  return {
+    id: updatedClient.id,
+    name: updatedClient.name,
+    email: updatedClient.email,
+    phone: updatedClient.phone,
+    isActive: updatedClient.isActive,
+    clientMetadata: updatedClient.clientMetadata,
+    createdDate: updatedClient.createdDate,
+    createdUserId: updatedClient.createdUserId,
+    updatedDate: updatedClient.updatedDate,
+    updatedUserId: updatedClient.updatedUserId
+  };
 };

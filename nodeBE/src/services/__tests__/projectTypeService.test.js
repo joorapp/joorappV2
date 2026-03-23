@@ -1,13 +1,13 @@
 /**
  * @author Bhavesh Venugopal
- * Job title service tests
+ * Project type service tests
  */
 
 import { jest, describe, it, expect, beforeEach, beforeAll } from '@jest/globals';
 import { v4 as uuidv4 } from 'uuid';
 import { ConflictError, NotFoundError, ForbiddenError } from '../../utils/errors.js';
 
-const mockFindOneByTitleAndCompany = jest.fn();
+const mockFindOneByTypeAndCompany = jest.fn();
 const mockCreate = jest.fn();
 const mockFindByIdOrFail = jest.fn();
 const mockFindAndCountByCreatedCompany = jest.fn();
@@ -16,9 +16,9 @@ const mockFindAllForCompanyDropdown = jest.fn();
 const mockUpdate = jest.fn();
 const mockDelete = jest.fn();
 
-jest.unstable_mockModule('../../repositories/jobTitleRepository.js', () => ({
-  jobTitleRepository: {
-    findOneByTitleAndCompany: mockFindOneByTitleAndCompany,
+jest.unstable_mockModule('../../repositories/projectTypeRepository.js', () => ({
+  projectTypeRepository: {
+    findOneByTypeAndCompany: mockFindOneByTypeAndCompany,
     create: mockCreate,
     findByIdOrFail: mockFindByIdOrFail,
     findAndCountByCreatedCompany: mockFindAndCountByCreatedCompany,
@@ -35,15 +35,15 @@ jest.unstable_mockModule('../systemCompanyService.js', () => ({
   getSuperAdminCompanyId: mockGetSuperAdminCompanyId
 }));
 
-let jobTitleService;
+let projectTypeService;
 
 beforeAll(async () => {
-  jobTitleService = await import('../jobTitleService.js');
+  projectTypeService = await import('../projectTypeService.js');
 });
 
 const baseRow = (overrides = {}) => ({
   id: uuidv4(),
-  jobTitle: 'X',
+  projectType: 'X',
   description: null,
   isActive: true,
   createdDate: new Date(),
@@ -53,7 +53,7 @@ const baseRow = (overrides = {}) => ({
   ...overrides
 });
 
-describe('jobTitleService', () => {
+describe('projectTypeService', () => {
   const userId = uuidv4();
   const companyId = uuidv4();
   const systemCompanyId = uuidv4();
@@ -62,42 +62,42 @@ describe('jobTitleService', () => {
     jest.clearAllMocks();
   });
 
-  describe('createJobTitle', () => {
+  describe('createProjectType', () => {
     it('should create when no duplicate', async () => {
-      mockFindOneByTitleAndCompany.mockResolvedValue(null);
-      const row = baseRow({ jobTitle: 'Dev', createdCompanyId: companyId });
+      mockFindOneByTypeAndCompany.mockResolvedValue(null);
+      const row = baseRow({ projectType: 'Dev', createdCompanyId: companyId });
       mockCreate.mockResolvedValue(row);
 
-      const dto = await jobTitleService.createJobTitle({ jobTitle: 'Dev' }, { userId, companyId });
+      const dto = await projectTypeService.createProjectType({ projectType: 'Dev' }, { userId, companyId });
 
       expect(mockCreate).toHaveBeenCalledWith(
-        expect.objectContaining({ jobTitle: 'Dev' }),
+        expect.objectContaining({ projectType: 'Dev' }),
         { userId, companyId }
       );
-      expect(dto.jobTitle).toBe('Dev');
+      expect(dto.projectType).toBe('Dev');
       expect(dto.canEdit).toBeUndefined();
     });
 
-    it('should throw ConflictError on duplicate title for company', async () => {
-      mockFindOneByTitleAndCompany.mockResolvedValue({ id: uuidv4() });
+    it('should throw ConflictError on duplicate type for company', async () => {
+      mockFindOneByTypeAndCompany.mockResolvedValue({ id: uuidv4() });
 
       await expect(
-        jobTitleService.createJobTitle({ jobTitle: 'Dup' }, { userId, companyId })
+        projectTypeService.createProjectType({ projectType: 'Dup' }, { userId, companyId })
       ).rejects.toThrow(ConflictError);
     });
   });
 
-  describe('listJobTitlesForCompany', () => {
+  describe('listProjectTypesForCompany', () => {
     const pagination = { page: 1, limit: 10, offset: 0 };
-    const order = [['jobTitle', 'ASC']];
+    const order = [['projectType', 'ASC']];
 
     it('company workspace merges tenant + system and sets canEdit / canDelete', async () => {
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
-      const tenantRow = baseRow({ id: 't1', jobTitle: 'T', createdCompanyId: companyId });
-      const systemRow = baseRow({ id: 's1', jobTitle: 'S', createdCompanyId: systemCompanyId });
+      const tenantRow = baseRow({ id: 't1', projectType: 'T', createdCompanyId: companyId });
+      const systemRow = baseRow({ id: 's1', projectType: 'S', createdCompanyId: systemCompanyId });
       mockFindAndCountByCreatedCompanies.mockResolvedValue({ rows: [tenantRow, systemRow], count: 2 });
 
-      const result = await jobTitleService.listJobTitlesForCompany(
+      const result = await projectTypeService.listProjectTypesForCompany(
         companyId,
         {},
         pagination,
@@ -113,8 +113,8 @@ describe('jobTitleService', () => {
         order
       );
       expect(result.total).toBe(2);
-      const t = result.jobTitles.find((x) => x.id === 't1');
-      const s = result.jobTitles.find((x) => x.id === 's1');
+      const t = result.projectTypes.find((x) => x.id === 't1');
+      const s = result.projectTypes.find((x) => x.id === 's1');
       expect(t.canEdit).toBe(true);
       expect(t.canDelete).toBe(true);
       expect(s.canEdit).toBe(false);
@@ -122,10 +122,10 @@ describe('jobTitleService', () => {
     });
 
     it('superAdmin workspace lists system company only without flags', async () => {
-      const row = baseRow({ jobTitle: 'Dev', createdCompanyId: systemCompanyId });
+      const row = baseRow({ projectType: 'Dev', createdCompanyId: systemCompanyId });
       mockFindAndCountByCreatedCompany.mockResolvedValue({ rows: [row], count: 1 });
 
-      const result = await jobTitleService.listJobTitlesForCompany(
+      const result = await projectTypeService.listProjectTypesForCompany(
         systemCompanyId,
         {},
         pagination,
@@ -140,27 +140,35 @@ describe('jobTitleService', () => {
         order
       );
       expect(mockFindAndCountByCreatedCompanies).not.toHaveBeenCalled();
-      expect(result.jobTitles[0].jobTitle).toBe('Dev');
-      expect(result.jobTitles[0].canEdit).toBeUndefined();
+      expect(result.projectTypes[0].projectType).toBe('Dev');
+      expect(result.projectTypes[0].canEdit).toBeUndefined();
     });
 
     it('throws when company workspace uses system company id', async () => {
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
 
       await expect(
-        jobTitleService.listJobTitlesForCompany(systemCompanyId, {}, pagination, order, { requestId: 'r' })
+        projectTypeService.listProjectTypesForCompany(systemCompanyId, {}, pagination, order, { requestId: 'r' })
       ).rejects.toThrow(ForbiddenError);
     });
   });
 
-  describe('listAllJobTitlesForDropdown', () => {
-    it('should merge system and tenant titles', async () => {
+  describe('listAllProjectTypesForDropdown', () => {
+    it('should merge system and tenant types', async () => {
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
       mockFindAllForCompanyDropdown.mockResolvedValue([
-        { id: '1', jobTitle: 'A', description: null, isActive: true, createdDate: new Date(), updatedDate: new Date(), version: 1 }
+        {
+          id: '1',
+          projectType: 'A',
+          description: null,
+          isActive: true,
+          createdDate: new Date(),
+          updatedDate: new Date(),
+          version: 1
+        }
       ]);
 
-      const list = await jobTitleService.listAllJobTitlesForDropdown(companyId, { requestId: 'r1' });
+      const list = await projectTypeService.listAllProjectTypesForDropdown(companyId, { requestId: 'r1' });
 
       expect(mockGetSuperAdminCompanyId).toHaveBeenCalledWith({ requestId: 'r1' });
       expect(mockFindAllForCompanyDropdown).toHaveBeenCalledWith(companyId, systemCompanyId, {
@@ -174,7 +182,7 @@ describe('jobTitleService', () => {
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
       mockFindAllForCompanyDropdown.mockResolvedValue([]);
 
-      await jobTitleService.listAllJobTitlesForDropdown(companyId, {
+      await projectTypeService.listAllProjectTypesForDropdown(companyId, {
         requestId: 'r1',
         isActive: false
       });
@@ -188,19 +196,19 @@ describe('jobTitleService', () => {
     it('should throw ForbiddenError when tenant is system company', async () => {
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
 
-      await expect(
-        jobTitleService.listAllJobTitlesForDropdown(systemCompanyId, {})
-      ).rejects.toThrow(ForbiddenError);
+      await expect(projectTypeService.listAllProjectTypesForDropdown(systemCompanyId, {})).rejects.toThrow(
+        ForbiddenError
+      );
     });
   });
 
-  describe('getJobTitleByIdForCompany', () => {
+  describe('getProjectTypeByIdForCompany', () => {
     it('company workspace returns tenant-owned with canEdit true', async () => {
       const id = uuidv4();
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
       mockFindByIdOrFail.mockResolvedValue(baseRow({ id, createdCompanyId: companyId }));
 
-      const dto = await jobTitleService.getJobTitleByIdForCompany(id, companyId, { requestId: 'r' });
+      const dto = await projectTypeService.getProjectTypeByIdForCompany(id, companyId, { requestId: 'r' });
       expect(dto.id).toBe(id);
       expect(dto.canEdit).toBe(true);
       expect(dto.canDelete).toBe(true);
@@ -211,18 +219,18 @@ describe('jobTitleService', () => {
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
       mockFindByIdOrFail.mockResolvedValue(baseRow({ id, createdCompanyId: systemCompanyId }));
 
-      const dto = await jobTitleService.getJobTitleByIdForCompany(id, companyId, { requestId: 'r' });
+      const dto = await projectTypeService.getProjectTypeByIdForCompany(id, companyId, { requestId: 'r' });
       expect(dto.canEdit).toBe(false);
       expect(dto.canDelete).toBe(false);
     });
 
-    it('company workspace throws NotFound when title is another tenant', async () => {
+    it('company workspace throws NotFound when type is another tenant', async () => {
       const id = uuidv4();
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
       mockFindByIdOrFail.mockResolvedValue(baseRow({ id, createdCompanyId: uuidv4() }));
 
       await expect(
-        jobTitleService.getJobTitleByIdForCompany(id, companyId, { requestId: 'r' })
+        projectTypeService.getProjectTypeByIdForCompany(id, companyId, { requestId: 'r' })
       ).rejects.toThrow(NotFoundError);
     });
 
@@ -230,7 +238,7 @@ describe('jobTitleService', () => {
       const id = uuidv4();
       mockFindByIdOrFail.mockResolvedValue(baseRow({ id, createdCompanyId: systemCompanyId }));
 
-      const dto = await jobTitleService.getJobTitleByIdForCompany(id, systemCompanyId, {
+      const dto = await projectTypeService.getProjectTypeByIdForCompany(id, systemCompanyId, {
         requestId: 'r',
         workspace: 'superAdmin'
       });
@@ -239,67 +247,67 @@ describe('jobTitleService', () => {
     });
   });
 
-  describe('updateJobTitleForCompany', () => {
-    it('throws ForbiddenError for system-owned title from tenant context', async () => {
+  describe('updateProjectTypeForCompany', () => {
+    it('throws ForbiddenError for system-owned type from tenant context', async () => {
       const id = uuidv4();
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
       mockFindByIdOrFail.mockResolvedValue(baseRow({ id, createdCompanyId: systemCompanyId }));
 
       await expect(
-        jobTitleService.updateJobTitleForCompany(id, { jobTitle: 'Y' }, { userId, requestId: 'r' }, companyId)
+        projectTypeService.updateProjectTypeForCompany(id, { projectType: 'Y' }, { userId, requestId: 'r' }, companyId)
       ).rejects.toThrow(ForbiddenError);
     });
 
-    it('updates tenant-owned title', async () => {
+    it('updates tenant-owned type', async () => {
       const id = uuidv4();
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
-      const row = baseRow({ id, jobTitle: 'Old', createdCompanyId: companyId });
+      const row = baseRow({ id, projectType: 'Old', createdCompanyId: companyId });
       mockFindByIdOrFail.mockResolvedValue(row);
-      mockFindOneByTitleAndCompany.mockResolvedValue(null);
-      const updated = baseRow({ id, jobTitle: 'New', createdCompanyId: companyId });
+      mockFindOneByTypeAndCompany.mockResolvedValue(null);
+      const updated = baseRow({ id, projectType: 'New', createdCompanyId: companyId });
       mockUpdate.mockResolvedValue(updated);
 
-      const dto = await jobTitleService.updateJobTitleForCompany(
+      const dto = await projectTypeService.updateProjectTypeForCompany(
         id,
-        { jobTitle: 'New' },
+        { projectType: 'New' },
         { userId, requestId: 'r' },
         companyId
       );
-      expect(dto.jobTitle).toBe('New');
-      expect(mockUpdate).toHaveBeenCalledWith(id, { jobTitle: 'New' }, { userId });
+      expect(dto.projectType).toBe('New');
+      expect(mockUpdate).toHaveBeenCalledWith(id, { projectType: 'New' }, { userId });
     });
   });
 
-  describe('deleteJobTitleForCompany', () => {
-    it('throws ForbiddenError for system-owned title from tenant context', async () => {
+  describe('deleteProjectTypeForCompany', () => {
+    it('throws ForbiddenError for system-owned type from tenant context', async () => {
       const id = uuidv4();
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
       mockFindByIdOrFail.mockResolvedValue(baseRow({ id, createdCompanyId: systemCompanyId }));
 
       await expect(
-        jobTitleService.deleteJobTitleForCompany(id, { userId, requestId: 'r' }, companyId)
+        projectTypeService.deleteProjectTypeForCompany(id, { userId, requestId: 'r' }, companyId)
       ).rejects.toThrow(ForbiddenError);
     });
 
-    it('deletes tenant-owned title', async () => {
+    it('deletes tenant-owned type', async () => {
       const id = uuidv4();
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
       mockFindByIdOrFail.mockResolvedValue(baseRow({ id, createdCompanyId: companyId }));
       mockDelete.mockResolvedValue(undefined);
 
-      await jobTitleService.deleteJobTitleForCompany(id, { userId, requestId: 'r' }, companyId);
+      await projectTypeService.deleteProjectTypeForCompany(id, { userId, requestId: 'r' }, companyId);
       expect(mockDelete).toHaveBeenCalledWith(id, { userId });
     });
   });
 
-  describe('setJobTitleActiveStatusForCompany', () => {
-    it('throws ForbiddenError for system-owned title from tenant context', async () => {
+  describe('setProjectTypeActiveStatusForCompany', () => {
+    it('throws ForbiddenError for system-owned type from tenant context', async () => {
       const id = uuidv4();
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
       mockFindByIdOrFail.mockResolvedValue(baseRow({ id, createdCompanyId: systemCompanyId }));
 
       await expect(
-        jobTitleService.setJobTitleActiveStatusForCompany(
+        projectTypeService.setProjectTypeActiveStatusForCompany(
           id,
           false,
           { userId, requestId: 'r' },
@@ -308,13 +316,13 @@ describe('jobTitleService', () => {
       ).rejects.toThrow(ForbiddenError);
     });
 
-    it('updates isActive for tenant-owned title', async () => {
+    it('updates isActive for tenant-owned type', async () => {
       const id = uuidv4();
       mockGetSuperAdminCompanyId.mockResolvedValue(systemCompanyId);
       mockFindByIdOrFail.mockResolvedValue(baseRow({ id, createdCompanyId: companyId, isActive: true }));
       mockUpdate.mockResolvedValue(baseRow({ id, createdCompanyId: companyId, isActive: false }));
 
-      const dto = await jobTitleService.setJobTitleActiveStatusForCompany(
+      const dto = await projectTypeService.setProjectTypeActiveStatusForCompany(
         id,
         false,
         { userId, requestId: 'r' },

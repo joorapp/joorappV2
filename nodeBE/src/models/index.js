@@ -15,6 +15,8 @@ import Client from './Client.js';
 import Project from './Project.js';
 import ProjectUser from './ProjectUser.js';
 import JobTitle from './JobTitle.js';
+import ProjectType from './ProjectType.js';
+import ProjectCategory from './ProjectCategory.js';
 import Employee from './Employee.js';
 
 /**
@@ -36,6 +38,8 @@ const initializeAssociations = () => {
     Project,
     ProjectUser,
     JobTitle,
+    ProjectType,
+    ProjectCategory,
     Employee
   };
 
@@ -74,6 +78,12 @@ const initializeAssociations = () => {
   if (JobTitle.associate) {
     JobTitle.associate(models);
   }
+  if (ProjectType.associate) {
+    ProjectType.associate(models);
+  }
+  if (ProjectCategory.associate) {
+    ProjectCategory.associate(models);
+  }
   if (Employee.associate) {
     Employee.associate(models);
   }
@@ -101,6 +111,8 @@ export {
   Project,
   ProjectUser,
   JobTitle,
+  ProjectType,
+  ProjectCategory,
   Employee
 };
 
@@ -117,6 +129,8 @@ export default {
   Project,
   ProjectUser,
   JobTitle,
+  ProjectType,
+  ProjectCategory,
   Employee,
   initializeModels
 };

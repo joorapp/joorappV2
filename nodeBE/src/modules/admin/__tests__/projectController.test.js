@@ -5,7 +5,7 @@
 
 import { jest, describe, it, expect, beforeEach, beforeAll } from '@jest/globals';
 import { v4 as uuidv4 } from 'uuid';
-import { ForbiddenError } from '../../../utils/errors.js';
+import { ForbiddenError, BadRequestError } from '../../../utils/errors.js';
 
 // Mock logger
 const mockLogger = {
@@ -38,11 +38,13 @@ jest.unstable_mockModule('../../../utils/responseHelpers.js', () => ({
 const mockValidateUUID = jest.fn();
 const mockValidateRequired = jest.fn();
 const mockValidateString = jest.fn();
+const mockValidateBoolean = jest.fn();
 
 jest.unstable_mockModule('../../../utils/validators.js', () => ({
   validateUUID: mockValidateUUID,
   validateRequired: mockValidateRequired,
-  validateString: mockValidateString
+  validateString: mockValidateString,
+  validateBoolean: mockValidateBoolean
 }));
 
 // Mock businessHelpers
@@ -88,6 +90,18 @@ jest.unstable_mockModule('../../../services/projectUserService.js', () => ({
   getProjectUsers: mockGetProjectUsers
 }));
 
+const mockListAllProjectTypesForDropdown = jest.fn();
+
+jest.unstable_mockModule('../../../services/projectTypeService.js', () => ({
+  listAllProjectTypesForDropdown: mockListAllProjectTypesForDropdown
+}));
+
+const mockListAllProjectCategoriesForDropdown = jest.fn();
+
+jest.unstable_mockModule('../../../services/projectCategoryService.js', () => ({
+  listAllProjectCategoriesForDropdown: mockListAllProjectCategoriesForDropdown
+}));
+
 let projectController;
 
 beforeAll(async () => {
@@ -103,6 +117,7 @@ describe('Project Controller', () => {
     req = {
       id: 'test-request-id',
       user: { id: uuidv4(), keycloakGlobalRole: 'COMPANY_ADMIN' },
+      company: { id: uuidv4() },
       body: {},
       params: {},
       query: {}
@@ -217,6 +232,74 @@ describe('Project Controller', () => {
 
       expect(mockAssignUserToProject).toHaveBeenCalledWith(req.params.projectId, req.body.userId, { userId: req.user.id });
       expect(res.status).toHaveBeenCalledWith(201);
+    });
+  });
+
+  describe('listAllProjectTypes', () => {
+    it('should omit isActive filter when query empty or absent', async () => {
+      req.query = {};
+      mockListAllProjectTypesForDropdown.mockResolvedValue([]);
+
+      await projectController.listAllProjectTypes(req, res);
+
+      expect(mockListAllProjectTypesForDropdown).toHaveBeenCalledWith(req.company.id, {
+        search: undefined,
+        isActive: undefined,
+        requestId: req.id
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should pass isActive true/false when query set', async () => {
+      req.query = { isActive: 'false' };
+      mockListAllProjectTypesForDropdown.mockResolvedValue([]);
+
+      await projectController.listAllProjectTypes(req, res);
+
+      expect(mockListAllProjectTypesForDropdown).toHaveBeenCalledWith(req.company.id, {
+        search: undefined,
+        isActive: false,
+        requestId: req.id
+      });
+    });
+
+    it('should throw BadRequestError without company context', async () => {
+      req.company = undefined;
+      await expect(projectController.listAllProjectTypes(req, res)).rejects.toThrow(BadRequestError);
+    });
+  });
+
+  describe('listAllProjectCategories', () => {
+    it('should omit isActive filter when query empty or absent', async () => {
+      req.query = {};
+      mockListAllProjectCategoriesForDropdown.mockResolvedValue([]);
+
+      await projectController.listAllProjectCategories(req, res);
+
+      expect(mockListAllProjectCategoriesForDropdown).toHaveBeenCalledWith(req.company.id, {
+        search: undefined,
+        isActive: undefined,
+        requestId: req.id
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should pass isActive when query set', async () => {
+      req.query = { isActive: 'true' };
+      mockListAllProjectCategoriesForDropdown.mockResolvedValue([]);
+
+      await projectController.listAllProjectCategories(req, res);
+
+      expect(mockListAllProjectCategoriesForDropdown).toHaveBeenCalledWith(req.company.id, {
+        search: undefined,
+        isActive: true,
+        requestId: req.id
+      });
+    });
+
+    it('should throw BadRequestError without company context', async () => {
+      req.company = undefined;
+      await expect(projectController.listAllProjectCategories(req, res)).rejects.toThrow(BadRequestError);
     });
   });
 });

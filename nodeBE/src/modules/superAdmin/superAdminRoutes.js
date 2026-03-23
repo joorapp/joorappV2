@@ -39,7 +39,20 @@ import {
   listSuperAdminJobTitles,
   getSuperAdminJobTitleById,
   updateSuperAdminJobTitle,
-  deleteSuperAdminJobTitle
+  patchSuperAdminJobTitleStatus,
+  deleteSuperAdminJobTitle,
+  createSuperAdminProjectType,
+  listSuperAdminProjectTypes,
+  getSuperAdminProjectTypeById,
+  updateSuperAdminProjectType,
+  patchSuperAdminProjectTypeStatus,
+  deleteSuperAdminProjectType,
+  createSuperAdminProjectCategory,
+  listSuperAdminProjectCategories,
+  getSuperAdminProjectCategoryById,
+  updateSuperAdminProjectCategory,
+  patchSuperAdminProjectCategoryStatus,
+  deleteSuperAdminProjectCategory
 } from './superAdminController.js';
 import { authMiddleware } from '../../middleware/authMiddleware.js';
 import { asyncHandler } from '../../middleware/errorHandler.js';
@@ -1052,6 +1065,53 @@ router.put('/job-titles/:id', authMiddleware, asyncHandler(updateSuperAdminJobTi
 
 /**
  * @swagger
+ * /api/v2/superAdmin/job-titles/{id}/status:
+ *   patch:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Set job title active or inactive (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Job title status updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/JobTitle'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch('/job-titles/:id/status', authMiddleware, asyncHandler(patchSuperAdminJobTitleStatus));
+
+/**
+ * @swagger
  * /api/v2/superAdmin/job-titles/{id}:
  *   delete:
  *     tags:
@@ -1083,6 +1143,498 @@ router.put('/job-titles/:id', authMiddleware, asyncHandler(updateSuperAdminJobTi
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.delete('/job-titles/:id', authMiddleware, asyncHandler(deleteSuperAdminJobTitle));
+
+// =====================================================
+// Project types (system company defaults)
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-types:
+ *   post:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Create project type (system company)
+ *     description: Creates a default project type owned by the super admin company. Requires SUPER_ADMIN.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectTypeCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Project type created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/project-types', authMiddleware, asyncHandler(createSuperAdminProjectType));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-types:
+ *   get:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: List project types (system company, paginated)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Project types retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ProjectType'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/project-types', authMiddleware, asyncHandler(listSuperAdminProjectTypes));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-types/{id}:
+ *   get:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Get project type by ID (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Project type retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectType'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/project-types/:id', authMiddleware, asyncHandler(getSuperAdminProjectTypeById));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-types/{id}:
+ *   put:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Update project type (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectTypeUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Project type updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put('/project-types/:id', authMiddleware, asyncHandler(updateSuperAdminProjectType));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-types/{id}/status:
+ *   patch:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Set project type active or inactive (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Project type status updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch('/project-types/:id/status', authMiddleware, asyncHandler(patchSuperAdminProjectTypeStatus));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-types/{id}:
+ *   delete:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Delete project type (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Project type deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/project-types/:id', authMiddleware, asyncHandler(deleteSuperAdminProjectType));
+
+// =====================================================
+// Project categories (system company defaults)
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-categories:
+ *   post:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Create project category (system company)
+ *     description: Creates a default project category owned by the super admin company. Requires SUPER_ADMIN.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectCategoryCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Project category created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectCategory'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/project-categories', authMiddleware, asyncHandler(createSuperAdminProjectCategory));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-categories:
+ *   get:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: List project categories (system company, paginated)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Project categories retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ProjectCategory'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/project-categories', authMiddleware, asyncHandler(listSuperAdminProjectCategories));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-categories/{id}:
+ *   get:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Get project category by ID (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Project category retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectCategory'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/project-categories/:id', authMiddleware, asyncHandler(getSuperAdminProjectCategoryById));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-categories/{id}:
+ *   put:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Update project category (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectCategoryUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Project category updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectCategory'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put('/project-categories/:id', authMiddleware, asyncHandler(updateSuperAdminProjectCategory));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-categories/{id}/status:
+ *   patch:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Set project category active or inactive (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Project category status updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectCategory'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch('/project-categories/:id/status', authMiddleware, asyncHandler(patchSuperAdminProjectCategoryStatus));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/project-categories/{id}:
+ *   delete:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Delete project category (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Project category deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/project-categories/:id', authMiddleware, asyncHandler(deleteSuperAdminProjectCategory));
 
 // =====================================================
 // Plan Management Routes

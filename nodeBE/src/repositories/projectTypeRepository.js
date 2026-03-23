@@ -1,23 +1,20 @@
 /**
  * @author Bhavesh Venugopal
- * JobTitle Repository
- * Data access for job titles scoped by created company
+ * ProjectType Repository
+ * Data access for project types scoped by created company
  */
 
 import { BaseRepository } from './base/BaseRepository.js';
-import { JobTitle } from '../models/index.js';
+import { ProjectType } from '../models/index.js';
 import { Op } from 'sequelize';
 
-export class JobTitleRepository extends BaseRepository {
+export class ProjectTypeRepository extends BaseRepository {
   constructor() {
-    super(JobTitle, 'JobTitle');
+    super(ProjectType, 'ProjectType');
   }
 
   /**
-   * Build list filters (search, isActive)
    * @param {Object} filters
-   * @param {boolean} [filters.isActive]
-   * @param {string} [filters.search]
    * @returns {Object} Sequelize where fragment
    */
   _listWhereFragment(filters = {}) {
@@ -28,7 +25,7 @@ export class JobTitleRepository extends BaseRepository {
     }
     if (search) {
       fragment[Op.or] = [
-        { jobTitle: { [Op.iLike]: `%${search}%` } },
+        { projectType: { [Op.iLike]: `%${search}%` } },
         { description: { [Op.iLike]: `%${search}%` } }
       ];
     }
@@ -36,12 +33,11 @@ export class JobTitleRepository extends BaseRepository {
   }
 
   /**
-   * Paginated list for a single owning company
-   * @param {string} companyId - createdCompanyId
-   * @param {Object} filters - { isActive?, search? }
-   * @param {Object} pagination - { limit, offset }
-   * @param {Array} order - Sequelize order
-   * @param {Object} [options] - Sequelize options
+   * @param {string} companyId
+   * @param {Object} filters
+   * @param {Object} pagination
+   * @param {Array} order
+   * @param {Object} [options]
    * @returns {Promise<{ rows: Array, count: number }>}
    */
   async findAndCountByCreatedCompany(companyId, filters, pagination, order, options = {}) {
@@ -61,11 +57,10 @@ export class JobTitleRepository extends BaseRepository {
   }
 
   /**
-   * Paginated list where createdCompanyId is one of the given companies (tenant + system)
-   * @param {string[]} companyIds - [tenantCompanyId, systemCompanyId]
-   * @param {Object} filters - { isActive?, search? }
-   * @param {Object} pagination - { limit, offset }
-   * @param {Array} order - Sequelize order
+   * @param {string[]} companyIds
+   * @param {Object} filters
+   * @param {Object} pagination
+   * @param {Array} order
    * @param {Object} [options]
    * @returns {Promise<{ rows: Array, count: number }>}
    */
@@ -86,11 +81,10 @@ export class JobTitleRepository extends BaseRepository {
   }
 
   /**
-   * Job titles for dropdown: system company + current company, ordered by name
-   * @param {string} currentCompanyId - Tenant company id
-   * @param {string} systemCompanyId - Super admin company id
-   * @param {Object} [filters] - { search?, isActive? } — omit isActive for both active and inactive
-   * @param {Object} [options] - Sequelize options
+   * @param {string} currentCompanyId
+   * @param {string} systemCompanyId
+   * @param {Object} [filters] - { search?, isActive? }
+   * @param {Object} [options]
    * @returns {Promise<Array>}
    */
   async findAllForCompanyDropdown(currentCompanyId, systemCompanyId, filters = {}, options = {}) {
@@ -101,22 +95,21 @@ export class JobTitleRepository extends BaseRepository {
     };
     return await this.Model.findAll({
       where,
-      order: [['jobTitle', 'ASC']],
+      order: [['projectType', 'ASC']],
       ...options
     });
   }
 
   /**
-   * Case-sensitive duplicate check per owning company (title text must be unique per company)
-   * @param {string} jobTitle - Title text
-   * @param {string} createdCompanyId - Owning company
-   * @param {string|null} [excludeId] - Exclude id on update
+   * @param {string} projectType
+   * @param {string} createdCompanyId
+   * @param {string|null} [excludeId]
    * @param {Object} [options]
    * @returns {Promise<Object|null>}
    */
-  async findOneByTitleAndCompany(jobTitle, createdCompanyId, excludeId = null, options = {}) {
+  async findOneByTypeAndCompany(projectType, createdCompanyId, excludeId = null, options = {}) {
     const where = {
-      jobTitle,
+      projectType,
       createdCompanyId
     };
     if (excludeId) {
@@ -126,4 +119,4 @@ export class JobTitleRepository extends BaseRepository {
   }
 }
 
-export const jobTitleRepository = new JobTitleRepository();
+export const projectTypeRepository = new ProjectTypeRepository();

@@ -166,6 +166,7 @@ export default {
 
 - **List**: `GET /api/v2/{module}/...` — pagination, filters, sorting; use `paginatedResponse`.
 - **`/all`**: `GET /api/v2/{module}/.../all` — returns `successResponse` with `data` as a **plain array** (no `pagination` object). Same auth/middleware as the list route unless documented otherwise.
+- **`/all` optional `isActive` query** (reference/dropdown masters aligned with the FE): **omit** = return active and inactive; **`true`** = active only; **`false`** = inactive only. Treat empty `isActive=` as omitted (same as employee list parsing).
 - **Route order**: Register **`/all` before** any `/:id` route on the same path prefix so `all` is not captured as an id.
 - **Swagger**: Document both endpoints; examples must match actual response shapes (`meta` on both per **api-responses.mdc**).
 

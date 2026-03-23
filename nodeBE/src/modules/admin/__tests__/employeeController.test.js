@@ -59,6 +59,7 @@ const mockListJobTitles = jest.fn();
 const mockListAllJobTitles = jest.fn();
 const mockGetJobTitleById = jest.fn();
 const mockUpdateJobTitle = jest.fn();
+const mockSetJobTitleActiveStatus = jest.fn();
 const mockDeleteJobTitle = jest.fn();
 
 jest.unstable_mockModule('../../../services/jobTitleService.js', () => ({
@@ -67,6 +68,7 @@ jest.unstable_mockModule('../../../services/jobTitleService.js', () => ({
   listAllJobTitlesForDropdown: mockListAllJobTitles,
   getJobTitleByIdForCompany: mockGetJobTitleById,
   updateJobTitleForCompany: mockUpdateJobTitle,
+  setJobTitleActiveStatusForCompany: mockSetJobTitleActiveStatus,
   deleteJobTitleForCompany: mockDeleteJobTitle
 }));
 
@@ -156,8 +158,25 @@ describe('employeeController', () => {
 
     await employeeController.listAllJobTitles(req, res);
 
-    expect(mockListAllJobTitles).toHaveBeenCalledWith(companyId, { search: undefined, requestId: req.id });
+    expect(mockListAllJobTitles).toHaveBeenCalledWith(companyId, {
+      search: undefined,
+      isActive: undefined,
+      requestId: req.id
+    });
     expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('listAllJobTitles should pass isActive query when provided', async () => {
+    req.query.isActive = 'true';
+    mockListAllJobTitles.mockResolvedValue([]);
+
+    await employeeController.listAllJobTitles(req, res);
+
+    expect(mockListAllJobTitles).toHaveBeenCalledWith(companyId, {
+      search: undefined,
+      isActive: true,
+      requestId: req.id
+    });
   });
 
   it('listJobTitles should use pagination', async () => {
@@ -173,6 +192,24 @@ describe('employeeController', () => {
       { requestId: req.id }
     );
     expect(mockPaginatedResponse).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('patchJobTitleStatus should call service', async () => {
+    req.params.id = uuidv4();
+    req.body = { isActive: false };
+    mockValidateUUID.mockImplementation(() => {});
+    mockValidateBoolean.mockReturnValue(false);
+    mockSetJobTitleActiveStatus.mockResolvedValue({ id: req.params.id, isActive: false });
+
+    await employeeController.patchJobTitleStatus(req, res);
+
+    expect(mockSetJobTitleActiveStatus).toHaveBeenCalledWith(
+      req.params.id,
+      false,
+      { userId: req.user.id, requestId: req.id },
+      companyId
+    );
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
