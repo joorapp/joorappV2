@@ -192,24 +192,31 @@ export const listJobTitlesForCompany = async (companyId, filters, pagination, or
 };
 
 /**
- * All active titles for dropdown (super admin company + current company)
+ * Titles for dropdown (super admin company + current company). Optional isActive filter.
  * @param {string} currentCompanyId
  * @param {Object} [opts]
  * @param {string} [opts.search]
+ * @param {boolean} [opts.isActive] - Omit for all; true = active only; false = inactive only
  * @param {string} [opts.requestId]
  * @returns {Promise<Object[]>}
  */
 export const listAllJobTitlesForDropdown = async (currentCompanyId, opts = {}) => {
-  const { search, requestId } = opts;
+  const { search, requestId, isActive } = opts;
   const systemCompanyId = await getSuperAdminCompanyId({ requestId });
   if (currentCompanyId === systemCompanyId) {
     throw new ForbiddenError('Use super admin job title APIs when operating in the system company', {
       requestId
     });
   }
-  const rows = await jobTitleRepository.findAllForCompanyDropdown(currentCompanyId, systemCompanyId, {
-    search
-  });
+  const filterPayload = { search };
+  if (isActive !== undefined) {
+    filterPayload.isActive = isActive;
+  }
+  const rows = await jobTitleRepository.findAllForCompanyDropdown(
+    currentCompanyId,
+    systemCompanyId,
+    filterPayload
+  );
   return rows.map(toDto);
 };
 
@@ -244,6 +251,24 @@ export const updateJobTitleForCompany = async (id, data, context, tenantCompanyI
   if (isActive !== undefined) updatePayload.isActive = isActive;
 
   const updated = await jobTitleRepository.update(id, updatePayload, { userId });
+  return toDto(updated);
+};
+
+/**
+ * Update only active status if title is tenant-owned (not system-managed)
+ * @param {string} id
+ * @param {boolean} isActive
+ * @param {Object} context - { userId, requestId? }
+ * @param {string} tenantCompanyId
+ * @returns {Promise<Object>}
+ */
+export const setJobTitleActiveStatusForCompany = async (id, isActive, context, tenantCompanyId) => {
+  const { userId, requestId } = context;
+  const systemCompanyId = await getSuperAdminCompanyId({ requestId });
+  const row = await jobTitleRepository.findByIdOrFail(id);
+  assertCompanyMayMutateJobTitle(row, tenantCompanyId, systemCompanyId, { requestId });
+
+  const updated = await jobTitleRepository.update(id, { isActive: Boolean(isActive) }, { userId });
   return toDto(updated);
 };
 

@@ -6,10 +6,10 @@
 
 import { createModuleLogger, logBusiness, logPerformance } from '../../utils/logger.js';
 import { successResponse, paginatedResponse } from '../../utils/responseHelpers.js';
-import { validateUUID, validateRequired, validateEmail, validateString } from '../../utils/validators.js';
+import { validateUUID, validateRequired, validateEmail, validateString, validateBoolean } from '../../utils/validators.js';
 import { buildPaginationQuery, buildSortQuery } from '../../utils/businessHelpers.js';
 import { isCompanyAdmin } from '../../constants/keycloakRoles.js';
-import { ForbiddenError } from '../../utils/errors.js';
+import { ForbiddenError, BadRequestError } from '../../utils/errors.js';
 import * as clientService from '../../services/clientService.js';
 
 const logger = createModuleLogger('clientController');
@@ -23,11 +23,23 @@ const checkPermission = (req) => {
   }
 };
 
+/**
+ * @param {Object} req
+ * @returns {string}
+ */
+const requireCompanyContext = (req) => {
+  if (!req.company?.id) {
+    throw new BadRequestError('Company context required. Select a company first.', { requestId: req.id });
+  }
+  return req.company.id;
+};
+
 export const createClient = async (req, res) => {
   const startTime = Date.now();
   
   try {
     checkPermission(req);
+    const companyId = requireCompanyContext(req);
 
     const { name, email, phone, isActive, clientMetadata } = req.body;
 
@@ -42,13 +54,16 @@ export const createClient = async (req, res) => {
       validateString(phone, 'phone', { maxLength: 50 }, req.id);
     }
 
-    const client = await clientService.createClient({
-      name,
-      email,
-      phone,
-      isActive,
-      clientMetadata
-    }, { userId: req.user.id });
+    const client = await clientService.createClient(
+      {
+        name,
+        email,
+        phone,
+        isActive,
+        clientMetadata
+      },
+      { userId: req.user.id, companyId }
+    );
 
     const duration = Date.now() - startTime;
     logger.info('Client created successfully', { requestId: req.id, clientId: client.id, duration: `${duration}ms` });
@@ -148,6 +163,68 @@ export const listClients = async (req, res) => {
     );
   } catch (error) {
     logger.error('List clients failed', { requestId: req.id, error: error.message });
+    throw error;
+  }
+};
+
+export const listAllClients = async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    checkPermission(req);
+    const companyId = requireCompanyContext(req);
+
+    const search = req.query.search ? String(req.query.search).trim() : undefined;
+    if (search) {
+      validateString(search, 'search', { minLength: 1, maxLength: 255 }, req.id);
+    }
+
+    const isActive =
+      req.query.isActive !== undefined && req.query.isActive !== ''
+        ? req.query.isActive === 'true'
+        : undefined;
+
+    const items = await clientService.listAllClientsForCompany(companyId, {
+      search,
+      isActive
+    });
+
+    res.status(200).json(successResponse('Clients retrieved successfully', items, {}, req, startTime));
+  } catch (error) {
+    logger.error('List all clients failed', { requestId: req.id, error: error.message });
+    throw error;
+  }
+};
+
+export const patchClientStatus = async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    checkPermission(req);
+    const companyId = requireCompanyContext(req);
+
+    const { id } = req.params;
+    validateUUID(id, 'id', req.id);
+
+    const isActive = validateBoolean(req.body.isActive, 'isActive', { required: true }, req.id);
+
+    const updated = await clientService.setClientActiveStatusForCompany(
+      id,
+      isActive,
+      { userId: req.user.id },
+      companyId
+    );
+
+    logBusiness('Client status updated', {
+      requestId: req.id,
+      userId: req.user.id,
+      clientId: id,
+      isActive
+    });
+
+    res.status(200).json(successResponse('Client status updated successfully', updated, {}, req, startTime));
+  } catch (error) {
+    logger.error('Patch client status failed', { requestId: req.id, error: error.message });
     throw error;
   }
 };

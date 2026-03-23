@@ -1135,6 +1135,234 @@ const swaggerDefinition = {
           }
         }
       },
+      ProjectType: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Project type UUID',
+            example: '550e8400-e29b-41d4-a716-446655440031'
+          },
+          projectType: {
+            type: 'string',
+            maxLength: 255,
+            description: 'Project type name',
+            example: 'Internal'
+          },
+          description: {
+            type: 'string',
+            nullable: true,
+            description: 'Optional description',
+            example: 'Internal delivery projects'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the project type is active',
+            example: true
+          },
+          createdDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          updatedDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          version: {
+            type: 'integer',
+            description: 'Optimistic locking version',
+            example: 1
+          }
+        },
+        required: ['id', 'projectType', 'isActive']
+      },
+      ProjectTypeCompanyWorkspace: {
+        allOf: [
+          { $ref: '#/components/schemas/ProjectType' },
+          {
+            type: 'object',
+            description:
+              'Project type in company-admin context. Platform-managed types (super admin company) include canEdit and canDelete false.',
+            properties: {
+              canEdit: {
+                type: 'boolean',
+                description: 'True when the type was created by the current company (tenant may edit)',
+                example: true
+              },
+              canDelete: {
+                type: 'boolean',
+                description: 'True when the type was created by the current company (tenant may delete)',
+                example: false
+              }
+            },
+            required: ['canEdit', 'canDelete']
+          }
+        ]
+      },
+      ProjectTypeCreateRequest: {
+        type: 'object',
+        required: ['projectType'],
+        properties: {
+          projectType: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Project type name',
+            example: 'Client-facing'
+          },
+          description: {
+            type: 'string',
+            description: 'Optional description',
+            example: 'Work delivered to external clients'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the project type is active',
+            example: true
+          }
+        }
+      },
+      ProjectTypeUpdateRequest: {
+        type: 'object',
+        properties: {
+          projectType: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Project type name',
+            example: 'Client delivery'
+          },
+          description: {
+            type: 'string',
+            description: 'Optional description',
+            example: 'Updated description'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the project type is active',
+            example: false
+          }
+        }
+      },
+      ProjectCategory: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Project category UUID',
+            example: '550e8400-e29b-41d4-a716-446655440032'
+          },
+          projectCategory: {
+            type: 'string',
+            maxLength: 255,
+            description: 'Project category name',
+            example: 'Strategic'
+          },
+          description: {
+            type: 'string',
+            nullable: true,
+            description: 'Optional description',
+            example: 'Strategic initiatives'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the project category is active',
+            example: true
+          },
+          createdDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          updatedDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          version: {
+            type: 'integer',
+            description: 'Optimistic locking version',
+            example: 1
+          }
+        },
+        required: ['id', 'projectCategory', 'isActive']
+      },
+      ProjectCategoryCompanyWorkspace: {
+        allOf: [
+          { $ref: '#/components/schemas/ProjectCategory' },
+          {
+            type: 'object',
+            description:
+              'Project category in company-admin context. Platform-managed categories (super admin company) include canEdit and canDelete false.',
+            properties: {
+              canEdit: {
+                type: 'boolean',
+                description: 'True when the category was created by the current company (tenant may edit)',
+                example: true
+              },
+              canDelete: {
+                type: 'boolean',
+                description: 'True when the category was created by the current company (tenant may delete)',
+                example: false
+              }
+            },
+            required: ['canEdit', 'canDelete']
+          }
+        ]
+      },
+      ProjectCategoryCreateRequest: {
+        type: 'object',
+        required: ['projectCategory'],
+        properties: {
+          projectCategory: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Project category name',
+            example: 'Operational'
+          },
+          description: {
+            type: 'string',
+            description: 'Optional description',
+            example: 'Day-to-day operations'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the project category is active',
+            example: true
+          }
+        }
+      },
+      ProjectCategoryUpdateRequest: {
+        type: 'object',
+        properties: {
+          projectCategory: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Project category name',
+            example: 'Operations'
+          },
+          description: {
+            type: 'string',
+            description: 'Optional description',
+            example: 'Updated description'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the project category is active',
+            example: false
+          }
+        }
+      },
       EmployeeJobTitleSummary: {
         type: 'object',
         nullable: true,
@@ -2088,10 +2316,19 @@ const swaggerDefinition = {
       }
     }
   },
+  // Tag order controls Swagger UI sidebar order (OpenAPI `tags` array sequence).
   tags: [
     {
       name: 'Auth',
       description: 'Authentication and company context management endpoints'
+    },
+    {
+      name: 'Health',
+      description: 'System health monitoring and diagnostics endpoints'
+    },
+    {
+      name: 'Users',
+      description: 'User management CRUD operations'
     },
     {
       name: 'SuperAdmin',
@@ -2106,16 +2343,12 @@ const swaggerDefinition = {
       description: 'Client management for company administrators'
     },
     {
+      name: 'Admin Employees',
+      description: 'Employee and job title management for company administrators'
+    },
+    {
       name: 'Admin Projects',
       description: 'Project management for company administrators'
-    },
-    {
-      name: 'Users',
-      description: 'User management CRUD operations'
-    },
-    {
-      name: 'Health',
-      description: 'System health monitoring and diagnostics endpoints'
     }
   ]
 };

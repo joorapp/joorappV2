@@ -18,6 +18,8 @@ import * as planService from '../../services/planService.js';
 import * as userService from '../../services/userService.js';
 import * as companyUserService from '../../services/companyUserService.js';
 import * as jobTitleService from '../../services/jobTitleService.js';
+import * as projectTypeService from '../../services/projectTypeService.js';
+import * as projectCategoryService from '../../services/projectCategoryService.js';
 import { getSuperAdminCompanyId } from '../../services/systemCompanyService.js';
 import { KEYCLOAK_GLOBAL_ROLE_VALUES } from '../../constants/keycloakRoles.js';
 
@@ -2362,6 +2364,40 @@ export const updateSuperAdminJobTitle = async (req, res) => {
 };
 
 /**
+ * PATCH active / inactive for job title (system company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const patchSuperAdminJobTitleStatus = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const isActive = validateBoolean(req.body.isActive, 'isActive', { required: true }, req.id);
+
+  const updated = await jobTitleService.setJobTitleActiveStatusForCompany(
+    req.params.id,
+    isActive,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Job title status updated (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    jobTitleId: updated.id,
+    isActive
+  });
+
+  res.status(200).json(successResponse('Job title status updated successfully', updated, {}, req, startTime));
+};
+
+/**
  * Delete job title (super admin company only)
  * @param {Object} req
  * @param {Object} res
@@ -2386,5 +2422,449 @@ export const deleteSuperAdminJobTitle = async (req, res) => {
   });
 
   res.status(200).json(successResponse('Job title deleted successfully', null, {}, req, startTime));
+};
+
+// =====================================================
+// Project types (system company defaults)
+// =====================================================
+
+/**
+ * Create project type owned by super admin company
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const createSuperAdminProjectType = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  const { projectType, description, isActive } = req.body;
+  validateRequired({ projectType }, req.id);
+  validateString(projectType, 'projectType', { minLength: 1, maxLength: 255 }, req.id);
+  if (description !== undefined && description !== null) {
+    validateString(description, 'description', { required: false, maxLength: 5000 }, req.id);
+  }
+  let resolvedActive = true;
+  if (isActive !== undefined && isActive !== null) {
+    resolvedActive = validateBoolean(isActive, 'isActive', { required: true }, req.id);
+  }
+
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const created = await projectTypeService.createProjectType(
+    { projectType, description, isActive: resolvedActive },
+    { userId: req.user.id, companyId }
+  );
+
+  logBusiness('Project type created (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    projectTypeId: created.id
+  });
+
+  res.status(201).json(successResponse('Project type created successfully', created, {}, req, startTime));
+};
+
+/**
+ * List project types for super admin company (paginated)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const listSuperAdminProjectTypes = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  const { page, limit, offset } = buildPaginationQuery(req.query, { defaultLimit: 10, maxLimit: 100 }, req.id);
+  const isActive = req.query.isActive !== undefined ? req.query.isActive === 'true' : undefined;
+  const search = req.query.search ? String(req.query.search).trim() : undefined;
+  if (search) {
+    validateString(search, 'search', { minLength: 1, maxLength: 255 }, req.id);
+  }
+
+  const sortBy = req.query.sortBy || 'projectType';
+  const sortOrder = req.query.sortOrder || 'ASC';
+  const allowedSortFields = ['projectType', 'createdDate', 'isActive'];
+  const order = buildSortQuery(sortBy, sortOrder, allowedSortFields, {
+    defaultSort: 'projectType',
+    defaultOrder: 'ASC'
+  });
+
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const result = await projectTypeService.listProjectTypesForCompany(
+    companyId,
+    { isActive, search },
+    { page, limit, offset },
+    order,
+    { requestId: req.id, workspace: 'superAdmin' }
+  );
+
+  res.status(200).json(
+    paginatedResponse(
+      'Project types retrieved successfully',
+      result.projectTypes,
+      { page, limit, total: result.total },
+      {},
+      req,
+      startTime
+    )
+  );
+};
+
+/**
+ * Get project type by id (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const getSuperAdminProjectTypeById = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const row = await projectTypeService.getProjectTypeByIdForCompany(req.params.id, companyId, {
+    requestId: req.id,
+    workspace: 'superAdmin'
+  });
+
+  res.status(200).json(successResponse('Project type retrieved successfully', row, {}, req, startTime));
+};
+
+/**
+ * Update project type (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const updateSuperAdminProjectType = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+
+  const { projectType, description, isActive } = req.body;
+  const payload = {};
+  if (projectType !== undefined) {
+    validateString(projectType, 'projectType', { minLength: 1, maxLength: 255 }, req.id);
+    payload.projectType = projectType;
+  }
+  if (description !== undefined) {
+    validateString(description, 'description', { required: false, maxLength: 5000 }, req.id);
+    payload.description = description;
+  }
+  if (isActive !== undefined) {
+    payload.isActive = validateBoolean(isActive, 'isActive', { required: true }, req.id);
+  }
+
+  const updated = await projectTypeService.updateProjectTypeForCompany(
+    req.params.id,
+    payload,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Project type updated (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    projectTypeId: updated.id
+  });
+
+  res.status(200).json(successResponse('Project type updated successfully', updated, {}, req, startTime));
+};
+
+/**
+ * PATCH active / inactive for project type (system company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const patchSuperAdminProjectTypeStatus = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const isActive = validateBoolean(req.body.isActive, 'isActive', { required: true }, req.id);
+
+  const updated = await projectTypeService.setProjectTypeActiveStatusForCompany(
+    req.params.id,
+    isActive,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Project type status updated (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    projectTypeId: updated.id,
+    isActive
+  });
+
+  res.status(200).json(successResponse('Project type status updated successfully', updated, {}, req, startTime));
+};
+
+/**
+ * Delete project type (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const deleteSuperAdminProjectType = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+
+  await projectTypeService.deleteProjectTypeForCompany(req.params.id, { userId: req.user.id, requestId: req.id }, companyId);
+
+  logBusiness('Project type deleted (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    projectTypeId: req.params.id
+  });
+
+  res.status(200).json(successResponse('Project type deleted successfully', null, {}, req, startTime));
+};
+
+// =====================================================
+// Project categories (system company defaults)
+// =====================================================
+
+/**
+ * Create project category owned by super admin company
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const createSuperAdminProjectCategory = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  const { projectCategory, description, isActive } = req.body;
+  validateRequired({ projectCategory }, req.id);
+  validateString(projectCategory, 'projectCategory', { minLength: 1, maxLength: 255 }, req.id);
+  if (description !== undefined && description !== null) {
+    validateString(description, 'description', { required: false, maxLength: 5000 }, req.id);
+  }
+  let resolvedActive = true;
+  if (isActive !== undefined && isActive !== null) {
+    resolvedActive = validateBoolean(isActive, 'isActive', { required: true }, req.id);
+  }
+
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const created = await projectCategoryService.createProjectCategory(
+    { projectCategory, description, isActive: resolvedActive },
+    { userId: req.user.id, companyId }
+  );
+
+  logBusiness('Project category created (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    projectCategoryId: created.id
+  });
+
+  res.status(201).json(successResponse('Project category created successfully', created, {}, req, startTime));
+};
+
+/**
+ * List project categories for super admin company (paginated)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const listSuperAdminProjectCategories = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  const { page, limit, offset } = buildPaginationQuery(req.query, { defaultLimit: 10, maxLimit: 100 }, req.id);
+  const isActive = req.query.isActive !== undefined ? req.query.isActive === 'true' : undefined;
+  const search = req.query.search ? String(req.query.search).trim() : undefined;
+  if (search) {
+    validateString(search, 'search', { minLength: 1, maxLength: 255 }, req.id);
+  }
+
+  const sortBy = req.query.sortBy || 'projectCategory';
+  const sortOrder = req.query.sortOrder || 'ASC';
+  const allowedSortFields = ['projectCategory', 'createdDate', 'isActive'];
+  const order = buildSortQuery(sortBy, sortOrder, allowedSortFields, {
+    defaultSort: 'projectCategory',
+    defaultOrder: 'ASC'
+  });
+
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const result = await projectCategoryService.listProjectCategoriesForCompany(
+    companyId,
+    { isActive, search },
+    { page, limit, offset },
+    order,
+    { requestId: req.id, workspace: 'superAdmin' }
+  );
+
+  res.status(200).json(
+    paginatedResponse(
+      'Project categories retrieved successfully',
+      result.projectCategories,
+      { page, limit, total: result.total },
+      {},
+      req,
+      startTime
+    )
+  );
+};
+
+/**
+ * Get project category by id (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const getSuperAdminProjectCategoryById = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const row = await projectCategoryService.getProjectCategoryByIdForCompany(req.params.id, companyId, {
+    requestId: req.id,
+    workspace: 'superAdmin'
+  });
+
+  res.status(200).json(successResponse('Project category retrieved successfully', row, {}, req, startTime));
+};
+
+/**
+ * Update project category (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const updateSuperAdminProjectCategory = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+
+  const { projectCategory, description, isActive } = req.body;
+  const payload = {};
+  if (projectCategory !== undefined) {
+    validateString(projectCategory, 'projectCategory', { minLength: 1, maxLength: 255 }, req.id);
+    payload.projectCategory = projectCategory;
+  }
+  if (description !== undefined) {
+    validateString(description, 'description', { required: false, maxLength: 5000 }, req.id);
+    payload.description = description;
+  }
+  if (isActive !== undefined) {
+    payload.isActive = validateBoolean(isActive, 'isActive', { required: true }, req.id);
+  }
+
+  const updated = await projectCategoryService.updateProjectCategoryForCompany(
+    req.params.id,
+    payload,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Project category updated (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    projectCategoryId: updated.id
+  });
+
+  res.status(200).json(successResponse('Project category updated successfully', updated, {}, req, startTime));
+};
+
+/**
+ * PATCH active / inactive for project category (system company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const patchSuperAdminProjectCategoryStatus = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const isActive = validateBoolean(req.body.isActive, 'isActive', { required: true }, req.id);
+
+  const updated = await projectCategoryService.setProjectCategoryActiveStatusForCompany(
+    req.params.id,
+    isActive,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Project category status updated (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    projectCategoryId: updated.id,
+    isActive
+  });
+
+  res.status(200).json(successResponse('Project category status updated successfully', updated, {}, req, startTime));
+};
+
+/**
+ * Delete project category (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const deleteSuperAdminProjectCategory = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+
+  await projectCategoryService.deleteProjectCategoryForCompany(
+    req.params.id,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Project category deleted (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    projectCategoryId: req.params.id
+  });
+
+  res.status(200).json(successResponse('Project category deleted successfully', null, {}, req, startTime));
 };
 

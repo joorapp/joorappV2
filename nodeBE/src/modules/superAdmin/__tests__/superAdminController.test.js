@@ -175,13 +175,37 @@ const mockJobTitleList = jest.fn();
 const mockJobTitleGetById = jest.fn();
 const mockJobTitleUpdate = jest.fn();
 const mockJobTitleDelete = jest.fn();
+const mockJobTitleSetActiveStatus = jest.fn();
 
 jest.unstable_mockModule('../../../services/jobTitleService.js', () => ({
   createJobTitle: mockJobTitleCreate,
   listJobTitlesForCompany: mockJobTitleList,
   getJobTitleByIdForCompany: mockJobTitleGetById,
   updateJobTitleForCompany: mockJobTitleUpdate,
-  deleteJobTitleForCompany: mockJobTitleDelete
+  deleteJobTitleForCompany: mockJobTitleDelete,
+  setJobTitleActiveStatusForCompany: mockJobTitleSetActiveStatus
+}));
+
+const mockProjectTypeSetActiveStatus = jest.fn();
+
+jest.unstable_mockModule('../../../services/projectTypeService.js', () => ({
+  createProjectType: jest.fn(),
+  listProjectTypesForCompany: jest.fn(),
+  getProjectTypeByIdForCompany: jest.fn(),
+  updateProjectTypeForCompany: jest.fn(),
+  deleteProjectTypeForCompany: jest.fn(),
+  setProjectTypeActiveStatusForCompany: mockProjectTypeSetActiveStatus
+}));
+
+const mockProjectCategorySetActiveStatus = jest.fn();
+
+jest.unstable_mockModule('../../../services/projectCategoryService.js', () => ({
+  createProjectCategory: jest.fn(),
+  listProjectCategoriesForCompany: jest.fn(),
+  getProjectCategoryByIdForCompany: jest.fn(),
+  updateProjectCategoryForCompany: jest.fn(),
+  deleteProjectCategoryForCompany: jest.fn(),
+  setProjectCategoryActiveStatusForCompany: mockProjectCategorySetActiveStatus
 }));
 
 const mockGetSuperAdminCompanyId = jest.fn();
@@ -215,6 +239,8 @@ beforeAll(async () => {
   companyUserService = await import('../../../services/companyUserService.js');
   planService = await import('../../../services/planService.js');
   await import('../../../services/jobTitleService.js');
+  await import('../../../services/projectTypeService.js');
+  await import('../../../services/projectCategoryService.js');
   await import('../../../services/systemCompanyService.js');
 });
 
@@ -1237,6 +1263,68 @@ describe('Super Admin Controller', () => {
         { requestId: req.id, workspace: 'superAdmin' }
       );
       expect(mockPaginatedResponse).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('patchSuperAdminJobTitleStatus should call setJobTitleActiveStatusForCompany', async () => {
+      const id = uuidv4();
+      req.params = { id };
+      req.body = { isActive: false };
+      mockJobTitleSetActiveStatus.mockResolvedValue({ id, jobTitle: 'X', isActive: false });
+
+      await superAdminController.patchSuperAdminJobTitleStatus(req, res);
+
+      expect(mockJobTitleSetActiveStatus).toHaveBeenCalledWith(
+        id,
+        false,
+        { userId: req.user.id, requestId: req.id },
+        saCompanyId
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+  });
+
+  describe('Super admin project type / category status PATCH', () => {
+    const saCompanyId = uuidv4();
+
+    beforeEach(() => {
+      mockIsSuperAdmin.mockReturnValue(true);
+      mockValidateUUID.mockImplementation(() => {});
+      mockValidateBoolean.mockImplementation((v) => v);
+      mockGetSuperAdminCompanyId.mockResolvedValue(saCompanyId);
+    });
+
+    it('patchSuperAdminProjectTypeStatus should call service', async () => {
+      const id = uuidv4();
+      req.params = { id };
+      req.body = { isActive: true };
+      mockProjectTypeSetActiveStatus.mockResolvedValue({ id, projectType: 'T', isActive: true });
+
+      await superAdminController.patchSuperAdminProjectTypeStatus(req, res);
+
+      expect(mockProjectTypeSetActiveStatus).toHaveBeenCalledWith(
+        id,
+        true,
+        { userId: req.user.id, requestId: req.id },
+        saCompanyId
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('patchSuperAdminProjectCategoryStatus should call service', async () => {
+      const id = uuidv4();
+      req.params = { id };
+      req.body = { isActive: false };
+      mockProjectCategorySetActiveStatus.mockResolvedValue({ id, projectCategory: 'C', isActive: false });
+
+      await superAdminController.patchSuperAdminProjectCategoryStatus(req, res);
+
+      expect(mockProjectCategorySetActiveStatus).toHaveBeenCalledWith(
+        id,
+        false,
+        { userId: req.user.id, requestId: req.id },
+        saCompanyId
+      );
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });

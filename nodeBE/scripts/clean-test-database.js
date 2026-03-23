@@ -67,6 +67,8 @@ const cleanTestDatabase = async () => {
       'company_users',             // Depends on users, companies, company_roles
       'company_roles',             // Depends on users
       'job_titles',                // Depends on users, companies (before companies)
+      'project_types',             // Depends on users, companies (before companies)
+      'project_categories',        // Depends on users, companies (before companies)
       'companies',                 // Depends on users, plans
       'plans',                     // Depends on users (before companies due to FK)
       'demo_auditable_models',     // Depends on users

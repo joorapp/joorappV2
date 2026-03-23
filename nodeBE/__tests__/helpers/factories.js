@@ -110,6 +110,34 @@ export const createJobTitleData = (overrides = {}) => {
 };
 
 /**
+ * Create ProjectType test data
+ * @param {Object} overrides
+ * @returns {Object}
+ */
+export const createProjectTypeData = (overrides = {}) => {
+  return {
+    projectType: generateUniqueName('Project Type'),
+    description: 'Test project type description',
+    isActive: true,
+    ...overrides
+  };
+};
+
+/**
+ * Create ProjectCategory test data
+ * @param {Object} overrides
+ * @returns {Object}
+ */
+export const createProjectCategoryData = (overrides = {}) => {
+  return {
+    projectCategory: generateUniqueName('Project Category'),
+    description: 'Test project category description',
+    isActive: true,
+    ...overrides
+  };
+};
+
+/**
  * Create Employee test data (for Employee.create with audit context)
  * @param {string} jobTitleId - Required FK to job_titles
  * @param {Object} overrides

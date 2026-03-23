@@ -54,6 +54,25 @@ describe('JobTitleRepository', () => {
     expect(list.map((r) => r.jobTitle)).toEqual(['Apple', 'Zebra']);
   });
 
+  it('findAllForCompanyDropdown filters by isActive when provided', async () => {
+    await JobTitle.create(createJobTitleData({ jobTitle: 'ActiveOne', isActive: true }), { context: ctxA });
+    await JobTitle.create(createJobTitleData({ jobTitle: 'InactiveOne', isActive: false }), { context: ctxA });
+    await JobTitle.create(createJobTitleData({ jobTitle: 'ActiveB', isActive: true }), { context: ctxB });
+
+    const activeOnly = await jobTitleRepository.findAllForCompanyDropdown(companyA.id, companyB.id, {
+      isActive: true
+    });
+    expect(activeOnly.map((r) => r.jobTitle).sort()).toEqual(['ActiveB', 'ActiveOne']);
+
+    const inactiveOnly = await jobTitleRepository.findAllForCompanyDropdown(companyA.id, companyB.id, {
+      isActive: false
+    });
+    expect(inactiveOnly.map((r) => r.jobTitle)).toEqual(['InactiveOne']);
+
+    const all = await jobTitleRepository.findAllForCompanyDropdown(companyA.id, companyB.id, {});
+    expect(all.map((r) => r.jobTitle).sort()).toEqual(['ActiveB', 'ActiveOne', 'InactiveOne']);
+  });
+
   it('findOneByTitleAndCompany detects duplicate', async () => {
     await JobTitle.create(createJobTitleData({ jobTitle: 'Unique Title' }), { context: ctxA });
     const dup = await jobTitleRepository.findOneByTitleAndCompany('Unique Title', companyA.id);
