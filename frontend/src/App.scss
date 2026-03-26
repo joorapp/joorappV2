@@ -589,3 +589,51 @@
 .cursor-pointer{
   cursor: pointer;
 }
+.fs-18{
+  font-size: 18px;
+}
+// Reactstrap Tabs Styles
+.nav-tabs {
+  border-bottom: 2px solid #e9ecef;
+  .nav-item {
+    margin-bottom: 0px;
+    .nav-link {
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-weight: 500;
+      color: #6c757d;
+      background: none;
+      transition: color 0.15s, border-bottom-color 0.15s;
+
+      &:hover,
+      &:focus {
+        color: #343a40;
+        background: none;
+        border-bottom: 2px solid #adb5bd;
+      }
+
+      &.active, &:active {
+        color: var(--bs-primary);
+        border-bottom: 2px solid var(--bs-primary);
+        background-color: transparent;
+      }
+
+      &.disabled, &:disabled {
+        color: #adb5bd;
+        background: none;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+.tab-content {
+  padding: 1rem 0 0 0;
+}
+
+@media (max-width: 767.98px) {
+  .nav-tabs .nav-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 14px;
+  }
+}

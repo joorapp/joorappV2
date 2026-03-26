@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import {
   Badge,
   Button,
@@ -177,6 +178,7 @@ const ACCEPTED_DRAWING_TYPES = 'application/pdf,image/*';
 
 const CompanyProjectsList = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
   const [currentPage, setCurrentPage] = useState(1);
@@ -335,6 +337,10 @@ const CompanyProjectsList = () => {
     handleCloseCreateModal();
   };
 
+  const handleOpenProjectOverview = (project: Project) => {
+    navigate(`/company/projects/${project.id}/overview`, { state: { project } });
+  };
+
   return (
     <>
       <Breadcrumbs
@@ -394,7 +400,16 @@ const CompanyProjectsList = () => {
                           <td>
                             <span className="fw-medium">{project.id}</span>
                           </td>
-                          <td>{project.name}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-link p-0 text-decoration-none fw-medium"
+                              onClick={() => handleOpenProjectOverview(project)}
+                              title={t('CompanyProjectsList.openOverview')}
+                            >
+                              {project.name}
+                            </button>
+                          </td>
                           <td>{project.clientName}</td>
                           <td>{project.projectManager ?? '—'}</td>
                           <td>{project.location ?? '—'}</td>
