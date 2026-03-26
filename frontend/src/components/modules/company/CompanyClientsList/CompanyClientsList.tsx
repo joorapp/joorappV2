@@ -2,9 +2,10 @@
  * Company clients – Dashboard layout: left sidebar client list, right panel client details.
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, type MouseEvent } from 'react';
 import './CompanyClientsList.scss';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardBody,
@@ -13,6 +14,8 @@ import {
   Button,
   Badge,
   Input,
+  InputGroup,
+  InputGroupText,
   Modal,
   ModalHeader,
   ModalBody,
@@ -23,12 +26,18 @@ import {
   NavItem,
   NavLink,
   Table,
+  Dropdown,
+  DropdownToggle,
+  DropdownMenu,
+  DropdownItem,
 } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
 import Pagination from '../../../common/Pagination/Pagination';
-import { showSuccessToast } from '../../../../core/utils/toast';
+import { showInfoToast, showSuccessToast } from '../../../../core/utils/toast';
 import { validateEmail, validatePhone, validateRequired } from '../../../../core/utils/Utils';
 import { STATUS } from '../../../../core/constants/constantValues';
+import CompanyClientOverview from './CompanyClientOverview';
+import CompanyClientTransactions from './CompanyClientTransactions';
 
 interface Client {
   id: string;
@@ -49,6 +58,209 @@ interface Client {
   logo?: string | null;
   totalAmount: number;
 }
+
+type PaymentStatus = 'PENDING' | 'COMPLETED' | 'OVERDUE';
+
+interface ClientPaymentRecord {
+  id: string;
+  clientName: string;
+  projectName?: string;
+  invoiceNumber?: string;
+  dueDate?: string;
+  amount: number;
+  currency: string;
+  projectCost: number;
+  paidAmount: number;
+  balanceAmount: number;
+  status: PaymentStatus;
+}
+
+// TODO: Replace with real API data for transactions/payments.
+// Dummy data is used so the Transactions tab design can be verified end-to-end.
+const DUMMY_PAYMENTS: ClientPaymentRecord[] = [
+  {
+    id: 'CP-2001',
+    clientName: 'Arabtec Construction',
+    projectName: 'Residential Tower – Phase 2',
+    invoiceNumber: 'INV-2026-010',
+    dueDate: '2026-03-20T00:00:00.000Z',
+    amount: 60000,
+    currency: 'AED',
+    projectCost: 60000,
+    paidAmount: 15000,
+    balanceAmount: 45000,
+    status: 'PENDING',
+  },
+  {
+    id: 'CP-2002',
+    clientName: 'Arabtec Construction',
+    projectName: 'Commercial Plaza – Block A',
+    invoiceNumber: 'INV-2026-011',
+    dueDate: '2026-02-25T00:00:00.000Z',
+    amount: 85000,
+    currency: 'AED',
+    projectCost: 85000,
+    paidAmount: 85000,
+    balanceAmount: 0,
+    status: 'COMPLETED',
+  },
+  {
+    id: 'CP-2003',
+    clientName: 'ALEC Engineering and Contracting',
+    projectName: 'Airport Expansion – Civil Works',
+    invoiceNumber: 'INV-2026-020',
+    dueDate: '2026-03-05T00:00:00.000Z',
+    amount: 125000,
+    currency: 'AED',
+    projectCost: 125000,
+    paidAmount: 75000,
+    balanceAmount: 50000,
+    status: 'PENDING',
+  },
+  {
+    id: 'CP-2004',
+    clientName: 'ALEC Engineering and Contracting',
+    projectName: 'Industrial Facility – Mechanical',
+    invoiceNumber: 'INV-2026-021',
+    dueDate: '2026-02-15T00:00:00.000Z',
+    amount: 98000,
+    currency: 'AED',
+    projectCost: 98000,
+    paidAmount: 98000,
+    balanceAmount: 0,
+    status: 'COMPLETED',
+  },
+  {
+    id: 'CP-2005',
+    clientName: 'Al Naboodah Construction Group',
+    projectName: 'Highway Infrastructure Package',
+    invoiceNumber: 'INV-2026-030',
+    dueDate: '2026-02-01T00:00:00.000Z',
+    amount: 220000,
+    currency: 'AED',
+    projectCost: 220000,
+    paidAmount: 140000,
+    balanceAmount: 80000,
+    status: 'OVERDUE',
+  },
+  {
+    id: 'CP-2006',
+    clientName: 'Al Naboodah Construction Group',
+    projectName: 'Urban Development – Package 3',
+    invoiceNumber: 'INV-2026-031',
+    dueDate: '2026-03-12T00:00:00.000Z',
+    amount: 74000,
+    currency: 'AED',
+    projectCost: 74000,
+    paidAmount: 25000,
+    balanceAmount: 49000,
+    status: 'PENDING',
+  },
+  {
+    id: 'CP-2007',
+    clientName: 'Dutco Construction Company',
+    projectName: 'Logistics Park – Warehouses',
+    invoiceNumber: 'INV-2026-040',
+    dueDate: '2026-03-05T00:00:00.000Z',
+    amount: 91000,
+    currency: 'AED',
+    projectCost: 91000,
+    paidAmount: 45000,
+    balanceAmount: 46000,
+    status: 'OVERDUE',
+  },
+  {
+    id: 'CP-2008',
+    clientName: 'Dutco Construction Company',
+    projectName: 'Infrastructure – Phase 1',
+    invoiceNumber: 'INV-2026-041',
+    dueDate: '2026-02-10T00:00:00.000Z',
+    amount: 67000,
+    currency: 'AED',
+    projectCost: 67000,
+    paidAmount: 67000,
+    balanceAmount: 0,
+    status: 'COMPLETED',
+  },
+  {
+    id: 'CP-2009',
+    clientName: 'Emaar Properties PJSC',
+    projectName: 'Residential Complex – Towers',
+    invoiceNumber: 'INV-2026-050',
+    dueDate: '2026-03-18T00:00:00.000Z',
+    amount: 132000,
+    currency: 'AED',
+    projectCost: 132000,
+    paidAmount: 60000,
+    balanceAmount: 72000,
+    status: 'PENDING',
+  },
+  {
+    id: 'CP-2010',
+    clientName: 'Al Jaber Construction Group',
+    projectName: 'Mixed-Use Development – Package 1',
+    invoiceNumber: 'INV-2026-060',
+    dueDate: '2026-03-10T00:00:00.000Z',
+    amount: 156000,
+    currency: 'AED',
+    projectCost: 156000,
+    paidAmount: 156000,
+    balanceAmount: 0,
+    status: 'COMPLETED',
+  },
+  {
+    id: 'CP-2011',
+    clientName: 'Nakheel PJSC',
+    projectName: 'Palm Jumeirah – Retail Zone',
+    invoiceNumber: 'INV-2026-061',
+    dueDate: '2026-02-28T00:00:00.000Z',
+    amount: 192000,
+    currency: 'AED',
+    projectCost: 192000,
+    paidAmount: 80000,
+    balanceAmount: 112000,
+    status: 'PENDING',
+  },
+  {
+    id: 'CP-2012',
+    clientName: 'Damac Properties',
+    projectName: 'Luxury Residence – Tower B',
+    invoiceNumber: 'INV-2026-070',
+    dueDate: '2026-02-05T00:00:00.000Z',
+    amount: 118000,
+    currency: 'AED',
+    projectCost: 118000,
+    paidAmount: 30000,
+    balanceAmount: 88000,
+    status: 'OVERDUE',
+  },
+  {
+    id: 'CP-2013',
+    clientName: 'Khansaheb Civil Engineering LLC',
+    projectName: 'Roadworks & Utilities – Phase 2',
+    invoiceNumber: 'INV-2026-080',
+    dueDate: '2026-03-22T00:00:00.000Z',
+    amount: 74000,
+    currency: 'AED',
+    projectCost: 74000,
+    paidAmount: 52000,
+    balanceAmount: 22000,
+    status: 'PENDING',
+  },
+  {
+    id: 'CP-2014',
+    clientName: 'Sobha Realty',
+    projectName: 'Residential Complex – Block 4',
+    invoiceNumber: 'INV-2026-090',
+    dueDate: '2026-02-12T00:00:00.000Z',
+    amount: 166000,
+    currency: 'AED',
+    projectCost: 166000,
+    paidAmount: 90000,
+    balanceAmount: 76000,
+    status: 'OVERDUE',
+  },
+];
 
 const INITIAL_CLIENTS: Client[] = [
   {
@@ -235,6 +447,29 @@ const INITIAL_CLIENTS: Client[] = [
 
 const ITEMS_PER_PAGE = 10;
 
+type CustomerViewId = 'all' | 'active' | 'crm' | 'duplicate' | 'inactive' | 'portal';
+
+const DEFAULT_CUSTOMER_VIEWS: CustomerViewId[] = [
+  'all',
+  'active',
+  'crm',
+  'duplicate',
+  'inactive',
+  'portal',
+];
+
+const customerViewLabelKey = (id: CustomerViewId): string => {
+  const keys: Record<CustomerViewId, string> = {
+    all: 'CompanyClientsList.allCustomers',
+    active: 'CompanyClientsList.viewActiveCustomers',
+    crm: 'CompanyClientsList.viewCrmCustomers',
+    duplicate: 'CompanyClientsList.viewDuplicateCustomers',
+    inactive: 'CompanyClientsList.viewInactiveCustomers',
+    portal: 'CompanyClientsList.viewCustomerPortalEnabled',
+  };
+  return keys[id];
+};
+
 const getInitials = (name: string): string => {
   const words = name.trim().split(/\s+/);
   if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
@@ -247,6 +482,21 @@ const getAvatarColor = (name: string): string => {
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return colors[Math.abs(hash) % colors.length];
 };
+
+const formatAedAmount = (amount: number) =>
+  `AED${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const INCOME_CHART_MONTHS = [
+  'Sep 2025',
+  'Oct 2025',
+  'Nov 2025',
+  'Dec 2025',
+  'Jan 2026',
+  'Feb 2026',
+  'Mar 2026',
+] as const;
+
+const INCOME_CHART_Y_LABELS = ['5K', '4K', '3K', '2K', '1K', '0'] as const;
 
 type NewClientForm = {
   name: string;
@@ -278,6 +528,7 @@ const emptyNewClient = (): NewClientForm => ({
 
 const CompanyClientsList = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
   const [currentPage, setCurrentPage] = useState(1);
@@ -289,15 +540,37 @@ const CompanyClientsList = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newClient, setNewClient] = useState(emptyNewClient);
   const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
+  /** Full-width table list first; split sidebar + detail after a client is opened. */
+  const [listScreen, setListScreen] = useState<'browse' | 'detail'>('browse');
+  const [customerViewPickerOpen, setCustomerViewPickerOpen] = useState(false);
+  const [selectedCustomerView, setSelectedCustomerView] = useState<CustomerViewId>('active');
+  const [favoritedCustomerViews, setFavoritedCustomerViews] = useState<Set<CustomerViewId>>(
+    () => new Set<CustomerViewId>(['active'])
+  );
+  const [viewPickerFavoritesOpen, setViewPickerFavoritesOpen] = useState(true);
+  const [viewPickerDefaultFiltersOpen, setViewPickerDefaultFiltersOpen] = useState(true);
+  const [viewPickerSearch, setViewPickerSearch] = useState('');
+  const [incomeChartPeriodOpen, setIncomeChartPeriodOpen] = useState(false);
+  const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<'ALL' | PaymentStatus>('ALL');
+  const [paymentCurrentPage, setPaymentCurrentPage] = useState(1);
+  const [paymentFilterDropdownOpen, setPaymentFilterDropdownOpen] = useState(false);
+  const payments = DUMMY_PAYMENTS;
+  const loadingPayments = false;
+
+  const contactPersonFromEmail = (email: string) => {
+    const local = (email.split('@')[0] || '').replace(/[._]+/g, ' ').trim();
+    const display = local ? local.charAt(0).toUpperCase() + local.slice(1) : '';
+    return t('CompanyClientsList.mrName', { name: display || '—' });
+  };
 
   const handleSelectClient = (client: Client) => {
-    setSelectedClient(client);
+    const fresh = clients.find((c) => c.id === client.id) ?? client;
+    setSelectedClient(fresh);
   };
 
   const handleOpenCreateModal = () => {
-    setNewClient(emptyNewClient());
-    setCreateErrors({});
-    setCreateModalOpen(true);
+    navigate('/company/clients/create');
   };
 
   const handleCloseCreateModal = () => {
@@ -363,16 +636,36 @@ const CompanyClientsList = () => {
     handleCloseCreateModal();
   };
 
+  const clientsMatchingView = useMemo(() => {
+    switch (selectedCustomerView) {
+      case 'all':
+      case 'portal':
+        return clients;
+      case 'active':
+        return clients.filter((c) => c.status !== 'OVERDUE');
+      case 'inactive':
+        return clients.filter((c) => c.status === 'OVERDUE' || c.status === 'PENDING');
+      case 'crm':
+        return clients.filter((c) => c.type === STATUS.GENERAL);
+      case 'duplicate': {
+        const dups = clients.filter((c, _i, arr) => arr.filter((x) => x.name === c.name).length > 1);
+        return dups.length > 0 ? dups : clients;
+      }
+      default:
+        return clients;
+    }
+  }, [clients, selectedCustomerView]);
+
   const filteredClients = useMemo(() => {
-    if (!searchTerm.trim()) return clients;
+    if (!searchTerm.trim()) return clientsMatchingView;
     const term = searchTerm.toLowerCase();
-    return clients.filter(
+    return clientsMatchingView.filter(
       (c) =>
         c.name.toLowerCase().includes(term) ||
         c.email.toLowerCase().includes(term) ||
         (c.phone && c.phone.includes(term))
     );
-  }, [clients, searchTerm]);
+  }, [clientsMatchingView, searchTerm]);
 
   const totalPages = Math.max(1, Math.ceil(filteredClients.length / ITEMS_PER_PAGE));
   const paginatedClients = useMemo(() => {
@@ -380,20 +673,75 @@ const CompanyClientsList = () => {
     return filteredClients.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredClients, currentPage]);
 
+  /** Keep detail panel bound to latest row data from `clients` after list updates. */
+  const displayClient = useMemo(() => {
+    if (!selectedClient) return null;
+    return clients.find((c) => c.id === selectedClient.id) ?? selectedClient;
+  }, [clients, selectedClient]);
+
+  const contactPersonRoleLine = useMemo(() => {
+    if (!displayClient) return '';
+    const raw = displayClient.description?.trim();
+    if (raw) {
+      const sentence = raw.split(/[.\n]/)[0]?.trim() ?? raw;
+      return sentence.length > 72 ? `${sentence.slice(0, 69)}…` : sentence;
+    }
+    return displayClient.type === STATUS.SUPPLIER
+      ? t('CompanyClientsList.contactPersonRoleSupplier')
+      : t('CompanyClientsList.contactPersonRoleGeneral');
+  }, [displayClient, t]);
+
   useEffect(() => {
     if (filteredClients.length === 0) {
       setSelectedClient(null);
       return;
     }
-
-    if (!selectedClient || !filteredClients.some((client) => client.id === selectedClient.id)) {
-      setSelectedClient(filteredClients[0]);
+    if (selectedClient && !filteredClients.some((c) => c.id === selectedClient.id)) {
+      setSelectedClient(null);
     }
   }, [filteredClients, selectedClient]);
 
   useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCustomerView]);
+
+  useEffect(() => {
     setActiveDetailTab('overview');
   }, [selectedClient?.id]);
+
+  const pickerSearchMatches = (id: CustomerViewId) => {
+    const q = viewPickerSearch.trim().toLowerCase();
+    if (!q) return true;
+    return t(customerViewLabelKey(id)).toLowerCase().includes(q);
+  };
+
+  const favoriteViewsInOrder = DEFAULT_CUSTOMER_VIEWS.filter(
+    (id) => favoritedCustomerViews.has(id) && pickerSearchMatches(id)
+  );
+
+  const defaultFilterViewsVisible = DEFAULT_CUSTOMER_VIEWS.filter((id) => pickerSearchMatches(id));
+
+  const toggleFavoriteCustomerView = (id: CustomerViewId, e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFavoritedCustomerViews((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectCustomerView = (id: CustomerViewId) => {
+    setSelectedCustomerView(id);
+    setCustomerViewPickerOpen(false);
+    setViewPickerSearch('');
+  };
+
+  const handleNewCustomViewClick = () => {
+    setCustomerViewPickerOpen(false);
+    showInfoToast(t('CompanyClientsList.newCustomViewComingSoon'));
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -411,6 +759,71 @@ const CompanyClientsList = () => {
     }
   };
 
+  const getPaymentStatusBadge = (status: PaymentStatus) => {
+    switch (status) {
+      case 'COMPLETED':
+        return <Badge color="success">{t('ClientPayment.status.completed')}</Badge>;
+      case 'OVERDUE':
+        return <Badge color="danger">{t('ClientPayment.status.overdue')}</Badge>;
+      case 'PENDING':
+      default:
+        return <Badge color="warning">{t('ClientPayment.status.pending')}</Badge>;
+    }
+  };
+
+  const formatPaymentDate = (value?: string) => {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const formatPaymentAmountBadge = (amount: number) => (
+    <Badge color="primary" className="d-inline-flex align-items-center justify-content-end">
+      {formatAedAmount(amount)}
+    </Badge>
+  );
+
+  const filteredPayments = useMemo(() => {
+    let list = payments;
+
+    if (displayClient?.name) {
+      list = list.filter((p) => p.clientName === displayClient.name);
+    }
+
+    if (paymentStatusFilter !== 'ALL') {
+      list = list.filter((p) => p.status === paymentStatusFilter);
+    }
+
+    const q = paymentSearchTerm.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (p) =>
+          p.clientName.toLowerCase().includes(q) ||
+          (p.projectName?.toLowerCase().includes(q) ?? false) ||
+          (p.invoiceNumber?.toLowerCase().includes(q) ?? false)
+      );
+    }
+
+    return list;
+  }, [paymentStatusFilter, paymentSearchTerm, displayClient?.id]);
+
+  const paymentTotalPages = Math.max(1, Math.ceil(filteredPayments.length / ITEMS_PER_PAGE));
+
+  const paginatedPayments = useMemo(() => {
+    const start = (paymentCurrentPage - 1) * ITEMS_PER_PAGE;
+    return filteredPayments.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredPayments, paymentCurrentPage]);
+
+  const handlePaymentStatusChange = (value: 'ALL' | PaymentStatus) => {
+    setPaymentStatusFilter(value);
+    setPaymentCurrentPage(1);
+  };
+
+  const handlePaymentPageChange = (page: number) => {
+    setPaymentCurrentPage(page);
+  };
+
   return (
     <>
       <Breadcrumbs
@@ -419,516 +832,580 @@ const CompanyClientsList = () => {
         link="/company/clients"
         breadcrumbParent={t('CompanyClientsList.clients')}
       />
+      <div className="company-clients-sidebar--joor company-clients-sidebar--fullpage mb-3">
+        {listScreen === 'browse' ? (
+          <div className="card">
+            <div className="card-body p-0">
 
-      <div className="company-clients-list">
-        {/* Left sidebar: client list */}
-        <aside className="company-clients-sidebar">
-          <div className="sidebar-header">
-            <Input
-              type="text"
-              className="sidebar-search-input"
-              placeholder={t('Common.searchPlaceholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Button
-              color="primary"
-              size="sm"
-              className="sidebar-btn-add"
-              onClick={handleOpenCreateModal}
-              title={t('NewClients.createClient')}
-            >
-              <i className="bx bx-plus" />
-            </Button>
-          </div>
-          <div className="client-list">
-            {paginatedClients.length > 0 ? (
-              paginatedClients.map((client) => {
-                const createdDate = new Date(client.createdAt);
-                const isActive = selectedClient?.id === client.id;
-                return (
-                  <button
-                    key={client.id}
+              <div className="clients-table-toolbar">
+                <Dropdown
+                  isOpen={customerViewPickerOpen}
+                  toggle={() => setCustomerViewPickerOpen((o) => !o)}
+                  className="clients-view-picker"
+                >
+                  <DropdownToggle
+                    tag="button"
                     type="button"
-                    className={`client-list-item ${isActive ? 'selected' : ''}`}
-                    onClick={() => handleSelectClient(client)}
+                    caret={false}
+                    className="clients-view-picker__trigger"
                   >
-                    <div className={`avatar-xs flex-shrink-0 avatar-title rounded-circle ${getAvatarColor(client.name)}`}>
-                      {getInitials(client.name)}
+                    <span className="clients-view-picker__trigger-label">{t(customerViewLabelKey(selectedCustomerView))}</span>
+                    <i
+                      className={`bx ms-2 clients-view-picker__trigger-chevron ${customerViewPickerOpen ? 'bx-chevron-up' : 'bx-chevron-down'}`}
+                      aria-hidden
+                    />
+                  </DropdownToggle>
+                  <DropdownMenu className="clients-view-picker__menu" flip>
+                    <div className="clients-view-picker__search-wrap">
+                      <InputGroup size="sm" className="clients-view-picker__search">
+                        <InputGroupText className="clients-view-picker__search-icon">
+                          <i className="bx bx-search" aria-hidden />
+                        </InputGroupText>
+                        <Input
+                          type="search"
+                          value={viewPickerSearch}
+                          onChange={(e) => setViewPickerSearch(e.target.value)}
+                          placeholder={t('CompanyClientsList.viewPickerSearchPlaceholder')}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={t('CompanyClientsList.viewPickerSearchPlaceholder')}
+                        />
+                      </InputGroup>
                     </div>
-                    <div className="client-list-item-body">
-                      <div className="client-name">{client.name}</div>
-                      <div className="client-meta text-muted text-truncate small">{client.email}</div>
-                      <div className="client-meta text-muted text-truncate small">{client.phone}</div>
-                      <div className="d-flex justify-content-between align-items-center mt-1 flex-wrap gap-1">
-                        <span>{getStatusBadge(client.status)}</span>
-                        <span className="client-date text-muted small">
-                          {createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+
+                    {favoriteViewsInOrder.length > 0 && (
+                      <div className="clients-view-picker__section">
+                        <button
+                          type="button"
+                          className="clients-view-picker__section-head"
+                          onClick={() => setViewPickerFavoritesOpen((o) => !o)}
+                        >
+                          <i
+                            className={`bx me-2 ${viewPickerFavoritesOpen ? 'bx-chevron-down' : 'bx-chevron-right'}`}
+                            aria-hidden
+                          />
+                          <span className="clients-view-picker__section-title">{t('CompanyClientsList.favoritesSection')}</span>
+                          <Badge pill color="primary" className="clients-view-picker__section-count ms-auto">
+                            {favoritedCustomerViews.size}
+                          </Badge>
+                        </button>
+                        {viewPickerFavoritesOpen && (
+                          <div className="clients-view-picker__section-body">
+                            {favoriteViewsInOrder.map((id) => (
+                              <div key={`fav-${id}`} className="clients-view-picker__row">
+                                <button
+                                  type="button"
+                                  className="clients-view-picker__row-main"
+                                  onClick={() => selectCustomerView(id)}
+                                >
+                                  {t(customerViewLabelKey(id))}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="clients-view-picker__star-btn clients-view-picker__star-btn--on"
+                                  aria-pressed="true"
+                                  aria-label={t('CompanyClientsList.toggleFavoriteForView', {
+                                    name: t(customerViewLabelKey(id)),
+                                  })}
+                                  onClick={(e) => toggleFavoriteCustomerView(id, e)}
+                                >
+                                  <i className="bx bxs-star" aria-hidden />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="clients-view-picker__section">
+                      <button
+                        type="button"
+                        className="clients-view-picker__section-head clients-view-picker__section-head--filters"
+                        onClick={() => setViewPickerDefaultFiltersOpen((o) => !o)}
+                      >
+                        <i
+                          className={`bx me-2 ${viewPickerDefaultFiltersOpen ? 'bx-chevron-down' : 'bx-chevron-right'}`}
+                          aria-hidden
+                        />
+                        <span className="clients-view-picker__section-title">{t('CompanyClientsList.defaultFiltersSection')}</span>
+                        <Badge pill color="primary" className="clients-view-picker__section-count ms-auto">
+                          {DEFAULT_CUSTOMER_VIEWS.length}
+                        </Badge>
+                      </button>
+                      {viewPickerDefaultFiltersOpen && (
+                        <div className="clients-view-picker__section-body">
+                          {defaultFilterViewsVisible.map((id) => {
+                            const isSelected = selectedCustomerView === id;
+                            const isFav = favoritedCustomerViews.has(id);
+                            return (
+                              <div key={id} className="clients-view-picker__row">
+                                <button
+                                  type="button"
+                                  className={`clients-view-picker__row-main ${isSelected ? 'is-active' : ''}`}
+                                  onClick={() => selectCustomerView(id)}
+                                >
+                                  {t(customerViewLabelKey(id))}
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`clients-view-picker__star-btn ${isFav ? 'clients-view-picker__star-btn--on' : ''}`}
+                                  aria-pressed={isFav}
+                                  aria-label={t('CompanyClientsList.toggleFavoriteForView', {
+                                    name: t(customerViewLabelKey(id)),
+                                  })}
+                                  onClick={(e) => toggleFavoriteCustomerView(id, e)}
+                                >
+                                  <i className={`bx ${isFav ? 'bxs-star' : 'bx-star'}`} aria-hidden />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="clients-view-picker__footer">
+                      <button type="button" className="clients-view-picker__new-view" onClick={handleNewCustomViewClick}>
+                        <span className="clients-view-picker__new-view-icon" aria-hidden>
+                          <i className="bx bx-plus" />
                         </span>
-                      </div>
+                        {t('CompanyClientsList.newCustomView')}
+                      </button>
                     </div>
-                  </button>
-                );
-              })
-            ) : (
-              <div className="detail-placeholder">
-                <p className="mb-0">{t('NewClients.noClientsFound')}</p>
-              </div>
-            )}
-          </div>
-          {filteredClients.length > 0 && (
-            <div className="sidebar-footer p-2 border-top">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredClients.length}
-                itemsPerPage={ITEMS_PER_PAGE}
-                onPageChange={setCurrentPage}
-              />
-            </div>
-          )}
-        </aside>
-
-        {/* Right panel: client details */}
-        <div className="company-clients-detail">
-          {selectedClient ? (
-            <Card className="h-100 border-0 shadow-none rounded-0 d-flex flex-column">
-              <div className="detail-header-bar">
-                <div className="d-flex align-items-center gap-3">
-                  <div
-                    className={`detail-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0 ${getAvatarColor(selectedClient.name)}`}
-                  >
-                    {getInitials(selectedClient.name)}
-                  </div>
-                  <div>
-                    <h4 className="detail-client-name mb-1">{selectedClient.name}</h4>
-                    <span className="text-muted">#{selectedClient.id}</span>
-                  </div>
-                </div>
-                <div className="d-flex gap-2">
-                  <Button
-                    color="secondary"
-                    size="sm"
-                    outline
-                    className="d-inline-flex align-items-center"
-                    onClick={handleOpenCreateModal}
-                  >
-                    <i className="mdi mdi-pencil me-1" />
-                    {t('Common.edit')}
-                  </Button>
-                  <Button color="danger" size="sm" outline className="d-inline-flex align-items-center">
-                    <i className="mdi mdi-delete me-1" />
-                    {t('Common.delete')}
+                  </DropdownMenu>
+                </Dropdown>
+                <div className="clients-toolbar-actions">
+                  <Button color="primary" className="btn-rounded waves-effect d-inline-flex align-items-center waves-light btn btn-primary" onClick={handleOpenCreateModal}>
+                    <i className="bx bx-plus me-1" />
+                    {t('CompanyClientsList.newBtn')}
                   </Button>
                 </div>
               </div>
-
-              <Nav tabs className="detail-tabs">
-                <NavItem>
-                  <NavLink
-                    tag="button"
-                    type="button"
-                    className={activeDetailTab === 'overview' ? 'active' : ''}
-                    onClick={() => setActiveDetailTab('overview')}
-                  >
-                    {t('CompanyClientsList.overview')}
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    tag="button"
-                    type="button"
-                    className={activeDetailTab === 'comments' ? 'active' : ''}
-                    onClick={() => setActiveDetailTab('comments')}
-                  >
-                    {t('CompanyClientsList.comments')}
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    tag="button"
-                    type="button"
-                    className={activeDetailTab === 'transactions' ? 'active' : ''}
-                    onClick={() => setActiveDetailTab('transactions')}
-                  >
-                    {t('CompanyClientsList.transactions')}
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    tag="button"
-                    type="button"
-                    className={activeDetailTab === 'mails' ? 'active' : ''}
-                    onClick={() => setActiveDetailTab('mails')}
-                  >
-                    {t('CompanyClientsList.mails')}
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    tag="button"
-                    type="button"
-                    className={activeDetailTab === 'statement' ? 'active' : ''}
-                    onClick={() => setActiveDetailTab('statement')}
-                  >
-                    {t('CompanyClientsList.statement')}
-                  </NavLink>
-                </NavItem>
-              </Nav>
-
-              <CardBody className="detail-card-body flex-grow-1 overflow-auto">
-                {activeDetailTab === 'overview' && selectedClient && (
-                  <div className="overview-content">
-                    <div className="overview-two-col">
-                      {/* Left column: Contact, Address, Other details, Contact persons */}
-                      <div className="overview-left">
-                        <div className="overview-contact-card">
-                          <div className="d-flex align-items-center gap-3">
-                            <div className={`overview-contact-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0 ${getAvatarColor(selectedClient.name)}`}>
-                              {getInitials(selectedClient.name)}
-                            </div>
-                            <div className="flex-grow-1 min-w-0">
-                              <div className="overview-contact-name">{selectedClient.name}</div>
-                              <a href="#invite" className="overview-invite-link">{t('CompanyClientsList.inviteToPortal')}</a>
-                            </div>
-                            <Button color="light" size="sm" className="btn-icon-sm p-1" title={t('Common.settings')}>
-                              <i className="bx bx-cog" />
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="overview-section">
-                          <button
-                            type="button"
-                            className="overview-section-toggle d-flex align-items-center justify-content-between w-100"
-                            onClick={() => setOverviewAddressOpen((o) => !o)}
-                          >
-                            <span className="overview-section-title">{t('CompanyClientsList.address')}</span>
-                            <i className={`bx ${overviewAddressOpen ? 'bx-chevron-up' : 'bx-chevron-down'} text-primary`} />
-                          </button>
-                          {overviewAddressOpen && (
-                            <div className="overview-section-body">
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.billingAddress')}</span>
-                                <span className="overview-kv-value">
-                                  {t('CompanyClientsList.noBillingAddress')} — <a href="#new-address" className="overview-link">{t('CompanyClientsList.newAddress')}</a>
+              {paginatedClients.length > 0 ? (
+                <Table responsive className="clients-data-table mb-0">
+                  <thead>
+                    <tr>
+                      <th className="clients-th-filter-check">
+                        <span className="visually-hidden">{t('CompanyClientsList.selectAllOnPage')}</span>
+                        <Input type="checkbox" className="clients-table-checkbox" disabled aria-hidden />
+                      </th>
+                      <th className="clients-th-name">
+                          {t('CompanyClientsList.companyName')}
+                      </th>
+                      <th>{t('Common.email')}</th>
+                      <th>{t('CompanyClientsList.workPhone')}</th>
+                      <th>{t('Common.status')}</th>
+                      <th className="text-end">{t('CompanyClientsList.receivablesBcy')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedClients.map((client) => {
+                      const isSelected = selectedClient?.id === client.id;
+                      return (
+                        <tr
+                          key={client.id}
+                          role="button"
+                          tabIndex={0}
+                          className={`clients-table-row ${isSelected ? 'clients-table-row--selected' : ''}`}
+                          onClick={() => {
+                            handleSelectClient(client);
+                            setListScreen('detail');
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleSelectClient(client);
+                              setListScreen('detail');
+                            }
+                          }}
+                        >
+                          <td onClick={(e) => e.stopPropagation()}>
+                            <Input type="checkbox" className="clients-table-checkbox" disabled aria-hidden />
+                          </td>
+                          <td className="clients-td-company">
+                            <div className="d-flex align-items-center gap-2 min-w-0">
+                              <div className="avatar-xs flex-shrink-0">
+                                <span className={`avatar-title rounded-circle ${getAvatarColor(client.name)}`}>
+                                  {getInitials(client.name)}
                                 </span>
                               </div>
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.shippingAddress')}</span>
-                                <span className="overview-kv-value">
-                                  {t('CompanyClientsList.noShippingAddress')} — <a href="#new-address" className="overview-link">{t('CompanyClientsList.newAddress')}</a>
-                                </span>
-                              </div>
+                              <span className="clients-name-link text-truncate" title={client.name}>
+                                {client.name}
+                              </span>
                             </div>
-                          )}
-                        </div>
-
-                        <div className="overview-section">
-                          <button
-                            type="button"
-                            className="overview-section-toggle d-flex align-items-center justify-content-between w-100"
-                            onClick={() => setOverviewOtherOpen((o) => !o)}
-                          >
-                            <span className="overview-section-title">{t('CompanyClientsList.otherDetails')}</span>
-                            <i className={`bx ${overviewOtherOpen ? 'bx-chevron-up' : 'bx-chevron-down'} text-primary`} />
-                          </button>
-                          {overviewOtherOpen && (
-                            <div className="overview-section-body">
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.customerType')}</span>
-                                <span className="overview-kv-value">{t('CompanyClientsList.business')}</span>
-                              </div>
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.customerNumber')}</span>
-                                <span className="overview-kv-value">CUS-{selectedClient.id}</span>
-                              </div>
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.defaultCurrency')}</span>
-                                <span className="overview-kv-value">AED</span>
-                              </div>
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.portalStatus')}</span>
-                                <span className="overview-kv-value">
-                                  <span className="portal-status-dot disabled" /> {t('CompanyClientsList.disabled')}
-                                </span>
-                              </div>
-                              <div className="overview-kv">
-                                <span className="overview-kv-label">{t('CompanyClientsList.customerLanguage')}</span>
-                                <span className="overview-kv-value">{t('CompanyClientsList.english')}</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="overview-section">
-                          <button
-                            type="button"
-                            className="overview-section-toggle d-flex align-items-center justify-content-between w-100"
-                            onClick={() => setOverviewContactsOpen((o) => !o)}
-                          >
-                            <span className="overview-section-title">{t('CompanyClientsList.contactPersons')}</span>
-                            <span className="d-flex align-items-center gap-1">
-                              <i className="bx bx-plus text-primary small" />
-                              <i className={`bx ${overviewContactsOpen ? 'bx-chevron-up' : 'bx-chevron-down'} text-primary`} />
-                            </span>
-                          </button>
-                          {overviewContactsOpen && (
-                            <div className="overview-section-body">
-                              <p className="text-muted small mb-0">{t('Common.noDataAvailable')}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Right column: Payment due, Receivables, Income and Expense */}
-                      <div className="overview-right">
-                        <div className="overview-block">
-                          <Label className="overview-label">{t('CompanyClientsList.paymentDuePeriod')}</Label>
-                          <p className="overview-value mb-0">{t('CompanyClientsList.dueOnReceipt')}</p>
-                        </div>
-
-                        <div className="overview-block">
-                          <div className="overview-heading">{t('CompanyClientsList.receivables')}</div>
-                          <div className="table-responsive">
-                            <Table className="overview-receivables-table mb-0">
-                              <thead>
-                                <tr>
-                                  <th>{t('CompanyClientsList.currency')}</th>
-                                  <th className="text-end">{t('CompanyClientsList.outstandingReceivables')}</th>
-                                  <th className="text-end">{t('CompanyClientsList.unusedCredits')}</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr>
-                                  <td>AED - UAE Dirham</td>
-                                  <td className="text-end">
-                                    AED{selectedClient.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </td>
-                                  <td className="text-end">AED0.00</td>
-                                </tr>
-                              </tbody>
-                            </Table>
-                          </div>
-                        </div>
-
-                        <div className="overview-block">
-                          <div className="overview-heading">{t('CompanyClientsList.incomeAndExpense')}</div>
-                          <p className="overview-chart-desc small text-muted">{t('CompanyClientsList.chartBaseCurrency')}</p>
-                          <a href="#period" className="overview-link d-inline-block mb-2">{t('CompanyClientsList.last6Months')} <i className="bx bx-chevron-down small" /></a>
-                          <div className="overview-chart-placeholder">
-                            <div className="overview-chart-bars">
-                              {[40, 55, 45, 60, 50, 55, 48].map((h, i) => (
-                                <div key={i} className="overview-chart-bar" style={{ height: `${h}%` }} />
-                              ))}
-                            </div>
-                            <div className="overview-chart-labels d-flex justify-content-between small text-muted mt-1">
-                              <span>Sep 2025</span>
-                              <span>Mar 2026</span>
-                            </div>
-                          </div>
-                          <p className="overview-total-income small text-muted mb-0 mt-2">
-                            {t('CompanyClientsList.totalIncomeLast6Months')} — AED{selectedClient.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeDetailTab === 'comments' && (
-                  <div className="detail-tab-placeholder">
-                    <p className="text-muted mb-0">{t('CompanyClientsList.comments')}</p>
-                  </div>
-                )}
-
-                {activeDetailTab === 'transactions' && (
-                  <div className="detail-tab-placeholder">
-                    <p className="text-muted mb-0">{t('CompanyClientsList.transactions')}</p>
-                  </div>
-                )}
-
-                {activeDetailTab === 'mails' && (
-                  <div className="detail-tab-placeholder">
-                    <p className="text-muted mb-0">{t('CompanyClientsList.mails')}</p>
-                  </div>
-                )}
-
-                {activeDetailTab === 'statement' && (
-                  <div className="detail-tab-placeholder">
-                    <p className="text-muted mb-0">{t('CompanyClientsList.statement')}</p>
-                  </div>
-                )}
-              </CardBody>
-            </Card>
-          ) : (
-            <div className="detail-placeholder">
-              <h5 className="mb-2">{t('CompanyClientsList.selectClientTitle')}</h5>
-              <p className="text-muted mb-0">{t('CompanyClientsList.selectClientDescription')}</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="lg">
-        <ModalHeader toggle={handleCloseCreateModal}>
-          {t('NewClients.createClient')}
-        </ModalHeader>
-        <ModalBody>
-          <Row className="m-0">
-            <div className="col-md-12 mb-4 d-flex flex-column align-items-center">
-              <Label className="form-label fw-semibold mb-2">{t('NewClients.profilePhoto')}</Label>
-              <div
-                className="profile-photo-upload position-relative d-flex align-items-center justify-content-center"
-                onClick={() => document.getElementById('client-profile-upload-input')?.click()}
-              >
-                {newClient.logo && newClient.logo.preview ? (
-                  <img
-                    src={newClient.logo.preview as string}
-                    alt="Profile"
-                  />
-                ) : (
-                  <svg width="80" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="40" cy="40" r="40" fill="#e1e7ef" />
-                    <circle cx="40" cy="32" r="14" fill="#ced6df" />
-                    <ellipse cx="40" cy="60" rx="22" ry="14" fill="#ced6df" />
-                  </svg>
-                )}
-
-                <div className="profile-upload-button">
-                  <i className="mdi mdi-camera text-primary" />
+                          </td>
+                          <td className="clients-td-email text-truncate" title={client.email}>
+                            {client.email}
+                          </td>
+                          <td>{client.phone}</td>
+                          <td>{getStatusBadge(client.status)}</td>
+                          <td className="text-end text-nowrap">
+                            ₹ {client.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </Table>
+              ) : (
+                <div className="clients-table-empty flex-grow-1">
+                  <p className="text-muted mb-0">{t('NewClients.noClientsFound')}</p>
                 </div>
-                <input
-                  id="client-profile-upload-input"
-                  type="file"
-                  accept="image/*"
-                  className="hidden-file-input"
-                  onChange={async (e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      const file = e.target.files[0];
-                      const reader = new FileReader();
-                      reader.onload = function (ev) {
-                        handleNewClientLogoChange({
-                          file,
-                          preview: ev.target?.result ?? null,
-                        });
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
+              )}
+              <div className="p-3 bg-white">
+                <Pagination
+                  className="mt-2"
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={filteredClients.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={setCurrentPage}
                 />
               </div>
-              <div className="profile-upload-helper-text">{t('NewClients.uploadProfilePhoto')}</div>
             </div>
+          </div>
+        ) : (
+          <>
+            <Row>
+              <Col lg="4" md="5" className="mb-3">
+                <Card className="h-100">
+                  <CardBody className="p-0">
+                    <div className="p-3 border-bottom">
+                      <div className="clients-table-toolbar_small">
+                        <Dropdown
+                          isOpen={customerViewPickerOpen}
+                          toggle={() => setCustomerViewPickerOpen((o) => !o)}
+                          className="clients-view-picker"
+                        >
+                          <DropdownToggle
+                            tag="button"
+                            type="button"
+                            caret={false}
+                            className="clients-view-picker__trigger"
+                          >
+                            <span className="clients-view-picker__trigger-label">{t(customerViewLabelKey(selectedCustomerView))}</span>
+                            <i
+                              className={`bx ms-2 fs-18 clients-view-picker__trigger-chevron ${customerViewPickerOpen ? 'bx-chevron-up' : 'bx-chevron-down'}`}
+                              aria-hidden
+                            />
+                          </DropdownToggle>
+                          <DropdownMenu className="clients-view-picker__menu" flip>
+                            <div className="clients-view-picker__search-wrap">
+                              <InputGroup size="sm" className="clients-view-picker__search">
+                                <InputGroupText className="clients-view-picker__search-icon">
+                                  <i className="bx bx-search" aria-hidden />
+                                </InputGroupText>
+                                <Input
+                                  type="search"
+                                  value={viewPickerSearch}
+                                  onChange={(e) => setViewPickerSearch(e.target.value)}
+                                  placeholder={t('CompanyClientsList.viewPickerSearchPlaceholder')}
+                                  onClick={(e) => e.stopPropagation()}
+                                  aria-label={t('CompanyClientsList.viewPickerSearchPlaceholder')}
+                                />
+                              </InputGroup>
+                            </div>
 
-            <Col md="6" className="mb-3">
-              <Label className="form-label fw-semibold form-label">{t('NewClients.clientName')} <span className="text-danger">*</span></Label>
-              <Input
-                value={newClient.name}
-                onChange={(e) => handleNewClientChange('name', e.target.value)}
-                invalid={!!createErrors.name}
-                placeholder={t('NewClients.enterClientName')}
-              />
-              <FormFeedback>{createErrors.name}</FormFeedback>
-            </Col>
-            <Col md="6" className="mb-3">
-              <Label className="form-label fw-semibold form-label">{t('Common.email')} <span className="text-danger">*</span></Label>
-              <Input
-                type="email"
-                value={newClient.email}
-                onChange={(e) => handleNewClientChange('email', e.target.value)}
-                invalid={!!createErrors.email}
-                placeholder={t('NewClients.enterEmailAddress')}
-              />
-              <FormFeedback>{createErrors.email}</FormFeedback>
-            </Col>
-            <Col md="6" className="mb-3">
-              <Label className="form-label fw-semibold form-label">{t('Common.phone')} <span className="text-danger">*</span></Label>
-              <Input
-                value={newClient.phone}
-                onChange={(e) => handleNewClientChange('phone', e.target.value)}
-                invalid={!!createErrors.phone}
-                placeholder={t('NewClients.enterPhoneNumber')}
-              />
-              <FormFeedback>{createErrors.phone}</FormFeedback>
-            </Col>
-            <Col md="6" className="mb-3">
-              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.buildingAddress')} <span className="text-danger">*</span></Label>
-              <Input
-                value={newClient.buildingAddress}
-                onChange={(e) => handleNewClientChange('buildingAddress', e.target.value)}
-                invalid={!!createErrors.buildingAddress}
-                placeholder={t('NewClients.enterBuildingAddress')}
-              />
-              <FormFeedback>{createErrors.buildingAddress}</FormFeedback>
-            </Col>
-            <Col md="6" className="mb-3">
-              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.streetAddress')} <span className="text-danger">*</span></Label>
-              <Input
-                value={newClient.streetAddress}
-                onChange={(e) => handleNewClientChange('streetAddress', e.target.value)}
-                invalid={!!createErrors.streetAddress}
-                placeholder={t('NewClients.enterStreetAddress')}
-              />
-              <FormFeedback>{createErrors.streetAddress}</FormFeedback>
-            </Col>
-            <Col md="6" className="mb-3">
-              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.country')} <span className="text-danger">*</span></Label>
-              <Input
-                value={newClient.country}
-                onChange={(e) => handleNewClientChange('country', e.target.value)}
-                invalid={!!createErrors.country}
-              />
-              <FormFeedback>{createErrors.country}</FormFeedback>
-            </Col>
-            <Col md="6" className="mb-3">
-              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.state')} <span className="text-danger">*</span></Label>
-              <Input
-                value={newClient.state}
-                onChange={(e) => handleNewClientChange('state', e.target.value)}
-                invalid={!!createErrors.state}
-              />
-              <FormFeedback>{createErrors.state}</FormFeedback>
-            </Col>
-            <Col md="6" className="mb-3">
-              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.city')} <span className="text-danger">*</span></Label>
-              <Input
-                value={newClient.city}
-                onChange={(e) => handleNewClientChange('city', e.target.value)}
-                invalid={!!createErrors.city}
-              />
-              <FormFeedback>{createErrors.city}</FormFeedback>
-            </Col>
-            <Col md="6" className="mb-3">
-              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.postalCode')} <span className="text-danger">*</span></Label>
-              <Input
-                value={newClient.postalCode}
-                onChange={(e) => handleNewClientChange('postalCode', e.target.value)}
-                invalid={!!createErrors.postalCode}
-              />
-              <FormFeedback>{createErrors.postalCode}</FormFeedback>
-            </Col>
-            <Col xs="12">
-              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.description')}</Label>
-              <Input
-                type="textarea"
-                value={newClient.description}
-                onChange={(e) => handleNewClientChange('description', e.target.value)}
-                placeholder={t('NewClients.enterDescription')}
-                rows={3}
-              />
-            </Col>
-          </Row>
-        </ModalBody>
-        <ModalFooter>
-          <Button color="secondary" onClick={handleCloseCreateModal}>
-            {t('Common.cancel')}
-          </Button>
-          <Button color="primary" onClick={handleCreateClient}>
-            {t('NewClients.createClient')}
-          </Button>
-        </ModalFooter>
-      </Modal>
+                            {favoriteViewsInOrder.length > 0 && (
+                              <div className="clients-view-picker__section">
+                                <button
+                                  type="button"
+                                  className="clients-view-picker__section-head"
+                                  onClick={() => setViewPickerFavoritesOpen((o) => !o)}
+                                >
+                                  <i
+                                    className={`bx me-2 ${viewPickerFavoritesOpen ? 'bx-chevron-down' : 'bx-chevron-right'}`}
+                                    aria-hidden
+                                  />
+                                  <span className="clients-view-picker__section-title">{t('CompanyClientsList.favoritesSection')}</span>
+                                  <Badge pill color="primary" className="clients-view-picker__section-count ms-auto">
+                                    {favoritedCustomerViews.size}
+                                  </Badge>
+                                </button>
+                                {viewPickerFavoritesOpen && (
+                                  <div className="clients-view-picker__section-body">
+                                    {favoriteViewsInOrder.map((id) => (
+                                      <div key={`fav-${id}`} className="clients-view-picker__row">
+                                        <button
+                                          type="button"
+                                          className="clients-view-picker__row-main"
+                                          onClick={() => selectCustomerView(id)}
+                                        >
+                                          {t(customerViewLabelKey(id))}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="clients-view-picker__star-btn clients-view-picker__star-btn--on"
+                                          aria-pressed="true"
+                                          aria-label={t('CompanyClientsList.toggleFavoriteForView', {
+                                            name: t(customerViewLabelKey(id)),
+                                          })}
+                                          onClick={(e) => toggleFavoriteCustomerView(id, e)}
+                                        >
+                                          <i className="bx bxs-star" aria-hidden />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="clients-view-picker__section">
+                              <button
+                                type="button"
+                                className="clients-view-picker__section-head clients-view-picker__section-head--filters"
+                                onClick={() => setViewPickerDefaultFiltersOpen((o) => !o)}
+                              >
+                                <i
+                                  className={`bx me-2 ${viewPickerDefaultFiltersOpen ? 'bx-chevron-down' : 'bx-chevron-right'}`}
+                                  aria-hidden
+                                />
+                                <span className="clients-view-picker__section-title">{t('CompanyClientsList.defaultFiltersSection')}</span>
+                                <Badge pill color="primary" className="clients-view-picker__section-count ms-auto">
+                                  {DEFAULT_CUSTOMER_VIEWS.length}
+                                </Badge>
+                              </button>
+                              {viewPickerDefaultFiltersOpen && (
+                                <div className="clients-view-picker__section-body">
+                                  {defaultFilterViewsVisible.map((id) => {
+                                    const isSelected = selectedCustomerView === id;
+                                    const isFav = favoritedCustomerViews.has(id);
+                                    return (
+                                      <div key={id} className="clients-view-picker__row">
+                                        <button
+                                          type="button"
+                                          className={`clients-view-picker__row-main ${isSelected ? 'is-active' : ''}`}
+                                          onClick={() => selectCustomerView(id)}
+                                        >
+                                          {t(customerViewLabelKey(id))}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className={`clients-view-picker__star-btn ${isFav ? 'clients-view-picker__star-btn--on' : ''}`}
+                                          aria-pressed={isFav}
+                                          aria-label={t('CompanyClientsList.toggleFavoriteForView', {
+                                            name: t(customerViewLabelKey(id)),
+                                          })}
+                                          onClick={(e) => toggleFavoriteCustomerView(id, e)}
+                                        >
+                                          <i className={`bx ${isFav ? 'bxs-star' : 'bx-star'}`} aria-hidden />
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="clients-view-picker__footer">
+                              <button type="button" className="clients-view-picker__new-view" onClick={handleNewCustomViewClick}>
+                                <span className="clients-view-picker__new-view-icon" aria-hidden>
+                                  <i className="bx bx-plus" />
+                                </span>
+                                {t('CompanyClientsList.newCustomView')}
+                              </button>
+                            </div>
+                          </DropdownMenu>
+                        </Dropdown>
+                        <div className="clients-toolbar-actions">
+                          <Button color="primary" className="btn waves-effect d-inline-flex align-items-center waves-light btn-sm btn-primary" onClick={handleOpenCreateModal}>
+                            <i className="bx bx-plus fs-18" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    {paginatedClients.length > 0 ? (
+                      <div className="list-group list-group-flush">
+                        {paginatedClients.map((client) => {
+                          const createdDate = new Date(client.createdAt);
+                          const isActive = selectedClient?.id === client.id;
+
+                          return (
+                            <button
+                              key={client.id}
+                              type="button"
+                              className={`list-group-item list-group-item-action d-flex align-items-center gap-3 ${isActive ? 'active' : ''
+                                }`}
+                              onClick={() => handleSelectClient(client)}
+                            >
+                              <div className="avatar-xs flex-shrink-0">
+                                <span
+                                  className={`avatar-title rounded-circle ${getAvatarColor(client.name)} ${isActive ? 'border border-2 border-white' : ''
+                                    }`}
+                                >
+                                  {getInitials(client.name)}
+                                </span>
+                              </div>
+                              <div className="flex-grow-1 text-start">
+                                <div className="d-flex justify-content-between align-items-center">
+                                  <div>
+                                    <h6 className="mb-0 text-truncate">{client.name}</h6>
+                                    <small className="text-muted d-block text-truncate">{client.email}</small>
+                                  </div>
+                                  <small className="text-muted ms-2">
+                                    {createdDate.toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })}
+                                  </small>
+                                </div>
+                                <div className="d-flex justify-content-between align-items-center mt-1">
+                                  <small className="text-muted">₹ {client.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</small>
+                                  <div>{getStatusBadge(client.status)}</div>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-muted mb-0">{t('NewClients.noClientsFound')}</p>
+                      </div>
+                    )}
+                  </CardBody>
+                </Card>
+              </Col>
+
+              <Col lg="8" md="7" className="mb-3 ps-0">
+                <div className="company-clients-detail">
+                  {displayClient ? (
+                    <Card className="h-100 border-0 shadow-none rounded-0 d-flex flex-column detail-view-card m-0">
+                      <div className="detail-header-bar detail-header-bar--compact p-3">
+                        <h1 className="detail-header-title" title={displayClient.name}>
+                          {displayClient.name}
+                        </h1>
+                        <div className="detail-header-actions">
+                          <Button
+                            color="secondary"
+                            size="sm"
+                            outline
+                            className="detail-header-control detail-header-control--ghost"
+                            onClick={handleOpenCreateModal}
+                            type="button"
+                          >
+                            {t('Common.edit')}
+                          </Button>
+                          <Button
+                            color="primary"
+                            size="sm"
+                            className="detail-header-control detail-header-control--primary"
+                            type="button"
+                            onClick={() => showInfoToast(t('CompanyClientsList.newCustomViewComingSoon'))}
+                          >
+                            {t('CompanyClientsList.newTransaction')}
+                          </Button>
+                          <button
+                            type="button"
+                            className="detail-header-close"
+                            onClick={() => setListScreen('browse')}
+                            aria-label={t('Common.close')}
+                          >
+                            <i className="bx bx-x" aria-hidden />
+                          </button>
+                        </div>
+                      </div>
+
+                      <Nav tabs className="detail-tabs">
+                        <NavItem>
+                          <NavLink
+                            tag="button"
+                            type="button"
+                            className={activeDetailTab === 'overview' ? 'active' : ''}
+                              onClick={() => setActiveDetailTab('overview')}
+                          >
+                            {t('CompanyClientsList.overview')}
+                          </NavLink>
+                        </NavItem>
+                        
+                        <NavItem>
+                          <NavLink
+                            tag="button"
+                            type="button"
+                            className={activeDetailTab === 'transactions' ? 'active' : ''}
+                            onClick={() => {
+                              setActiveDetailTab('transactions');
+                            }}
+                          >
+                            {t('CompanyClientsList.transactions')}
+                          </NavLink>
+                        </NavItem>
+                        <NavItem>
+                          <NavLink
+                            tag="button"
+                            type="button"
+                            className={activeDetailTab === 'mails' ? 'active' : ''}
+                            onClick={() => setActiveDetailTab('mails')}
+                          >
+                            {t('CompanyClientsList.mails')}
+                          </NavLink>
+                        </NavItem>
+                        <NavItem>
+                          <NavLink
+                            tag="button"
+                            type="button"
+                            className={activeDetailTab === 'statement' ? 'active' : ''}
+                            onClick={() => setActiveDetailTab('statement')}
+                          >
+                            {t('CompanyClientsList.statement')}
+                          </NavLink>
+                        </NavItem>
+                      </Nav>
+
+                      <CardBody className="detail-card-body flex-grow-1 overflow-auto p-0">
+                        {activeDetailTab === 'overview' && (
+                          displayClient ? (
+                            <CompanyClientOverview displayClient={displayClient} />
+                          ) : (
+                            <div className="detail-tab-placeholder">
+                              <div className="p-3">
+                                <p className="text-muted mb-0">{t('CompanyClientsList.noCustomersSelected')}</p>
+                              </div>
+                            </div>
+                          )
+                        )}
+
+                        {activeDetailTab === 'transactions' && (
+                          displayClient ? (
+                            <CompanyClientTransactions displayClient={displayClient} />
+                          ) : (
+                            <div className="detail-tab-placeholder">
+                              <div className="p-3">
+                                <p className="text-muted mb-0">{t('CompanyClientsList.noCustomersSelected')}</p>
+                              </div>
+                            </div>
+                          )
+                         
+                        )}
+
+                        {activeDetailTab === 'mails' && (
+                          <div className="detail-tab-placeholder">
+                            <p className="text-muted mb-0">{t('CompanyClientsList.mails')}</p>
+                          </div>
+                        )}
+
+                        {activeDetailTab === 'statement' && (
+                          <div className="detail-tab-placeholder">
+                            <p className="text-muted mb-0">{t('CompanyClientsList.statement')}</p>
+                          </div>
+                        )}
+                      </CardBody>
+                    </Card>
+                  ) : (
+                    <div className="detail-placeholder">
+                      <h5 className="mb-2">{t('CompanyClientsList.selectClientTitle')}</h5>
+                      <p className="text-muted mb-0">{t('CompanyClientsList.selectClientDescription')}</p>
+                    </div>
+                  )}
+                </div>
+              </Col>
+            </Row>
+
+          </>
+        )}
+      </div>
+     
     </>
   );
 };

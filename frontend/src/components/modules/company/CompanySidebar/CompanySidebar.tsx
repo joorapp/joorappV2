@@ -225,7 +225,7 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
         },
         {
           key: 'clientVisits',
-          path: '/company/clients/visits',
+          path: '/company/clients/visit',
           label: t('CompanySidebar.clientVisits'),
         },
       ],

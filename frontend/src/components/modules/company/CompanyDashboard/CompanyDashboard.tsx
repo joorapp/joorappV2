@@ -460,7 +460,7 @@ const CompanyDashboard = () => {
             <Outlet />
           </div>
         </div>
-        <CompanyFooter />
+        {/* <CompanyFooter /> */}
       </main>
     </div>
   );
