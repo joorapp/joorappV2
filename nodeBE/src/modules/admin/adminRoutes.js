@@ -17,6 +17,9 @@ import {
   removeUserFromCompany,
   updateUserRole
 } from './adminController.js';
+import * as clientController from './clientController.js';
+import * as projectController from './projectController.js';
+import * as employeeController from './employeeController.js';
 import { authMiddleware } from '../../middleware/authMiddleware.js';
 import { companyContextMiddleware } from '../../middleware/companyContextMiddleware.js';
 import { asyncHandler } from '../../middleware/errorHandler.js';
@@ -835,5 +838,2049 @@ router.delete('/users/:id', authMiddleware, companyContextMiddleware, asyncHandl
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.put('/users/:id/role', authMiddleware, companyContextMiddleware, asyncHandler(updateUserRole));
+
+// =====================================================
+// Client Management Routes
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/admin/clients:
+ *   post:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Create a new client
+ *     description: Creates a new client. Requires COMPANY_ADMIN role.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phone:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *               clientMetadata:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Client created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Client'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/clients', authMiddleware, companyContextMiddleware, asyncHandler(clientController.createClient));
+
+/**
+ * @swagger
+ * /api/v2/admin/clients:
+ *   get:
+ *     tags:
+ *       - Admin Clients
+ *     summary: List clients
+ *     description: Retrieves a paginated list of clients. Requires COMPANY_ADMIN role.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: Clients retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Client'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/clients', authMiddleware, companyContextMiddleware, asyncHandler(clientController.listClients));
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/all:
+ *   get:
+ *     tags:
+ *       - Admin Clients
+ *     summary: List all clients for dropdowns (no pagination)
+ *     description: >
+ *       Returns clients created by the current company, sorted by name.
+ *       Query isActive: omit for all; true for active only; false for inactive only. Empty isActive= is treated as omitted.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active flag; omit to return both active and inactive
+ *     responses:
+ *       200:
+ *         description: Clients retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Client'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/clients/all', authMiddleware, companyContextMiddleware, asyncHandler(clientController.listAllClients));
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/{id}:
+ *   get:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Get client by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Client retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Client'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/clients/:id', authMiddleware, companyContextMiddleware, asyncHandler(clientController.getClientById));
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/{id}:
+ *   put:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Update client
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *               clientMetadata:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Client updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Client'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put('/clients/:id', authMiddleware, companyContextMiddleware, asyncHandler(clientController.updateClient));
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/{id}/status:
+ *   patch:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Set client active or inactive (current company)
+ *     description: Only clients created by the current company can be updated; others return 404.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Client status updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Client'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch('/clients/:id/status', authMiddleware, companyContextMiddleware, asyncHandler(clientController.patchClientStatus));
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/{id}:
+ *   delete:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Delete client
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Client deleted successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/clients/:id', authMiddleware, companyContextMiddleware, asyncHandler(clientController.deleteClient));
+
+// =====================================================
+// Employees (job titles and future employee APIs)
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles/all:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: List all job titles for dropdowns
+ *     description: >
+ *       Returns job titles from the super admin company plus the current company, sorted by name.
+ *       Query isActive: omit for all; true for active only; false for inactive only.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active flag; omit to return both active and inactive
+ *     responses:
+ *       200:
+ *         description: Job titles retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/JobTitle'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees/job-titles/all',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.listAllJobTitles)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles:
+ *   post:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Create job title for current company
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/JobTitleCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/JobTitle'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post(
+  '/employees/job-titles',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.createJobTitle)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: List job titles for current company (paginated)
+ *     description: Returns job titles owned by the super admin company (platform defaults) plus the current company. Each item includes canEdit and canDelete (false for platform-managed titles).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Paginated job titles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/JobTitleCompanyWorkspace'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees/job-titles',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.listJobTitles)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles/{id}:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Get job title by ID (tenant or platform default)
+ *     description: Returns a title if it belongs to the current company or the super admin company. Includes canEdit and canDelete.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Job title
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/JobTitleCompanyWorkspace'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees/job-titles/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.getJobTitleById)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles/{id}:
+ *   put:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Update job title (current company)
+ *     description: Forbidden when the job title is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/JobTitleUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/JobTitle'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or job title is platform-managed and cannot be changed from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put(
+  '/employees/job-titles/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.updateJobTitle)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles/{id}/status:
+ *   patch:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Set job title active or inactive (current company)
+ *     description: Forbidden when the job title is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/JobTitle'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or job title is platform-managed and cannot be changed from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch(
+  '/employees/job-titles/:id/status',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.patchJobTitleStatus)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/job-titles/{id}:
+ *   delete:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Delete job title (current company)
+ *     description: Forbidden when the job title is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or job title is platform-managed and cannot be deleted from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete(
+  '/employees/job-titles/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.deleteJobTitle)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/all:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: List all employees (no pagination)
+ *     description: Filter by search, jobTitleId, and isActive. Sorted by last name, first name.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: jobTitleId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by job title id
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: Employees retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Employee'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees/all',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.listAllEmployees)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: List employees (paginated)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: jobTitleId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Paginated employees
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Employee'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ *   post:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Create employee
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/EmployeeCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Employee'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.listEmployees)
+);
+router.post(
+  '/employees',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.createEmployee)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/assign-role:
+ *   post:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Assign company role to employee (enable login or update role)
+ *     description: >
+ *       If the employee has no companyUserId, creates Keycloak user (default password `admin`), DB user,
+ *       company assignment with the given role, and sets employee.companyUserId.
+ *       If companyUserId is set, updates only the company role on that assignment.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - employeeId
+ *               - roleId
+ *             properties:
+ *               employeeId:
+ *                 type: string
+ *                 format: uuid
+ *               roleId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: company_roles.id (master role)
+ *     responses:
+ *       200:
+ *         description: Role assigned or updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         employee:
+ *                           $ref: '#/components/schemas/Employee'
+ *                         companyUser:
+ *                           type: object
+ *                         provisioned:
+ *                           type: boolean
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post(
+  '/employees/assign-role',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.assignEmployeeCompanyRole)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/{id}/status:
+ *   patch:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Set employee active or inactive
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/EmployeeStatusPatchRequest'
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Employee'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch(
+  '/employees/:id/status',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.patchEmployeeStatus)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/employees/{id}:
+ *   get:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Get employee by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Employee
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Employee'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ *   put:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Update employee
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/EmployeeUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Employee'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ *   delete:
+ *     tags:
+ *       - Admin Employees
+ *     summary: Soft-delete employee
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/employees/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.getEmployeeById)
+);
+router.put(
+  '/employees/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.updateEmployee)
+);
+router.delete(
+  '/employees/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(employeeController.deleteEmployee)
+);
+
+// =====================================================
+// Project types (reference data; register before /projects/:id)
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/types/all:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: List all project types for dropdowns
+ *     description: >
+ *       Returns project types from the super admin company plus the current company, sorted by name.
+ *       Query isActive: omit for all; true for active only; false for inactive only.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active flag; omit to return both active and inactive
+ *     responses:
+ *       200:
+ *         description: Project types retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ProjectType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/projects/types/all',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.listAllProjectTypes)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/types:
+ *   post:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Create project type for current company
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectTypeCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post(
+  '/projects/types',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.createProjectType)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/types:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: List project types for current company (paginated)
+ *     description: Returns types owned by the super admin company (platform defaults) plus the current company. Each item includes canEdit and canDelete (false for platform-managed types).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Paginated project types
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ProjectTypeCompanyWorkspace'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/projects/types',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.listProjectTypes)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/types/{id}:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Get project type by ID (tenant or platform default)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Project type
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectTypeCompanyWorkspace'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/projects/types/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.getProjectTypeById)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/types/{id}:
+ *   put:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Update project type (current company)
+ *     description: Forbidden when the type is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectTypeUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or type is platform-managed and cannot be changed from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put(
+  '/projects/types/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.updateProjectType)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/types/{id}/status:
+ *   patch:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Set project type active or inactive (current company)
+ *     description: Forbidden when the type is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or type is platform-managed and cannot be changed from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch(
+  '/projects/types/:id/status',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.patchProjectTypeStatus)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/types/{id}:
+ *   delete:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Delete project type (current company)
+ *     description: Forbidden when the type is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or type is platform-managed and cannot be deleted from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete(
+  '/projects/types/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.deleteProjectType)
+);
+
+// =====================================================
+// Project categories (reference data; register before /projects/:id)
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/categories/all:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: List all project categories for dropdowns
+ *     description: >
+ *       Returns project categories from the super admin company plus the current company, sorted by name.
+ *       Query isActive: omit for all; true for active only; false for inactive only.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active flag; omit to return both active and inactive
+ *     responses:
+ *       200:
+ *         description: Project categories retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ProjectCategory'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/projects/categories/all',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.listAllProjectCategories)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/categories:
+ *   post:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Create project category for current company
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectCategoryCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectCategory'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post(
+  '/projects/categories',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.createProjectCategory)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/categories:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: List project categories for current company (paginated)
+ *     description: Returns categories owned by the super admin company (platform defaults) plus the current company. Each item includes canEdit and canDelete (false for platform-managed categories).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Paginated project categories
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ProjectCategoryCompanyWorkspace'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/projects/categories',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.listProjectCategories)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/categories/{id}:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Get project category by ID (tenant or platform default)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Project category
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectCategoryCompanyWorkspace'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/projects/categories/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.getProjectCategoryById)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/categories/{id}:
+ *   put:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Update project category (current company)
+ *     description: Forbidden when the category is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectCategoryUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectCategory'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or category is platform-managed and cannot be changed from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put(
+  '/projects/categories/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.updateProjectCategory)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/categories/{id}/status:
+ *   patch:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Set project category active or inactive (current company)
+ *     description: Forbidden when the category is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ProjectCategory'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or category is platform-managed and cannot be changed from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch(
+  '/projects/categories/:id/status',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.patchProjectCategoryStatus)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/categories/{id}:
+ *   delete:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Delete project category (current company)
+ *     description: Forbidden when the category is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or category is platform-managed and cannot be deleted from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete(
+  '/projects/categories/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(projectController.deleteProjectCategory)
+);
+
+// =====================================================
+// Project Management Routes
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/admin/projects:
+ *   post:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Create a new project
+ *     description: Creates a new project. Requires COMPANY_ADMIN role.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - clientId
+ *               - name
+ *             properties:
+ *               clientId:
+ *                 type: string
+ *                 format: uuid
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [PLANNING, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED]
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *               projectMetadata:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Project created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Project'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/projects', authMiddleware, companyContextMiddleware, asyncHandler(projectController.createProject));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: List projects
+ *     description: Retrieves a paginated list of projects. Company admins see all projects. Regular users see projects assigned to them.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: clientId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Projects retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Project'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/projects', authMiddleware, companyContextMiddleware, asyncHandler(projectController.listProjects));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{id}:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Get project by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Project retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Project'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/projects/:id', authMiddleware, companyContextMiddleware, asyncHandler(projectController.getProjectById));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{id}:
+ *   put:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Update project
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *               projectMetadata:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Project updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Project'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put('/projects/:id', authMiddleware, companyContextMiddleware, asyncHandler(projectController.updateProject));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{id}:
+ *   delete:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Delete project
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Project deleted successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/projects/:id', authMiddleware, companyContextMiddleware, asyncHandler(projectController.deleteProject));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{projectId}/users:
+ *   post:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Assign user to project
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       201:
+ *         description: User assigned successfully
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/projects/:projectId/users', authMiddleware, companyContextMiddleware, asyncHandler(projectController.assignUser));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{projectId}/users:
+ *   get:
+ *     tags:
+ *       - Admin Projects
+ *     summary: List assigned users for a project
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/projects/:projectId/users', authMiddleware, companyContextMiddleware, asyncHandler(projectController.listAssignedUsers));
+
+/**
+ * @swagger
+ * /api/v2/admin/projects/{projectId}/users/{userId}:
+ *   delete:
+ *     tags:
+ *       - Admin Projects
+ *     summary: Remove user from project
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: User removed successfully
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/projects/:projectId/users/:userId', authMiddleware, companyContextMiddleware, asyncHandler(projectController.removeUser));
 
 export default router;

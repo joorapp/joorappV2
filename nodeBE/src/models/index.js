@@ -11,6 +11,13 @@ import CompanyRole from './CompanyRole.js';
 import CompanyUser from './CompanyUser.js';
 import UserCompanyContext from './UserCompanyContext.js';
 import Plan from './Plan.js';
+import Client from './Client.js';
+import Project from './Project.js';
+import ProjectUser from './ProjectUser.js';
+import JobTitle from './JobTitle.js';
+import ProjectType from './ProjectType.js';
+import ProjectCategory from './ProjectCategory.js';
+import Employee from './Employee.js';
 
 /**
  * Initialize model associations
@@ -26,7 +33,14 @@ const initializeAssociations = () => {
     CompanyUser,
     UserCompanyContext,
     DemoAuditableModel,
-    Plan
+    Plan,
+    Client,
+    Project,
+    ProjectUser,
+    JobTitle,
+    ProjectType,
+    ProjectCategory,
+    Employee
   };
 
   // Call each model's associate method if it exists
@@ -52,6 +66,27 @@ const initializeAssociations = () => {
   if (Plan.associate) {
     Plan.associate(models);
   }
+  if (Client.associate) {
+    Client.associate(models);
+  }
+  if (Project.associate) {
+    Project.associate(models);
+  }
+  if (ProjectUser.associate) {
+    ProjectUser.associate(models);
+  }
+  if (JobTitle.associate) {
+    JobTitle.associate(models);
+  }
+  if (ProjectType.associate) {
+    ProjectType.associate(models);
+  }
+  if (ProjectCategory.associate) {
+    ProjectCategory.associate(models);
+  }
+  if (Employee.associate) {
+    Employee.associate(models);
+  }
 };
 
 /**
@@ -64,7 +99,22 @@ export const initializeModels = () => {
 };
 
 // Export all models
-export { User, DemoAuditableModel, Company, CompanyRole, CompanyUser, UserCompanyContext, Plan };
+export {
+  User,
+  DemoAuditableModel,
+  Company,
+  CompanyRole,
+  CompanyUser,
+  UserCompanyContext,
+  Plan,
+  Client,
+  Project,
+  ProjectUser,
+  JobTitle,
+  ProjectType,
+  ProjectCategory,
+  Employee
+};
 
 // Export default object with all models
 export default {
@@ -75,6 +125,13 @@ export default {
   CompanyUser,
   UserCompanyContext,
   Plan,
+  Client,
+  Project,
+  ProjectUser,
+  JobTitle,
+  ProjectType,
+  ProjectCategory,
+  Employee,
   initializeModels
 };
 

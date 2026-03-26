@@ -16,6 +16,10 @@ alwaysApply: true
 8. **Create controller test** in `src/modules/{module}/__tests__/{module}Controller.test.js` (see test-file-locations.mdc)
 9. **Create integration test** in `src/modules/__tests__/{module}.integration.test.js` (see test-file-locations.mdc)
 
+## Controller Splitting (For Complex Modules)
+If a module acts as a domain boundary (e.g., `admin`) but manages multiple distinct sub-entities (e.g., Users, Clients, Projects), **DO NOT** put all handlers in a single `{module}Controller.js`.
+👉 **CRITICAL**: See `nodeBE/.cursor/rules/controller-splitting.mdc` for the mandatory pattern on how to split controllers by entity while maintaining a single route file.
+
 ## Route Handler Pattern
 ```javascript
 import { validateUUID } from '../../utils/validators.js';
@@ -155,6 +159,16 @@ export default {
 - Action routes: `router.get('/action', controller.handler)`
 - All routes are relative to `/api/v2/{module}`
 - **All routes MUST have Swagger annotations** using JSDoc `@swagger` tags
+
+## Paginated list and `/all` companion route
+
+**MANDATORY**: For every **paginated listing** endpoint (`GET` with `page` / `limit`, returning `paginatedResponse`), add a companion **`GET .../all`** route when consumers need the **full unpaginated set** (dropdowns, selects, typeahead).
+
+- **List**: `GET /api/v2/{module}/...` — pagination, filters, sorting; use `paginatedResponse`.
+- **`/all`**: `GET /api/v2/{module}/.../all` — returns `successResponse` with `data` as a **plain array** (no `pagination` object). Same auth/middleware as the list route unless documented otherwise.
+- **`/all` optional `isActive` query** (reference/dropdown masters aligned with the FE): **omit** = return active and inactive; **`true`** = active only; **`false`** = inactive only. Treat empty `isActive=` as omitted (same as employee list parsing).
+- **Route order**: Register **`/all` before** any `/:id` route on the same path prefix so `all` is not captured as an id.
+- **Swagger**: Document both endpoints; examples must match actual response shapes (`meta` on both per **api-responses.mdc**).
 
 ## Endpoint Conflict Prevention
 

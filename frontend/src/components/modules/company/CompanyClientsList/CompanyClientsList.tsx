@@ -2,7 +2,7 @@
  * Company clients – Dashboard layout: left sidebar client list, right panel client details.
  */
 
-import { useState, useMemo, useEffect, type MouseEvent } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import './CompanyClientsList.scss';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -33,11 +33,11 @@ import {
 } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
 import Pagination from '../../../common/Pagination/Pagination';
-import { showInfoToast, showSuccessToast } from '../../../../core/utils/toast';
+import ConfirmModal from '../../../common/ConfirmModal/ConfirmModal';
+import { showSuccessToast } from '../../../../core/utils/toast';
 import { validateEmail, validatePhone, validateRequired } from '../../../../core/utils/Utils';
-import { STATUS } from '../../../../core/constants/constantValues';
-import CompanyClientOverview from './CompanyClientOverview';
-import CompanyClientTransactions from './CompanyClientTransactions';
+import { STATUS, PAGINATION } from '../../../../core/constants/constantValues';
+import CompanyAdminService from '../../../../core/service/CompanyAdminService';
 
 interface Client {
   id: string;
@@ -59,393 +59,78 @@ interface Client {
   totalAmount: number;
 }
 
-type PaymentStatus = 'PENDING' | 'COMPLETED' | 'OVERDUE';
-
-interface ClientPaymentRecord {
-  id: string;
-  clientName: string;
-  projectName?: string;
-  invoiceNumber?: string;
-  dueDate?: string;
-  amount: number;
-  currency: string;
-  projectCost: number;
-  paidAmount: number;
-  balanceAmount: number;
-  status: PaymentStatus;
+/** GET /admin/clients response body: success, message, data (clients array), pagination */
+interface GetClientsResponseBody {
+  data?: Array<{
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    isActive?: boolean;
+    createdDate?: string;
+  }>;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
 }
 
-// TODO: Replace with real API data for transactions/payments.
-// Dummy data is used so the Transactions tab design can be verified end-to-end.
-const DUMMY_PAYMENTS: ClientPaymentRecord[] = [
-  {
-    id: 'CP-2001',
-    clientName: 'Arabtec Construction',
-    projectName: 'Residential Tower – Phase 2',
-    invoiceNumber: 'INV-2026-010',
-    dueDate: '2026-03-20T00:00:00.000Z',
-    amount: 60000,
-    currency: 'AED',
-    projectCost: 60000,
-    paidAmount: 15000,
-    balanceAmount: 45000,
-    status: 'PENDING',
-  },
-  {
-    id: 'CP-2002',
-    clientName: 'Arabtec Construction',
-    projectName: 'Commercial Plaza – Block A',
-    invoiceNumber: 'INV-2026-011',
-    dueDate: '2026-02-25T00:00:00.000Z',
-    amount: 85000,
-    currency: 'AED',
-    projectCost: 85000,
-    paidAmount: 85000,
-    balanceAmount: 0,
-    status: 'COMPLETED',
-  },
-  {
-    id: 'CP-2003',
-    clientName: 'ALEC Engineering and Contracting',
-    projectName: 'Airport Expansion – Civil Works',
-    invoiceNumber: 'INV-2026-020',
-    dueDate: '2026-03-05T00:00:00.000Z',
-    amount: 125000,
-    currency: 'AED',
-    projectCost: 125000,
-    paidAmount: 75000,
-    balanceAmount: 50000,
-    status: 'PENDING',
-  },
-  {
-    id: 'CP-2004',
-    clientName: 'ALEC Engineering and Contracting',
-    projectName: 'Industrial Facility – Mechanical',
-    invoiceNumber: 'INV-2026-021',
-    dueDate: '2026-02-15T00:00:00.000Z',
-    amount: 98000,
-    currency: 'AED',
-    projectCost: 98000,
-    paidAmount: 98000,
-    balanceAmount: 0,
-    status: 'COMPLETED',
-  },
-  {
-    id: 'CP-2005',
-    clientName: 'Al Naboodah Construction Group',
-    projectName: 'Highway Infrastructure Package',
-    invoiceNumber: 'INV-2026-030',
-    dueDate: '2026-02-01T00:00:00.000Z',
-    amount: 220000,
-    currency: 'AED',
-    projectCost: 220000,
-    paidAmount: 140000,
-    balanceAmount: 80000,
-    status: 'OVERDUE',
-  },
-  {
-    id: 'CP-2006',
-    clientName: 'Al Naboodah Construction Group',
-    projectName: 'Urban Development – Package 3',
-    invoiceNumber: 'INV-2026-031',
-    dueDate: '2026-03-12T00:00:00.000Z',
-    amount: 74000,
-    currency: 'AED',
-    projectCost: 74000,
-    paidAmount: 25000,
-    balanceAmount: 49000,
-    status: 'PENDING',
-  },
-  {
-    id: 'CP-2007',
-    clientName: 'Dutco Construction Company',
-    projectName: 'Logistics Park – Warehouses',
-    invoiceNumber: 'INV-2026-040',
-    dueDate: '2026-03-05T00:00:00.000Z',
-    amount: 91000,
-    currency: 'AED',
-    projectCost: 91000,
-    paidAmount: 45000,
-    balanceAmount: 46000,
-    status: 'OVERDUE',
-  },
-  {
-    id: 'CP-2008',
-    clientName: 'Dutco Construction Company',
-    projectName: 'Infrastructure – Phase 1',
-    invoiceNumber: 'INV-2026-041',
-    dueDate: '2026-02-10T00:00:00.000Z',
-    amount: 67000,
-    currency: 'AED',
-    projectCost: 67000,
-    paidAmount: 67000,
-    balanceAmount: 0,
-    status: 'COMPLETED',
-  },
-  {
-    id: 'CP-2009',
-    clientName: 'Emaar Properties PJSC',
-    projectName: 'Residential Complex – Towers',
-    invoiceNumber: 'INV-2026-050',
-    dueDate: '2026-03-18T00:00:00.000Z',
-    amount: 132000,
-    currency: 'AED',
-    projectCost: 132000,
-    paidAmount: 60000,
-    balanceAmount: 72000,
-    status: 'PENDING',
-  },
-  {
-    id: 'CP-2010',
-    clientName: 'Al Jaber Construction Group',
-    projectName: 'Mixed-Use Development – Package 1',
-    invoiceNumber: 'INV-2026-060',
-    dueDate: '2026-03-10T00:00:00.000Z',
-    amount: 156000,
-    currency: 'AED',
-    projectCost: 156000,
-    paidAmount: 156000,
-    balanceAmount: 0,
-    status: 'COMPLETED',
-  },
-  {
-    id: 'CP-2011',
-    clientName: 'Nakheel PJSC',
-    projectName: 'Palm Jumeirah – Retail Zone',
-    invoiceNumber: 'INV-2026-061',
-    dueDate: '2026-02-28T00:00:00.000Z',
-    amount: 192000,
-    currency: 'AED',
-    projectCost: 192000,
-    paidAmount: 80000,
-    balanceAmount: 112000,
-    status: 'PENDING',
-  },
-  {
-    id: 'CP-2012',
-    clientName: 'Damac Properties',
-    projectName: 'Luxury Residence – Tower B',
-    invoiceNumber: 'INV-2026-070',
-    dueDate: '2026-02-05T00:00:00.000Z',
-    amount: 118000,
-    currency: 'AED',
-    projectCost: 118000,
-    paidAmount: 30000,
-    balanceAmount: 88000,
-    status: 'OVERDUE',
-  },
-  {
-    id: 'CP-2013',
-    clientName: 'Khansaheb Civil Engineering LLC',
-    projectName: 'Roadworks & Utilities – Phase 2',
-    invoiceNumber: 'INV-2026-080',
-    dueDate: '2026-03-22T00:00:00.000Z',
-    amount: 74000,
-    currency: 'AED',
-    projectCost: 74000,
-    paidAmount: 52000,
-    balanceAmount: 22000,
-    status: 'PENDING',
-  },
-  {
-    id: 'CP-2014',
-    clientName: 'Sobha Realty',
-    projectName: 'Residential Complex – Block 4',
-    invoiceNumber: 'INV-2026-090',
-    dueDate: '2026-02-12T00:00:00.000Z',
-    amount: 166000,
-    currency: 'AED',
-    projectCost: 166000,
-    paidAmount: 90000,
-    balanceAmount: 76000,
-    status: 'OVERDUE',
-  },
-];
+/** GET /admin/clients/:id response data – client with clientMetadata */
+interface GetClientByIdResponseClient {
+  id: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  isActive?: boolean;
+  clientMetadata?: Record<string, unknown>;
+  createdDate?: string;
+  updatedDate?: string;
+}
 
-const INITIAL_CLIENTS: Client[] = [
-  {
-    id: '1001',
-    name: 'Arabtec Construction',
-    email: 'projects@arabtec.ae',
-    phone: '+971 4 333 3000',
-    buildingAddress: 'Arabtec Tower',
-    streetAddress: 'Sheikh Zayed Road',
-    country: 'UAE',
-    state: 'Dubai',
-    city: 'Dubai',
-    postalCode: '12345',
-    description: 'Major UAE contractor; known for Burj Khalifa and landmark projects. Civil, MEP and building construction.',
-    type: STATUS.GENERAL,
-    status: 'New',
-    createdAt: '2026-02-10T00:00:00.000Z',
-    updatedAt: '2026-02-10T00:00:00.000Z',
-    totalAmount: 240000.00,
-  },
-  {
-    id: '1002',
-    name: 'ALEC Engineering and Contracting',
-    email: 'info@alec.ae',
-    phone: '+971 4 809 0000',
-    buildingAddress: 'ALEC Headquarters',
-    streetAddress: 'Dubai Investments Park',
-    country: 'UAE',
-    state: 'Dubai',
-    city: 'Dubai',
-    postalCode: '54321',
-    description: 'Dubai-based contractor; completed Dubai International Airport Terminal 3 and major commercial projects.',
-    type: STATUS.GENERAL,
-    status: 'COMPLETED',
-    createdAt: '2026-02-22T00:00:00.000Z',
-    updatedAt: '2026-02-22T00:00:00.000Z',
-    totalAmount: 120000.00,
-  },
-  {
-    id: '1003',
-    name: 'Al Naboodah Construction Group',
-    email: 'enquiries@alnaboodah.ae',
-    phone: '+971 4 880 0000',
-    buildingAddress: 'Al Naboodah Building',
-    streetAddress: 'Al Quoz Industrial Area',
-    country: 'UAE',
-    state: 'Dubai',
-    city: 'Dubai',
-    postalCode: '67890',
-    description: 'Established since 1960s. Specializes in civil engineering, MEP and infrastructure.',
-    type: STATUS.SUPPLIER,
-    status: 'OVERDUE',
-    createdAt: '2026-02-22T00:00:00.000Z',
-    updatedAt: '2026-02-22T00:00:00.000Z',
-    totalAmount: 700000.00,
-  },
-  {
-    id: '1004',
-    name: 'Dutco Construction Company',
-    email: 'contact@dutco.ae',
-    phone: '+971 4 347 0000',
-    buildingAddress: 'Dutco House',
-    streetAddress: 'Jebel Ali',
-    country: 'UAE',
-    state: 'Dubai',
-    city: 'Dubai',
-    postalCode: '98765',
-    description: 'One of the largest construction companies in UAE; infrastructure, building and civil works.',
-    type: STATUS.GENERAL,
-    status: 'PENDING',
-    createdAt: '2026-02-25T00:00:00.000Z',
-    updatedAt: '2026-02-25T00:00:00.000Z',
-    totalAmount: 870000.00,
-  },
-  {
-    id: '1005',
-    name: 'Al Jaber Construction Group',
-    email: 'info@aljaber.ae',
-    phone: '+971 4 880 0000',
-    buildingAddress: 'Al Jaber Building',
-    streetAddress: 'Al Quoz Industrial Area',
-    country: 'UAE',
-    state: 'Dubai',
-    city: 'Dubai',
-    postalCode: '67890',
-    description: 'Established since 1960s. Specializes in civil engineering, MEP and infrastructure.',
-    type: STATUS.SUPPLIER,
-    status: 'COMPLETED',
-    createdAt: '2026-02-22T00:00:00.000Z',
-    updatedAt: '2026-02-22T00:00:00.000Z',
-    totalAmount: 700000.00,
-  },
-  {
-    id: '1006',
-    name: 'Nakheel PJSC',
-    email: 'customercare@nakheel.com',
-    phone: '+971 4 390 3333',
-    buildingAddress: 'Nakheel Sales Centre',
-    streetAddress: 'King Salman Bin Abdul Aziz Al Saud Street, Al Sufouh 2',
-    country: 'UAE',
-    state: 'Dubai',
-    city: 'Dubai',
-    postalCode: '00000',
-    description: 'Dubai-based master developer; Palm Jumeirah, Deira Islands, Ibn Battuta and other landmark projects.',
-    type: STATUS.GENERAL,
-    status: 'PENDING',
-    createdAt: '2026-02-18T00:00:00.000Z',
-    updatedAt: '2026-02-18T00:00:00.000Z',
-    totalAmount: 520000.00,
-  },
-  {
-    id: '1007',
-    name: 'Emaar Properties PJSC',
-    email: 'customer.service@emaar.ae',
-    phone: '+971 4 366 1688',
-    buildingAddress: 'Emaar Square',
-    streetAddress: 'Building 4, Downtown Dubai',
-    country: 'UAE',
-    state: 'Dubai',
-    city: 'Dubai',
-    postalCode: '00000',
-    description: 'Global developer; Burj Khalifa, Dubai Mall, Downtown Dubai and international real estate.',
-    type: STATUS.GENERAL,
-    status: 'COMPLETED',
-    createdAt: '2026-01-15T00:00:00.000Z',
-    updatedAt: '2026-02-20T00:00:00.000Z',
-    totalAmount: 980000.00,
-  },
-  {
-    id: '1008',
-    name: 'Damac Properties',
-    email: 'info@damacproperties.com',
-    phone: '+971 4 373 2000',
-    buildingAddress: 'Damac Towers',
-    streetAddress: 'Dubai Marina',
-    country: 'UAE',
-    state: 'Dubai',
-    city: 'Dubai',
-    postalCode: '00000',
-    description: 'Luxury developer; residential and commercial projects in Dubai and key international markets.',
-    type: STATUS.GENERAL,
-    status: 'NEW',
-    createdAt: '2026-02-28T00:00:00.000Z',
-    updatedAt: '2026-02-28T00:00:00.000Z',
-    totalAmount: 450000.00,
-  },
-  {
-    id: '1009',
-    name: 'Khansaheb Civil Engineering LLC',
-    email: 'enquiries@khansaheb.ae',
-    phone: '+971 4 337 5555',
-    buildingAddress: 'Khansaheb Building',
-    streetAddress: 'Al Quoz Industrial Area 3',
-    country: 'UAE',
-    state: 'Dubai',
-    city: 'Dubai',
-    postalCode: '00000',
-    description: 'Civil engineering and construction; infrastructure, buildings and MEP across UAE and region.',
-    type: STATUS.SUPPLIER,
-    status: 'PENDING',
-    createdAt: '2026-02-12T00:00:00.000Z',
-    updatedAt: '2026-02-12T00:00:00.000Z',
-    totalAmount: 610000.00,
-  },
-  {
-    id: '1010',
-    name: 'Sobha Realty',
-    email: 'info@sobharealty.com',
-    phone: '+971 4 378 8888',
-    buildingAddress: 'Sobha Hartland',
-    streetAddress: 'Mohammed Bin Rashid City',
-    country: 'UAE',
-    state: 'Dubai',
-    city: 'Dubai',
-    postalCode: '00000',
-    description: 'Developer of Sobha Hartland and other residential and mixed-use projects in Dubai.',
-    type: STATUS.GENERAL,
-    status: 'OVERDUE',
-    createdAt: '2026-02-05T00:00:00.000Z',
-    updatedAt: '2026-02-05T00:00:00.000Z',
-    totalAmount: 380000.00,
-  },
-];
+/** Format address from clientMetadata for display */
+function formatAddressFromMetadata(meta: Record<string, unknown> | undefined): string {
+  if (!meta) return '';
+  const parts = [
+    meta.buildingAddress,
+    meta.streetAddress,
+    [meta.city, meta.state].filter(Boolean).join(', '),
+    meta.postalCode,
+    meta.country,
+  ].filter(Boolean) as string[];
+  return parts.join(' — ') || '';
+}
 
-const ITEMS_PER_PAGE = 10;
+/** Map API list item to Client for UI (list returns id, name, email, phone, isActive, createdDate) */
+function mapApiClientToClient(item: {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  isActive?: boolean;
+  createdDate?: string;
+}): Client {
+  return {
+    id: item.id,
+    name: item.name,
+    email: item.email,
+    phone: item.phone ?? '',
+    buildingAddress: '',
+    streetAddress: '',
+    country: '',
+    state: '',
+    city: '',
+    postalCode: '',
+    type: STATUS.GENERAL,
+    status: item.isActive !== false ? STATUS.ACTIVE : 'Inactive',
+    createdAt: item.createdDate ?? new Date().toISOString(),
+    updatedAt: item.createdDate ?? new Date().toISOString(),
+    totalAmount: 0,
+  };
+}
 
 type CustomerViewId = 'all' | 'active' | 'crm' | 'duplicate' | 'inactive' | 'portal';
 
@@ -530,8 +215,11 @@ const CompanyClientsList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState<number>(PAGINATION.DEFAULT_PAGE_NUMBER);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'comments' | 'transactions' | 'mails' | 'statement'>('overview');
   const [overviewAddressOpen, setOverviewAddressOpen] = useState(true);
@@ -540,29 +228,75 @@ const CompanyClientsList = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newClient, setNewClient] = useState(emptyNewClient);
   const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
-  /** Full-width table list first; split sidebar + detail after a client is opened. */
-  const [listScreen, setListScreen] = useState<'browse' | 'detail'>('browse');
-  const [customerViewPickerOpen, setCustomerViewPickerOpen] = useState(false);
-  const [selectedCustomerView, setSelectedCustomerView] = useState<CustomerViewId>('active');
-  const [favoritedCustomerViews, setFavoritedCustomerViews] = useState<Set<CustomerViewId>>(
-    () => new Set<CustomerViewId>(['active'])
-  );
-  const [viewPickerFavoritesOpen, setViewPickerFavoritesOpen] = useState(true);
-  const [viewPickerDefaultFiltersOpen, setViewPickerDefaultFiltersOpen] = useState(true);
-  const [viewPickerSearch, setViewPickerSearch] = useState('');
-  const [incomeChartPeriodOpen, setIncomeChartPeriodOpen] = useState(false);
-  const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState<'ALL' | PaymentStatus>('ALL');
-  const [paymentCurrentPage, setPaymentCurrentPage] = useState(1);
-  const [paymentFilterDropdownOpen, setPaymentFilterDropdownOpen] = useState(false);
-  const payments = DUMMY_PAYMENTS;
-  const loadingPayments = false;
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [selectedClientDetails, setSelectedClientDetails] = useState<GetClientByIdResponseClient | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const contactPersonFromEmail = (email: string) => {
-    const local = (email.split('@')[0] || '').replace(/[._]+/g, ' ').trim();
-    const display = local ? local.charAt(0).toUpperCase() + local.slice(1) : '';
-    return t('CompanyClientsList.mrName', { name: display || '—' });
-  };
+  const fetchClients = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await CompanyAdminService.getClients({
+        page: currentPage,
+        limit: PAGINATION.DEFAULT_PAGE_SIZE,
+        search: searchTerm.trim() || undefined,
+      });
+      const body = (res?.data ?? {}) as GetClientsResponseBody;
+      const data = body?.data ?? [];
+      const pagination = body?.pagination;
+      const list = Array.isArray(data) ? data.map(mapApiClientToClient) : [];
+      setClients(list);
+      setTotalItems(pagination?.total ?? 0);
+      setTotalPages(Math.max(1, pagination?.pages ?? 1));
+      if (list.length > 0 && (!selectedClient || !list.some((c) => c.id === selectedClient.id))) {
+        setSelectedClient(list[0]);
+      } else if (list.length === 0) {
+        setSelectedClient(null);
+      }
+    } catch {
+      setClients([]);
+      setTotalItems(0);
+      setTotalPages(1);
+      setSelectedClient(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, searchTerm]);
+
+  useEffect(() => {
+    fetchClients();
+  }, [fetchClients]);
+
+  
+  useEffect(() => {
+    if (!selectedClient?.id) {
+      setSelectedClientDetails(null);
+      setLoadingDetails(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingDetails(true);
+    setSelectedClientDetails(null);
+    CompanyAdminService.getClientById(selectedClient.id)
+      .then((res) => {
+        if (cancelled) return;
+        const body = (res?.data ?? {}) as { data?: GetClientByIdResponseClient };
+        setSelectedClientDetails(body?.data ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setSelectedClientDetails(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingDetails(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedClient?.id]);
 
   const handleSelectClient = (client: Client) => {
     const fresh = clients.find((c) => c.id === client.id) ?? client;
@@ -570,13 +304,74 @@ const CompanyClientsList = () => {
   };
 
   const handleOpenCreateModal = () => {
-    navigate('/company/clients/create');
+    setEditingClient(null);
+    setNewClient(emptyNewClient());
+    setCreateErrors({});
+    setCreateModalOpen(true);
+  };
+
+  const handleOpenEditModal = async (client: Client) => {
+    setLoadingEdit(true);
+    setCreateErrors({});
+    try {
+      const res = await CompanyAdminService.getClientById(client.id);
+      const body = (res?.data ?? {}) as { data?: GetClientByIdResponseClient };
+      const data = body?.data;
+      if (!data) {
+        return;
+      }
+      const meta = (data.clientMetadata ?? {}) as Record<string, unknown>;
+      setNewClient({
+        name: data.name ?? '',
+        email: data.email ?? '',
+        phone: data.phone ?? '',
+        buildingAddress: (meta.buildingAddress as string) ?? '',
+        streetAddress: (meta.streetAddress as string) ?? '',
+        country: (meta.country as string) ?? '',
+        state: (meta.state as string) ?? '',
+        city: (meta.city as string) ?? '',
+        postalCode: (meta.postalCode as string) ?? '',
+        description: (meta.description as string) ?? '',
+        logo:
+          meta.logo && typeof meta.logo === 'string'
+            ? { file: null as unknown as File, preview: meta.logo }
+            : null,
+      });
+      setEditingClient(client);
+      setCreateModalOpen(true);
+    } catch {
+      // Error toast handled by interceptor
+    } finally {
+      setLoadingEdit(false);
+    }
   };
 
   const handleCloseCreateModal = () => {
     setCreateModalOpen(false);
+    setEditingClient(null);
     setNewClient(emptyNewClient());
     setCreateErrors({});
+  };
+
+  const handleDeleteClick = (client: Client) => {
+    setClientToDelete(client);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!clientToDelete) return;
+    setIsDeleting(true);
+    try {
+      await CompanyAdminService.deleteClient(clientToDelete.id);
+      await fetchClients();
+      showSuccessToast(t('NewClients.clientDeletedSuccessfully'));
+      setDeleteModalOpen(false);
+      setClientToDelete(null);
+    } catch {
+      // Error toast handled by interceptor
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleNewClientChange = (field: string, value: string) => {
@@ -588,7 +383,27 @@ const CompanyClientsList = () => {
     setNewClient((prev) => ({ ...prev, logo }));
   };
 
-  const handleCreateClient = () => {
+  const buildClientRequestBody = () => {
+    const clientMetadata: Record<string, unknown> = {
+      buildingAddress: newClient.buildingAddress,
+      streetAddress: newClient.streetAddress,
+      country: newClient.country,
+      state: newClient.state,
+      city: newClient.city,
+      postalCode: newClient.postalCode,
+      description: newClient.description || undefined,
+      ...(newClient.logo?.preview && typeof newClient.logo.preview === 'string' && { logo: newClient.logo.preview }),
+    };
+    return {
+      name: newClient.name,
+      email: newClient.email,
+      phone: newClient.phone,
+      isActive: true,
+      clientMetadata,
+    };
+  };
+
+  const handleSaveClient = async () => {
     const nameVal = validateRequired(newClient.name, 'name');
     const emailVal = validateEmail(newClient.email);
     const phoneVal = validatePhone(newClient.phone);
@@ -612,94 +427,72 @@ const CompanyClientsList = () => {
       setCreateErrors(errors);
       return;
     }
-    const now = new Date().toISOString();
-    const client: Client = {
-      id: String(Date.now()),
-      name: newClient.name,
-      email: newClient.email,
-      phone: newClient.phone,
-      buildingAddress: newClient.buildingAddress,
-      streetAddress: newClient.streetAddress,
-      country: newClient.country,
-      state: newClient.state,
-      city: newClient.city,
-      postalCode: newClient.postalCode,
-      description: newClient.description || undefined,
-      type: STATUS.SUPPLIER,
-      status: STATUS.ACTIVE,
-      createdAt: now,
-      updatedAt: now,
-      totalAmount: 100000.00,
-    };
-    setClients((prev) => [client, ...prev]);
-    showSuccessToast(t('NewClients.clientCreatedSuccessfully'));
-    handleCloseCreateModal();
-  };
 
-  const clientsMatchingView = useMemo(() => {
-    switch (selectedCustomerView) {
-      case 'all':
-      case 'portal':
-        return clients;
-      case 'active':
-        return clients.filter((c) => c.status !== 'OVERDUE');
-      case 'inactive':
-        return clients.filter((c) => c.status === 'OVERDUE' || c.status === 'PENDING');
-      case 'crm':
-        return clients.filter((c) => c.type === STATUS.GENERAL);
-      case 'duplicate': {
-        const dups = clients.filter((c, _i, arr) => arr.filter((x) => x.name === c.name).length > 1);
-        return dups.length > 0 ? dups : clients;
+    const body = buildClientRequestBody();
+    setIsSubmitting(true);
+    try {
+      if (editingClient) {
+        await CompanyAdminService.updateClient(editingClient.id, body);
+        showSuccessToast(t('NewClients.clientUpdatedSuccessfully'));
+        if (selectedClient?.id === editingClient.id) {
+          try {
+            const res = await CompanyAdminService.getClientById(editingClient.id);
+            const bodyRes = (res?.data ?? {}) as { data?: GetClientByIdResponseClient };
+            setSelectedClientDetails(bodyRes?.data ?? null);
+          } catch {
+            // ignore
+          }
+        }
+        setSelectedClient((prev) =>
+          prev?.id === editingClient.id
+            ? {
+                ...prev,
+                name: newClient.name,
+                email: newClient.email,
+                phone: newClient.phone,
+                buildingAddress: newClient.buildingAddress,
+                streetAddress: newClient.streetAddress,
+                country: newClient.country,
+                state: newClient.state,
+                city: newClient.city,
+                postalCode: newClient.postalCode,
+                description: newClient.description || undefined,
+                updatedAt: new Date().toISOString(),
+              }
+            : prev
+        );
+        setClients((prev) =>
+          prev.map((c) =>
+            c.id === editingClient.id
+              ? {
+                  ...c,
+                  name: newClient.name,
+                  email: newClient.email,
+                  phone: newClient.phone,
+                  buildingAddress: newClient.buildingAddress,
+                  streetAddress: newClient.streetAddress,
+                  country: newClient.country,
+                  state: newClient.state,
+                  city: newClient.city,
+                  postalCode: newClient.postalCode,
+                  description: newClient.description || undefined,
+                  updatedAt: new Date().toISOString(),
+                }
+              : c
+          )
+        );
+      } else {
+        await CompanyAdminService.createClient(body);
+        showSuccessToast(t('NewClients.clientCreatedSuccessfully'));
+        await fetchClients();
       }
-      default:
-        return clients;
+      handleCloseCreateModal();
+    } catch {
+      // Error toast handled by interceptor
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [clients, selectedCustomerView]);
-
-  const filteredClients = useMemo(() => {
-    if (!searchTerm.trim()) return clientsMatchingView;
-    const term = searchTerm.toLowerCase();
-    return clientsMatchingView.filter(
-      (c) =>
-        c.name.toLowerCase().includes(term) ||
-        c.email.toLowerCase().includes(term) ||
-        (c.phone && c.phone.includes(term))
-    );
-  }, [clientsMatchingView, searchTerm]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredClients.length / ITEMS_PER_PAGE));
-  const paginatedClients = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredClients.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredClients, currentPage]);
-
-  /** Keep detail panel bound to latest row data from `clients` after list updates. */
-  const displayClient = useMemo(() => {
-    if (!selectedClient) return null;
-    return clients.find((c) => c.id === selectedClient.id) ?? selectedClient;
-  }, [clients, selectedClient]);
-
-  const contactPersonRoleLine = useMemo(() => {
-    if (!displayClient) return '';
-    const raw = displayClient.description?.trim();
-    if (raw) {
-      const sentence = raw.split(/[.\n]/)[0]?.trim() ?? raw;
-      return sentence.length > 72 ? `${sentence.slice(0, 69)}…` : sentence;
-    }
-    return displayClient.type === STATUS.SUPPLIER
-      ? t('CompanyClientsList.contactPersonRoleSupplier')
-      : t('CompanyClientsList.contactPersonRoleGeneral');
-  }, [displayClient, t]);
-
-  useEffect(() => {
-    if (filteredClients.length === 0) {
-      setSelectedClient(null);
-      return;
-    }
-    if (selectedClient && !filteredClients.some((c) => c.id === selectedClient.id)) {
-      setSelectedClient(null);
-    }
-  }, [filteredClients, selectedClient]);
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -837,14 +630,42 @@ const CompanyClientsList = () => {
           <div className="card">
             <div className="card-body p-0">
 
-              <div className="clients-table-toolbar">
-                <Dropdown
-                  isOpen={customerViewPickerOpen}
-                  toggle={() => setCustomerViewPickerOpen((o) => !o)}
-                  className="clients-view-picker"
-                >
-                  <DropdownToggle
-                    tag="button"
+      <div className="company-clients-list">
+        {/* Left sidebar: client list */}
+        <aside className="company-clients-sidebar">
+          <div className="sidebar-header">
+            <Input
+              type="text"
+              className="sidebar-search-input"
+              placeholder={t('Common.searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(PAGINATION.DEFAULT_PAGE_NUMBER);
+              }}
+            />
+            <Button
+              color="primary"
+              size="sm"
+              className="sidebar-btn-add"
+              onClick={handleOpenCreateModal}
+              title={t('NewClients.createClient')}
+            >
+              <i className="bx bx-plus" />
+            </Button>
+          </div>
+          <div className="client-list">
+            {loading ? (
+              <div className="detail-placeholder">
+                <p className="mb-0">{t('Common.loading')}</p>
+              </div>
+            ) : clients.length > 0 ? (
+              clients.map((client) => {
+                const createdDate = new Date(client.createdAt);
+                const isActive = selectedClient?.id === client.id;
+                return (
+                  <button
+                    key={client.id}
                     type="button"
                     caret={false}
                     className="clients-view-picker__trigger"
@@ -963,75 +784,156 @@ const CompanyClientsList = () => {
                         </div>
                       )}
                     </div>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="detail-placeholder">
+                <p className="mb-0">{t('NewClients.noClientsFound')}</p>
+              </div>
+            )}
+          </div>
+          {!loading && totalItems > 0 && (
+            <div className="sidebar-footer p-2 border-top">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemsPerPage={PAGINATION.DEFAULT_PAGE_SIZE}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
+        </aside>
 
-                    <div className="clients-view-picker__footer">
-                      <button type="button" className="clients-view-picker__new-view" onClick={handleNewCustomViewClick}>
-                        <span className="clients-view-picker__new-view-icon" aria-hidden>
-                          <i className="bx bx-plus" />
-                        </span>
-                        {t('CompanyClientsList.newCustomView')}
-                      </button>
+        {/* Right panel: client details */}
+        <div className="company-clients-detail">
+          {selectedClient ? (
+            <Card className="h-100 border-0 shadow-none rounded-0 d-flex flex-column">
+              <div className="detail-header-bar">
+                <div className="d-flex align-items-center gap-3">
+                  {selectedClientDetails?.clientMetadata?.logo && typeof selectedClientDetails.clientMetadata.logo === 'string' ? (
+                    <div className="detail-avatar rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 overflow-hidden bg-light">
+                      <img src={selectedClientDetails.clientMetadata.logo as string} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
-                  </DropdownMenu>
-                </Dropdown>
-                <div className="clients-toolbar-actions">
-                  <Button color="primary" className="btn-rounded waves-effect d-inline-flex align-items-center waves-light btn btn-primary" onClick={handleOpenCreateModal}>
-                    <i className="bx bx-plus me-1" />
-                    {t('CompanyClientsList.newBtn')}
+                  ) : (
+                    <div
+                      className={`detail-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0 ${getAvatarColor(selectedClient.name)}`}
+                    >
+                      {getInitials(selectedClient.name)}
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="detail-client-name mb-1">{selectedClientDetails?.name ?? selectedClient.name}</h4>
+                    <span className="text-muted">#{selectedClient.id}</span>
+                  </div>
+                </div>
+                <div className="d-flex gap-2">
+                  <Button
+                    color="secondary"
+                    size="sm"
+                    outline
+                    className="d-inline-flex align-items-center"
+                    onClick={() => handleOpenEditModal(selectedClient)}
+                    disabled={loadingEdit}
+                  >
+                    <i className="mdi mdi-pencil me-1" />
+                    {loadingEdit ? t('Common.loading') : t('Common.edit')}
+                  </Button>
+                  <Button
+                    color="danger"
+                    size="sm"
+                    outline
+                    className="d-inline-flex align-items-center"
+                    onClick={() => handleDeleteClick(selectedClient)}
+                    disabled={isDeleting}
+                  >
+                    <i className="mdi mdi-delete me-1" />
+                    {t('Common.delete')}
                   </Button>
                 </div>
               </div>
-              {paginatedClients.length > 0 ? (
-                <Table responsive className="clients-data-table mb-0">
-                  <thead>
-                    <tr>
-                      <th className="clients-th-filter-check">
-                        <span className="visually-hidden">{t('CompanyClientsList.selectAllOnPage')}</span>
-                        <Input type="checkbox" className="clients-table-checkbox" disabled aria-hidden />
-                      </th>
-                      <th className="clients-th-name">
-                          {t('CompanyClientsList.companyName')}
-                      </th>
-                      <th>{t('Common.email')}</th>
-                      <th>{t('CompanyClientsList.workPhone')}</th>
-                      <th>{t('Common.status')}</th>
-                      <th className="text-end">{t('CompanyClientsList.receivablesBcy')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedClients.map((client) => {
-                      const isSelected = selectedClient?.id === client.id;
-                      return (
-                        <tr
-                          key={client.id}
-                          role="button"
-                          tabIndex={0}
-                          className={`clients-table-row ${isSelected ? 'clients-table-row--selected' : ''}`}
-                          onClick={() => {
-                            handleSelectClient(client);
-                            setListScreen('detail');
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              handleSelectClient(client);
-                              setListScreen('detail');
-                            }
-                          }}
-                        >
-                          <td onClick={(e) => e.stopPropagation()}>
-                            <Input type="checkbox" className="clients-table-checkbox" disabled aria-hidden />
-                          </td>
-                          <td className="clients-td-company">
-                            <div className="d-flex align-items-center gap-2 min-w-0">
-                              <div className="avatar-xs flex-shrink-0">
-                                <span className={`avatar-title rounded-circle ${getAvatarColor(client.name)}`}>
-                                  {getInitials(client.name)}
-                                </span>
+
+              <Nav tabs className="detail-tabs">
+                <NavItem>
+                  <NavLink
+                    tag="button"
+                    type="button"
+                    className={activeDetailTab === 'overview' ? 'active' : ''}
+                    onClick={() => setActiveDetailTab('overview')}
+                  >
+                    {t('CompanyClientsList.overview')}
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink
+                    tag="button"
+                    type="button"
+                    className={activeDetailTab === 'comments' ? 'active' : ''}
+                    onClick={() => setActiveDetailTab('comments')}
+                  >
+                    {t('CompanyClientsList.comments')}
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink
+                    tag="button"
+                    type="button"
+                    className={activeDetailTab === 'transactions' ? 'active' : ''}
+                    onClick={() => setActiveDetailTab('transactions')}
+                  >
+                    {t('CompanyClientsList.transactions')}
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink
+                    tag="button"
+                    type="button"
+                    className={activeDetailTab === 'mails' ? 'active' : ''}
+                    onClick={() => setActiveDetailTab('mails')}
+                  >
+                    {t('CompanyClientsList.mails')}
+                  </NavLink>
+                </NavItem>
+                <NavItem>
+                  <NavLink
+                    tag="button"
+                    type="button"
+                    className={activeDetailTab === 'statement' ? 'active' : ''}
+                    onClick={() => setActiveDetailTab('statement')}
+                  >
+                    {t('CompanyClientsList.statement')}
+                  </NavLink>
+                </NavItem>
+              </Nav>
+
+              <CardBody className="detail-card-body flex-grow-1 overflow-auto">
+                {loadingDetails ? (
+                  <div className="detail-tab-placeholder">
+                    <p className="text-muted mb-0">{t('Common.loading')}</p>
+                  </div>
+                ) : activeDetailTab === 'overview' && selectedClient ? (
+                  <div className="overview-content">
+                    <div className="overview-two-col">
+                      {/* Left column: Contact, Address, Other details, Contact persons */}
+                      <div className="overview-left">
+                        <div className="overview-contact-card">
+                          <div className="d-flex align-items-center gap-3">
+                            {selectedClientDetails?.clientMetadata?.logo && typeof selectedClientDetails.clientMetadata.logo === 'string' ? (
+                              <div className="overview-contact-avatar rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 overflow-hidden bg-light">
+                                <img src={selectedClientDetails.clientMetadata.logo as string} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               </div>
-                              <span className="clients-name-link text-truncate" title={client.name}>
-                                {client.name}
-                              </span>
+                            ) : (
+                              <div className={`overview-contact-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0 ${getAvatarColor(selectedClient.name)}`}>
+                                {getInitials(selectedClient.name)}
+                              </div>
+                            )}
+                            <div className="flex-grow-1 min-w-0">
+                              <div className="overview-contact-name">{selectedClientDetails?.name ?? selectedClient.name}</div>
+                              {(selectedClientDetails?.email ?? selectedClient.email) && (
+                                <div className="small text-muted">{selectedClientDetails?.email ?? selectedClient.email}</div>
+                              )}
+                              <a href="#invite" className="overview-invite-link">{t('CompanyClientsList.inviteToPortal')}</a>
                             </div>
                           </td>
                           <td className="clients-td-email text-truncate" title={client.email}>
@@ -1083,125 +985,25 @@ const CompanyClientsList = () => {
                             caret={false}
                             className="clients-view-picker__trigger"
                           >
-                            <span className="clients-view-picker__trigger-label">{t(customerViewLabelKey(selectedCustomerView))}</span>
-                            <i
-                              className={`bx ms-2 fs-18 clients-view-picker__trigger-chevron ${customerViewPickerOpen ? 'bx-chevron-up' : 'bx-chevron-down'}`}
-                              aria-hidden
-                            />
-                          </DropdownToggle>
-                          <DropdownMenu className="clients-view-picker__menu" flip>
-                            <div className="clients-view-picker__search-wrap">
-                              <InputGroup size="sm" className="clients-view-picker__search">
-                                <InputGroupText className="clients-view-picker__search-icon">
-                                  <i className="bx bx-search" aria-hidden />
-                                </InputGroupText>
-                                <Input
-                                  type="search"
-                                  value={viewPickerSearch}
-                                  onChange={(e) => setViewPickerSearch(e.target.value)}
-                                  placeholder={t('CompanyClientsList.viewPickerSearchPlaceholder')}
-                                  onClick={(e) => e.stopPropagation()}
-                                  aria-label={t('CompanyClientsList.viewPickerSearchPlaceholder')}
-                                />
-                              </InputGroup>
-                            </div>
-
-                            {favoriteViewsInOrder.length > 0 && (
-                              <div className="clients-view-picker__section">
-                                <button
-                                  type="button"
-                                  className="clients-view-picker__section-head"
-                                  onClick={() => setViewPickerFavoritesOpen((o) => !o)}
-                                >
-                                  <i
-                                    className={`bx me-2 ${viewPickerFavoritesOpen ? 'bx-chevron-down' : 'bx-chevron-right'}`}
-                                    aria-hidden
-                                  />
-                                  <span className="clients-view-picker__section-title">{t('CompanyClientsList.favoritesSection')}</span>
-                                  <Badge pill color="primary" className="clients-view-picker__section-count ms-auto">
-                                    {favoritedCustomerViews.size}
-                                  </Badge>
-                                </button>
-                                {viewPickerFavoritesOpen && (
-                                  <div className="clients-view-picker__section-body">
-                                    {favoriteViewsInOrder.map((id) => (
-                                      <div key={`fav-${id}`} className="clients-view-picker__row">
-                                        <button
-                                          type="button"
-                                          className="clients-view-picker__row-main"
-                                          onClick={() => selectCustomerView(id)}
-                                        >
-                                          {t(customerViewLabelKey(id))}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="clients-view-picker__star-btn clients-view-picker__star-btn--on"
-                                          aria-pressed="true"
-                                          aria-label={t('CompanyClientsList.toggleFavoriteForView', {
-                                            name: t(customerViewLabelKey(id)),
-                                          })}
-                                          onClick={(e) => toggleFavoriteCustomerView(id, e)}
-                                        >
-                                          <i className="bx bxs-star" aria-hidden />
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
+                            <span className="overview-section-title">{t('CompanyClientsList.address')}</span>
+                            <i className={`bx ${overviewAddressOpen ? 'bx-chevron-up' : 'bx-chevron-down'} text-primary`} />
+                          </button>
+                          {overviewAddressOpen && (
+                            <div className="overview-section-body">
+                              <div className="overview-kv">
+                                <span className="overview-kv-label">{t('CompanyClientsList.billingAddress')}</span>
+                                <span className="overview-kv-value">
+                                  {formatAddressFromMetadata(selectedClientDetails?.clientMetadata as Record<string, unknown> | undefined) || (
+                                    <>{t('CompanyClientsList.noBillingAddress')} — <a href="#new-address" className="overview-link">{t('CompanyClientsList.newAddress')}</a></>
+                                  )}
+                                </span>
                               </div>
-                            )}
-
-                            <div className="clients-view-picker__section">
-                              <button
-                                type="button"
-                                className="clients-view-picker__section-head clients-view-picker__section-head--filters"
-                                onClick={() => setViewPickerDefaultFiltersOpen((o) => !o)}
-                              >
-                                <i
-                                  className={`bx me-2 ${viewPickerDefaultFiltersOpen ? 'bx-chevron-down' : 'bx-chevron-right'}`}
-                                  aria-hidden
-                                />
-                                <span className="clients-view-picker__section-title">{t('CompanyClientsList.defaultFiltersSection')}</span>
-                                <Badge pill color="primary" className="clients-view-picker__section-count ms-auto">
-                                  {DEFAULT_CUSTOMER_VIEWS.length}
-                                </Badge>
-                              </button>
-                              {viewPickerDefaultFiltersOpen && (
-                                <div className="clients-view-picker__section-body">
-                                  {defaultFilterViewsVisible.map((id) => {
-                                    const isSelected = selectedCustomerView === id;
-                                    const isFav = favoritedCustomerViews.has(id);
-                                    return (
-                                      <div key={id} className="clients-view-picker__row">
-                                        <button
-                                          type="button"
-                                          className={`clients-view-picker__row-main ${isSelected ? 'is-active' : ''}`}
-                                          onClick={() => selectCustomerView(id)}
-                                        >
-                                          {t(customerViewLabelKey(id))}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className={`clients-view-picker__star-btn ${isFav ? 'clients-view-picker__star-btn--on' : ''}`}
-                                          aria-pressed={isFav}
-                                          aria-label={t('CompanyClientsList.toggleFavoriteForView', {
-                                            name: t(customerViewLabelKey(id)),
-                                          })}
-                                          onClick={(e) => toggleFavoriteCustomerView(id, e)}
-                                        >
-                                          <i className={`bx ${isFav ? 'bxs-star' : 'bx-star'}`} aria-hidden />
-                                        </button>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="clients-view-picker__footer">
-                              <button type="button" className="clients-view-picker__new-view" onClick={handleNewCustomViewClick}>
-                                <span className="clients-view-picker__new-view-icon" aria-hidden>
-                                  <i className="bx bx-plus" />
+                              <div className="overview-kv">
+                                <span className="overview-kv-label">{t('CompanyClientsList.shippingAddress')}</span>
+                                <span className="overview-kv-value">
+                                  {formatAddressFromMetadata(selectedClientDetails?.clientMetadata as Record<string, unknown> | undefined) || (
+                                    <>{t('CompanyClientsList.noShippingAddress')} — <a href="#new-address" className="overview-link">{t('CompanyClientsList.newAddress')}</a></>
+                                  )}
                                 </span>
                                 {t('CompanyClientsList.newCustomView')}
                               </button>
@@ -1307,51 +1109,36 @@ const CompanyClientsList = () => {
                         </div>
                       </div>
 
-                      <Nav tabs className="detail-tabs">
-                        <NavItem>
-                          <NavLink
-                            tag="button"
-                            type="button"
-                            className={activeDetailTab === 'overview' ? 'active' : ''}
-                              onClick={() => setActiveDetailTab('overview')}
-                          >
-                            {t('CompanyClientsList.overview')}
-                          </NavLink>
-                        </NavItem>
-                        
-                        <NavItem>
-                          <NavLink
-                            tag="button"
-                            type="button"
-                            className={activeDetailTab === 'transactions' ? 'active' : ''}
-                            onClick={() => {
-                              setActiveDetailTab('transactions');
-                            }}
-                          >
-                            {t('CompanyClientsList.transactions')}
-                          </NavLink>
-                        </NavItem>
-                        <NavItem>
-                          <NavLink
-                            tag="button"
-                            type="button"
-                            className={activeDetailTab === 'mails' ? 'active' : ''}
-                            onClick={() => setActiveDetailTab('mails')}
-                          >
-                            {t('CompanyClientsList.mails')}
-                          </NavLink>
-                        </NavItem>
-                        <NavItem>
-                          <NavLink
-                            tag="button"
-                            type="button"
-                            className={activeDetailTab === 'statement' ? 'active' : ''}
-                            onClick={() => setActiveDetailTab('statement')}
-                          >
-                            {t('CompanyClientsList.statement')}
-                          </NavLink>
-                        </NavItem>
-                      </Nav>
+                      {/* Right column: Payment due, Receivables, Income and Expense */}
+                      <div className="overview-right">
+                        <div className="overview-block">
+                          <Label className="overview-label">{t('CompanyClientsList.paymentDuePeriod')}</Label>
+                          <p className="overview-value mb-0">{t('CompanyClientsList.dueOnReceipt')}</p>
+                        </div>
+
+                        <div className="overview-block">
+                          <div className="overview-heading">{t('CompanyClientsList.receivables')}</div>
+                          <div className="table-responsive">
+                            <Table className="overview-receivables-table mb-0">
+                              <thead>
+                                <tr>
+                                  <th>{t('CompanyClientsList.currency')}</th>
+                                  <th className="text-end">{t('CompanyClientsList.outstandingReceivables')}</th>
+                                  <th className="text-end">{t('CompanyClientsList.unusedCredits')}</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td>AED - UAE Dirham</td>
+                                  <td className="text-end">
+                                    AED{(Number((selectedClientDetails?.clientMetadata as Record<string, unknown> | undefined)?.totalAmount) || selectedClient?.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </td>
+                                  <td className="text-end">AED0.00</td>
+                                </tr>
+                              </tbody>
+                            </Table>
+                          </div>
+                        </div>
 
                       <CardBody className="detail-card-body flex-grow-1 overflow-auto p-0">
                         {activeDetailTab === 'overview' && (
@@ -1383,29 +1170,199 @@ const CompanyClientsList = () => {
                           <div className="detail-tab-placeholder">
                             <p className="text-muted mb-0">{t('CompanyClientsList.mails')}</p>
                           </div>
-                        )}
-
-                        {activeDetailTab === 'statement' && (
-                          <div className="detail-tab-placeholder">
-                            <p className="text-muted mb-0">{t('CompanyClientsList.statement')}</p>
-                          </div>
-                        )}
-                      </CardBody>
-                    </Card>
-                  ) : (
-                    <div className="detail-placeholder">
-                      <h5 className="mb-2">{t('CompanyClientsList.selectClientTitle')}</h5>
-                      <p className="text-muted mb-0">{t('CompanyClientsList.selectClientDescription')}</p>
+                          <p className="overview-total-income small text-muted mb-0 mt-2">
+                            {t('CompanyClientsList.totalIncomeLast6Months')} — AED{(Number((selectedClientDetails?.clientMetadata as Record<string, unknown> | undefined)?.totalAmount) || selectedClient?.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  )}
+                  </div>
+                ) : null}
+
+                {activeDetailTab === 'comments' && (
+                  <div className="detail-tab-placeholder">
+                    <p className="text-muted mb-0">{t('CompanyClientsList.comments')}</p>
+                  </div>
+                )}
+
+                {activeDetailTab === 'transactions' && (
+                  <div className="detail-tab-placeholder">
+                    <p className="text-muted mb-0">{t('CompanyClientsList.transactions')}</p>
+                  </div>
+                )}
+
+                {activeDetailTab === 'mails' && (
+                  <div className="detail-tab-placeholder">
+                    <p className="text-muted mb-0">{t('CompanyClientsList.mails')}</p>
+                  </div>
+                )}
+
+                {activeDetailTab === 'statement' && (
+                  <div className="detail-tab-placeholder">
+                    <p className="text-muted mb-0">{t('CompanyClientsList.statement')}</p>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          ) : (
+            <div className="detail-placeholder">
+              <h5 className="mb-2">{t('CompanyClientsList.selectClientTitle')}</h5>
+              <p className="text-muted mb-0">{t('CompanyClientsList.selectClientDescription')}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="lg">
+        <ModalHeader toggle={handleCloseCreateModal}>
+          {editingClient ? t('NewClients.editClient') : t('NewClients.createClient')}
+        </ModalHeader>
+        <ModalBody>
+          <Row className="m-0">
+            <div className="col-md-12 mb-4 d-flex flex-column align-items-center">
+              <Label className="form-label fw-semibold mb-2">{t('NewClients.profilePhoto')}</Label>
+              <div
+                className="profile-photo-upload position-relative d-flex align-items-center justify-content-center"
+                onClick={() => document.getElementById('client-profile-upload-input')?.click()}
+              >
+                {newClient.logo && newClient.logo.preview ? (
+                  <img
+                    src={newClient.logo.preview as string}
+                    alt="Profile"
+                  />
+                ) : (
+                  <svg width="80" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="40" cy="40" r="40" fill="#e1e7ef" />
+                    <circle cx="40" cy="32" r="14" fill="#ced6df" />
+                    <ellipse cx="40" cy="60" rx="22" ry="14" fill="#ced6df" />
+                  </svg>
+                )}
+
+                <div className="profile-upload-button">
+                  <i className="mdi mdi-camera text-primary" />
                 </div>
               </Col>
             </Row>
 
-          </>
-        )}
-      </div>
-     
+            <Col md="6" className="mb-3">
+              <Label className="form-label fw-semibold form-label">{t('NewClients.clientName')} <span className="text-danger">*</span></Label>
+              <Input
+                value={newClient.name}
+                onChange={(e) => handleNewClientChange('name', e.target.value)}
+                invalid={!!createErrors.name}
+                placeholder={t('NewClients.enterClientName')}
+              />
+              <FormFeedback>{createErrors.name}</FormFeedback>
+            </Col>
+            <Col md="6" className="mb-3">
+              <Label className="form-label fw-semibold form-label">{t('Common.email')} <span className="text-danger">*</span></Label>
+              <Input
+                type="email"
+                value={newClient.email}
+                onChange={(e) => handleNewClientChange('email', e.target.value)}
+                invalid={!!createErrors.email}
+                placeholder={t('NewClients.enterEmailAddress')}
+              />
+              <FormFeedback>{createErrors.email}</FormFeedback>
+            </Col>
+            <Col md="6" className="mb-3">
+              <Label className="form-label fw-semibold form-label">{t('Common.phone')} <span className="text-danger">*</span></Label>
+              <Input
+                value={newClient.phone}
+                onChange={(e) => handleNewClientChange('phone', e.target.value)}
+                invalid={!!createErrors.phone}
+                placeholder={t('NewClients.enterPhoneNumber')}
+              />
+              <FormFeedback>{createErrors.phone}</FormFeedback>
+            </Col>
+            <Col md="6" className="mb-3">
+              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.buildingAddress')} <span className="text-danger">*</span></Label>
+              <Input
+                value={newClient.buildingAddress}
+                onChange={(e) => handleNewClientChange('buildingAddress', e.target.value)}
+                invalid={!!createErrors.buildingAddress}
+                placeholder={t('NewClients.enterBuildingAddress')}
+              />
+              <FormFeedback>{createErrors.buildingAddress}</FormFeedback>
+            </Col>
+            <Col md="6" className="mb-3">
+              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.streetAddress')} <span className="text-danger">*</span></Label>
+              <Input
+                value={newClient.streetAddress}
+                onChange={(e) => handleNewClientChange('streetAddress', e.target.value)}
+                invalid={!!createErrors.streetAddress}
+                placeholder={t('NewClients.enterStreetAddress')}
+              />
+              <FormFeedback>{createErrors.streetAddress}</FormFeedback>
+            </Col>
+            <Col md="6" className="mb-3">
+              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.country')} <span className="text-danger">*</span></Label>
+              <Input
+                value={newClient.country}
+                onChange={(e) => handleNewClientChange('country', e.target.value)}
+                invalid={!!createErrors.country}
+              />
+              <FormFeedback>{createErrors.country}</FormFeedback>
+            </Col>
+            <Col md="6" className="mb-3">
+              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.state')} <span className="text-danger">*</span></Label>
+              <Input
+                value={newClient.state}
+                onChange={(e) => handleNewClientChange('state', e.target.value)}
+                invalid={!!createErrors.state}
+              />
+              <FormFeedback>{createErrors.state}</FormFeedback>
+            </Col>
+            <Col md="6" className="mb-3">
+              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.city')} <span className="text-danger">*</span></Label>
+              <Input
+                value={newClient.city}
+                onChange={(e) => handleNewClientChange('city', e.target.value)}
+                invalid={!!createErrors.city}
+              />
+              <FormFeedback>{createErrors.city}</FormFeedback>
+            </Col>
+            <Col md="6" className="mb-3">
+              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.postalCode')} <span className="text-danger">*</span></Label>
+              <Input
+                value={newClient.postalCode}
+                onChange={(e) => handleNewClientChange('postalCode', e.target.value)}
+                invalid={!!createErrors.postalCode}
+              />
+              <FormFeedback>{createErrors.postalCode}</FormFeedback>
+            </Col>
+            <Col xs="12">
+              <Label className="form-label fw-semibold form-label">{t('NewClients.labels.description')}</Label>
+              <Input
+                type="textarea"
+                value={newClient.description}
+                onChange={(e) => handleNewClientChange('description', e.target.value)}
+                placeholder={t('NewClients.enterDescription')}
+                rows={3}
+              />
+            </Col>
+          </Row>
+        </ModalBody>
+        <ModalFooter>
+          <Button color="secondary" onClick={handleCloseCreateModal} disabled={isSubmitting}>
+            {t('Common.cancel')}
+          </Button>
+          <Button color="primary" onClick={handleSaveClient} disabled={isSubmitting}>
+            {isSubmitting ? t('Common.loading') : editingClient ? t('Common.save') : t('NewClients.createClient')}
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        toggle={() => {
+          setDeleteModalOpen(false);
+          setClientToDelete(null);
+        }}
+        message={clientToDelete ? `${t('NewClients.deleteConfirmation')} ${clientToDelete.name}?` : ''}
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeleting}
+      />
     </>
   );
 };

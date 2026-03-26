@@ -60,6 +60,7 @@ export const createCompanyData = (overrides = {}) => {
   const data = {
     name: generateUniqueName('Company'),
     description: 'Test company description',
+    email: generateUniqueEmail(),
     isActive: true,
     status: COMPANY_STATUS_DEFAULT,
     ...overrides
@@ -89,6 +90,68 @@ export const createRoleData = (overrides = {}) => {
     name: generateUniqueName('Role'),
     code: generateUniqueCode('ROLE'),
     description: 'Test role description',
+    isActive: true,
+    ...overrides
+  };
+};
+
+/**
+ * Create JobTitle test data
+ * @param {Object} overrides - Fields to override
+ * @returns {Object} JobTitle data for JobTitle.create()
+ */
+export const createJobTitleData = (overrides = {}) => {
+  return {
+    jobTitle: generateUniqueName('Job Title'),
+    description: 'Test job title description',
+    isActive: true,
+    ...overrides
+  };
+};
+
+/**
+ * Create ProjectType test data
+ * @param {Object} overrides
+ * @returns {Object}
+ */
+export const createProjectTypeData = (overrides = {}) => {
+  return {
+    projectType: generateUniqueName('Project Type'),
+    description: 'Test project type description',
+    isActive: true,
+    ...overrides
+  };
+};
+
+/**
+ * Create ProjectCategory test data
+ * @param {Object} overrides
+ * @returns {Object}
+ */
+export const createProjectCategoryData = (overrides = {}) => {
+  return {
+    projectCategory: generateUniqueName('Project Category'),
+    description: 'Test project category description',
+    isActive: true,
+    ...overrides
+  };
+};
+
+/**
+ * Create Employee test data (for Employee.create with audit context)
+ * @param {string} jobTitleId - Required FK to job_titles
+ * @param {Object} overrides
+ * @returns {Object}
+ */
+export const createEmployeeData = (jobTitleId, overrides = {}) => {
+  return {
+    firstName: 'Test',
+    lastName: 'Employee',
+    email: generateUniqueEmail(),
+    phone: '+15550001111',
+    employeeMetadata: {},
+    jobTitleId,
+    salary: 75000.5,
     isActive: true,
     ...overrides
   };

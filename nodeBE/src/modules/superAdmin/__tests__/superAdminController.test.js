@@ -56,6 +56,7 @@ const mockValidateRequired = jest.fn();
 const mockValidateString = jest.fn();
 const mockValidateEnum = jest.fn();
 const mockValidateNumber = jest.fn();
+const mockValidateBoolean = jest.fn();
 
 jest.unstable_mockModule('../../../utils/validators.js', () => ({
   validateUUID: mockValidateUUID,
@@ -63,7 +64,8 @@ jest.unstable_mockModule('../../../utils/validators.js', () => ({
   validateRequired: mockValidateRequired,
   validateString: mockValidateString,
   validateEnum: mockValidateEnum,
-  validateNumber: mockValidateNumber
+  validateNumber: mockValidateNumber,
+  validateBoolean: mockValidateBoolean
 }));
 
 // Mock businessHelpers
@@ -87,13 +89,15 @@ const mockListCompanies = jest.fn();
 const mockGetCompanyById = jest.fn();
 const mockUpdateCompany = jest.fn();
 const mockDeleteCompany = jest.fn();
+const mockGetCompanyByEmail = jest.fn();
 
 jest.unstable_mockModule('../../../services/companyService.js', () => ({
   createCompany: mockCreateCompany,
   listCompanies: mockListCompanies,
   getCompanyById: mockGetCompanyById,
   updateCompany: mockUpdateCompany,
-  deleteCompany: mockDeleteCompany
+  deleteCompany: mockDeleteCompany,
+  getCompanyByEmail: mockGetCompanyByEmail
 }));
 
 const mockCreateRole = jest.fn();
@@ -101,13 +105,15 @@ const mockListRoles = jest.fn();
 const mockGetRoleById = jest.fn();
 const mockUpdateRole = jest.fn();
 const mockDeleteRole = jest.fn();
+const mockGetRoleByCode = jest.fn();
 
 jest.unstable_mockModule('../../../services/roleService.js', () => ({
   createRole: mockCreateRole,
   listRoles: mockListRoles,
   getRoleById: mockGetRoleById,
   updateRole: mockUpdateRole,
-  deleteRole: mockDeleteRole
+  deleteRole: mockDeleteRole,
+  getRoleByCode: mockGetRoleByCode
 }));
 
 const mockListUsers = jest.fn();
@@ -117,6 +123,7 @@ const mockGetUserByIdWithCompanies = jest.fn();
 const mockCreateUserInDB = jest.fn();
 const mockCreateUserInKeycloak = jest.fn();
 const mockCheckUserExistsInKeycloak = jest.fn();
+const mockGetUserByEmail = jest.fn();
 const mockUpdateUserInDB = jest.fn();
 const mockUpdateUserInKeycloak = jest.fn();
 const mockDeleteUserFromKeycloak = jest.fn();
@@ -132,6 +139,7 @@ jest.unstable_mockModule('../../../services/userService.js', () => ({
   createUserInDB: mockCreateUserInDB,
   createUserInKeycloak: mockCreateUserInKeycloak,
   checkUserExistsInKeycloak: mockCheckUserExistsInKeycloak,
+  getUserByEmail: mockGetUserByEmail,
   updateUserInDB: mockUpdateUserInDB,
   updateUserInKeycloak: mockUpdateUserInKeycloak,
   deleteUserFromKeycloak: mockDeleteUserFromKeycloak,
@@ -162,6 +170,50 @@ jest.unstable_mockModule('../../../services/planService.js', () => ({
   deletePlan: mockDeletePlan
 }));
 
+const mockJobTitleCreate = jest.fn();
+const mockJobTitleList = jest.fn();
+const mockJobTitleGetById = jest.fn();
+const mockJobTitleUpdate = jest.fn();
+const mockJobTitleDelete = jest.fn();
+const mockJobTitleSetActiveStatus = jest.fn();
+
+jest.unstable_mockModule('../../../services/jobTitleService.js', () => ({
+  createJobTitle: mockJobTitleCreate,
+  listJobTitlesForCompany: mockJobTitleList,
+  getJobTitleByIdForCompany: mockJobTitleGetById,
+  updateJobTitleForCompany: mockJobTitleUpdate,
+  deleteJobTitleForCompany: mockJobTitleDelete,
+  setJobTitleActiveStatusForCompany: mockJobTitleSetActiveStatus
+}));
+
+const mockProjectTypeSetActiveStatus = jest.fn();
+
+jest.unstable_mockModule('../../../services/projectTypeService.js', () => ({
+  createProjectType: jest.fn(),
+  listProjectTypesForCompany: jest.fn(),
+  getProjectTypeByIdForCompany: jest.fn(),
+  updateProjectTypeForCompany: jest.fn(),
+  deleteProjectTypeForCompany: jest.fn(),
+  setProjectTypeActiveStatusForCompany: mockProjectTypeSetActiveStatus
+}));
+
+const mockProjectCategorySetActiveStatus = jest.fn();
+
+jest.unstable_mockModule('../../../services/projectCategoryService.js', () => ({
+  createProjectCategory: jest.fn(),
+  listProjectCategoriesForCompany: jest.fn(),
+  getProjectCategoryByIdForCompany: jest.fn(),
+  updateProjectCategoryForCompany: jest.fn(),
+  deleteProjectCategoryForCompany: jest.fn(),
+  setProjectCategoryActiveStatusForCompany: mockProjectCategorySetActiveStatus
+}));
+
+const mockGetSuperAdminCompanyId = jest.fn();
+
+jest.unstable_mockModule('../../../services/systemCompanyService.js', () => ({
+  getSuperAdminCompanyId: mockGetSuperAdminCompanyId
+}));
+
 let superAdminController;
 let loggerUtils;
 let responseHelpers;
@@ -186,6 +238,10 @@ beforeAll(async () => {
   userService = await import('../../../services/userService.js');
   companyUserService = await import('../../../services/companyUserService.js');
   planService = await import('../../../services/planService.js');
+  await import('../../../services/jobTitleService.js');
+  await import('../../../services/projectTypeService.js');
+  await import('../../../services/projectCategoryService.js');
+  await import('../../../services/systemCompanyService.js');
 });
 
 describe('Super Admin Controller', () => {
@@ -272,28 +328,119 @@ describe('Super Admin Controller', () => {
   });
 
   describe('createCompany', () => {
-    it('should create company successfully', async () => {
+    it('should create company and admin user successfully', async () => {
       // Arrange
       req.body = {
         name: 'New Company',
-        description: 'New company description'
+        description: 'New company description',
+        email: 'admin@newcompany.com'
       };
 
       const mockNewCompany = createMockCompany({
-        name: 'New Company'
+        name: 'New Company',
+        email: 'admin@newcompany.com'
       });
+      
+      const mockRole = createMockRole({ code: 'COMPANY_ADMIN' });
+      const mockKeycloakUser = { id: uuidv4() };
+      const mockNewUser = createMockUser({ email: 'admin@newcompany.com' });
 
       mockValidateRequired.mockImplementation(() => {});
       mockValidateString.mockImplementation(() => {});
+      mockValidateEmail.mockImplementation(() => {});
+      
+      mockGetCompanyByEmail.mockResolvedValue(null);
+      mockCheckUserExistsInKeycloak.mockResolvedValue(null);
+      mockGetUserByEmail.mockResolvedValue(null);
+      mockGetRoleByCode.mockResolvedValue(mockRole);
+      
       mockCreateCompany.mockResolvedValue(mockNewCompany);
+      mockCreateUserInKeycloak.mockResolvedValue(mockKeycloakUser);
+      mockCreateUserInDB.mockResolvedValue(mockNewUser);
+      mockAssignUserToCompany.mockResolvedValue({});
 
       // Act
       await superAdminController.createCompany(req, res);
 
       // Assert
+      expect(mockGetCompanyByEmail).toHaveBeenCalledWith('admin@newcompany.com');
+      expect(mockCheckUserExistsInKeycloak).toHaveBeenCalledWith('admin@newcompany.com');
       expect(mockCreateCompany).toHaveBeenCalled();
+      expect(mockCreateUserInKeycloak).toHaveBeenCalledWith(expect.objectContaining({
+        email: 'admin@newcompany.com',
+        password: 'admin',
+        firstName: 'New Company',
+        lastName: 'Admin',
+        keycloakGlobalRole: 'COMPANY_ADMIN'
+      }));
+      expect(mockCreateUserInDB).toHaveBeenCalled();
+      expect(mockAssignUserToCompany).toHaveBeenCalledWith(
+        mockNewUser.id,
+        mockNewCompany.id,
+        mockRole.id,
+        expect.objectContaining({ userId: req.user.id })
+      );
       expect(mockLogBusiness).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should throw ConflictError if company with email already exists', async () => {
+      // Arrange
+      req.body = {
+        name: 'New Company',
+        email: 'admin@newcompany.com'
+      };
+
+      mockValidateRequired.mockImplementation(() => {});
+      mockValidateString.mockImplementation(() => {});
+      mockValidateEmail.mockImplementation(() => {});
+      
+      mockGetCompanyByEmail.mockResolvedValue({ id: uuidv4(), email: 'admin@newcompany.com' });
+
+      // Act & Assert
+      await expect(superAdminController.createCompany(req, res)).rejects.toThrow(ConflictError);
+      expect(mockCreateCompany).not.toHaveBeenCalled();
+    });
+
+    it('should throw ConflictError if user with email already exists', async () => {
+      // Arrange
+      req.body = {
+        name: 'New Company',
+        email: 'admin@newcompany.com'
+      };
+
+      mockValidateRequired.mockImplementation(() => {});
+      mockValidateString.mockImplementation(() => {});
+      mockValidateEmail.mockImplementation(() => {});
+      
+      mockGetCompanyByEmail.mockResolvedValue(null);
+      mockCheckUserExistsInKeycloak.mockResolvedValue(null);
+      mockGetUserByEmail.mockResolvedValue({ id: uuidv4(), email: 'admin@newcompany.com' });
+
+      // Act & Assert
+      await expect(superAdminController.createCompany(req, res)).rejects.toThrow(ConflictError);
+      expect(mockCreateCompany).not.toHaveBeenCalled();
+    });
+
+    it('should throw ConflictError if COMPANY_ADMIN role does not exist', async () => {
+      // Arrange
+      req.body = {
+        name: 'New Company',
+        email: 'admin@newcompany.com'
+      };
+
+      mockValidateRequired.mockImplementation(() => {});
+      mockValidateString.mockImplementation(() => {});
+      mockValidateEmail.mockImplementation(() => {});
+      
+      mockGetCompanyByEmail.mockResolvedValue(null);
+      mockCheckUserExistsInKeycloak.mockResolvedValue(null);
+      mockGetUserByEmail.mockResolvedValue(null);
+      mockGetRoleByCode.mockResolvedValue(null); // Role not found
+
+      // Act & Assert
+      await expect(superAdminController.createCompany(req, res)).rejects.toThrow(ConflictError);
+      expect(mockCreateCompany).not.toHaveBeenCalled();
     });
 
     it('should create company with all new fields', async () => {
@@ -323,7 +470,16 @@ describe('Super Admin Controller', () => {
       mockValidateString.mockImplementation(() => {});
       mockValidateEmail.mockImplementation(() => {});
       mockValidateEnum.mockImplementation(() => {});
+      
+      mockGetCompanyByEmail.mockResolvedValue(null);
+      mockCheckUserExistsInKeycloak.mockResolvedValue(null);
+      mockGetUserByEmail.mockResolvedValue(null);
+      mockGetRoleByCode.mockResolvedValue(createMockRole({ code: 'COMPANY_ADMIN' }));
+
       mockCreateCompany.mockResolvedValue(mockNewCompany);
+      mockCreateUserInKeycloak.mockResolvedValue({ id: uuidv4() });
+      mockCreateUserInDB.mockResolvedValue(createMockUser({ email: 'contact@example.com' }));
+      mockAssignUserToCompany.mockResolvedValue({});
 
       // Act
       await superAdminController.createCompany(req, res);
@@ -1051,6 +1207,124 @@ describe('Super Admin Controller', () => {
 
       // Assert
       expect(mockDeletePlan).toHaveBeenCalledWith(planId, { deletedUserId: req.user.id });
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+  });
+
+  describe('Super admin job titles', () => {
+    const saCompanyId = uuidv4();
+
+    beforeEach(() => {
+      mockIsSuperAdmin.mockReturnValue(true);
+      mockValidateRequired.mockImplementation(() => {});
+      mockValidateString.mockImplementation(() => {});
+      mockValidateBoolean.mockImplementation((v) => v);
+      mockValidateUUID.mockImplementation(() => {});
+      mockBuildPaginationQuery.mockReturnValue({ page: 1, limit: 10, offset: 0 });
+      mockBuildSortQuery.mockReturnValue([['jobTitle', 'ASC']]);
+      mockGetSuperAdminCompanyId.mockResolvedValue(saCompanyId);
+    });
+
+    it('createSuperAdminJobTitle should create with system company context', async () => {
+      req.body = { jobTitle: 'CTO', description: 'Lead tech', isActive: true };
+      const dto = { id: uuidv4(), jobTitle: 'CTO', isActive: true };
+      mockJobTitleCreate.mockResolvedValue(dto);
+
+      await superAdminController.createSuperAdminJobTitle(req, res);
+
+      expect(mockGetSuperAdminCompanyId).toHaveBeenCalledWith({ requestId: req.id });
+      expect(mockJobTitleCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ jobTitle: 'CTO' }),
+        { userId: req.user.id, companyId: saCompanyId }
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('createSuperAdminJobTitle should forbid non-super-admin', async () => {
+      mockIsSuperAdmin.mockReturnValue(false);
+      req.body = { jobTitle: 'X' };
+
+      await expect(superAdminController.createSuperAdminJobTitle(req, res)).rejects.toThrow(ForbiddenError);
+    });
+
+    it('listSuperAdminJobTitles should return paginated list', async () => {
+      mockJobTitleList.mockResolvedValue({
+        jobTitles: [{ id: uuidv4(), jobTitle: 'Dev' }],
+        total: 1
+      });
+
+      await superAdminController.listSuperAdminJobTitles(req, res);
+
+      expect(mockJobTitleList).toHaveBeenCalledWith(
+        saCompanyId,
+        expect.any(Object),
+        { page: 1, limit: 10, offset: 0 },
+        [['jobTitle', 'ASC']],
+        { requestId: req.id, workspace: 'superAdmin' }
+      );
+      expect(mockPaginatedResponse).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('patchSuperAdminJobTitleStatus should call setJobTitleActiveStatusForCompany', async () => {
+      const id = uuidv4();
+      req.params = { id };
+      req.body = { isActive: false };
+      mockJobTitleSetActiveStatus.mockResolvedValue({ id, jobTitle: 'X', isActive: false });
+
+      await superAdminController.patchSuperAdminJobTitleStatus(req, res);
+
+      expect(mockJobTitleSetActiveStatus).toHaveBeenCalledWith(
+        id,
+        false,
+        { userId: req.user.id, requestId: req.id },
+        saCompanyId
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+  });
+
+  describe('Super admin project type / category status PATCH', () => {
+    const saCompanyId = uuidv4();
+
+    beforeEach(() => {
+      mockIsSuperAdmin.mockReturnValue(true);
+      mockValidateUUID.mockImplementation(() => {});
+      mockValidateBoolean.mockImplementation((v) => v);
+      mockGetSuperAdminCompanyId.mockResolvedValue(saCompanyId);
+    });
+
+    it('patchSuperAdminProjectTypeStatus should call service', async () => {
+      const id = uuidv4();
+      req.params = { id };
+      req.body = { isActive: true };
+      mockProjectTypeSetActiveStatus.mockResolvedValue({ id, projectType: 'T', isActive: true });
+
+      await superAdminController.patchSuperAdminProjectTypeStatus(req, res);
+
+      expect(mockProjectTypeSetActiveStatus).toHaveBeenCalledWith(
+        id,
+        true,
+        { userId: req.user.id, requestId: req.id },
+        saCompanyId
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('patchSuperAdminProjectCategoryStatus should call service', async () => {
+      const id = uuidv4();
+      req.params = { id };
+      req.body = { isActive: false };
+      mockProjectCategorySetActiveStatus.mockResolvedValue({ id, projectCategory: 'C', isActive: false });
+
+      await superAdminController.patchSuperAdminProjectCategoryStatus(req, res);
+
+      expect(mockProjectCategorySetActiveStatus).toHaveBeenCalledWith(
+        id,
+        false,
+        { userId: req.user.id, requestId: req.id },
+        saCompanyId
+      );
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });

@@ -322,6 +322,104 @@ npm test
 
 ---
 
+## Job titles API (company vs super admin)
+
+Reference for employee-domain job titles after migrations include the `job_titles` table.
+
+**Company admin** (`COMPANY_ADMIN`, company context), base path `/api/v2/admin/employees/job-titles`:
+
+| Method | Path | Purpose |
+|--------|------|--------|
+| `GET` | `/` (paginated) | Lists **platform defaults** (owned by super-admin company) **and** titles created by the **current company**. Each item includes read-only **`canEdit`** and **`canDelete`**: `false` for platform-managed rows (UI should disable edit/delete). |
+| `GET` | `/all` | **Dropdown**: titles from super-admin company + current company, sorted by name. Query `isActive` optional — omit for all, `true` active only, `false` inactive only. **No** `canEdit` / `canDelete` (plain job title fields). |
+| `GET` | `/:id` | Single title if it belongs to the current company **or** the super-admin company; includes **`canEdit`** / **`canDelete`**. |
+| `POST` | `/` | Create a title for the **current company** only. |
+| `PATCH` | `/:id/status` | Status-only toggle with body `{ "isActive": boolean }`; **403 Forbidden** if the title is owned by the super-admin company. |
+| `PUT` / `DELETE` | `/:id` | **403 Forbidden** if the title is owned by the super-admin company (cannot tamper with platform defaults from a tenant workspace). |
+
+**Super admin** (`SUPER_ADMIN`), base path `/api/v2/superAdmin/job-titles`:
+
+- Full CRUD for titles owned by the **super-admin company** only (platform defaults).
+- `PATCH /{id}/status` — body `{ "isActive": boolean }` to toggle active/inactive (system company titles only).
+- List/detail responses use the standard job title shape **without** `canEdit` / `canDelete` (not needed in this workspace).
+
+OpenAPI: schema **`JobTitleCompanyWorkspace`** describes paginated list and GET-by-id responses for company admin.
+
+## Project types API (company vs super admin)
+
+Reference for project-domain types after migrations include the `project_types` table (same ownership pattern as job titles).
+
+**Company admin** (`COMPANY_ADMIN`, company context), base path `/api/v2/admin/projects/types`:
+
+| Method | Path | Purpose |
+|--------|------|--------|
+| `GET` | `/` (paginated under `/projects/types`) | Lists **platform defaults** and types created by the **current company**. Each item includes **`canEdit`** / **`canDelete`** (`false` for platform-managed rows). |
+| `GET` | `/all` | **Dropdown**: types from super-admin company + current company, sorted by name. Query `isActive` optional — omit for all, `true` active only, `false` inactive only. **No** `canEdit` / `canDelete`. |
+| `GET` | `/:id` | Single type if tenant or super-admin company; includes **`canEdit`** / **`canDelete`**. |
+| `POST` | `/` | Create a type for the **current company** only. |
+| `PATCH` | `/:id/status` | Body `{ "isActive": boolean }`; **403** if owned by super-admin company. |
+| `PUT` / `DELETE` | `/:id` | **403** if platform-managed from tenant workspace. |
+
+**Super admin** (`SUPER_ADMIN`), base path `/api/v2/superAdmin/project-types`:
+
+- Full CRUD for types owned by the **super-admin company** (platform defaults).
+- `PATCH /{id}/status` — body `{ "isActive": boolean }` to toggle active/inactive.
+- List/detail responses use the standard **`ProjectType`** shape without `canEdit` / `canDelete`.
+
+OpenAPI: **`ProjectTypeCompanyWorkspace`** for company-admin paginated list and GET-by-id.
+
+## Project categories API (company vs super admin)
+
+Reference for project-domain categories after migrations include the `project_categories` table (same ownership pattern as project types).
+
+**Company admin** (`COMPANY_ADMIN`, company context), base path `/api/v2/admin/projects/categories`:
+
+| Method | Path | Purpose |
+|--------|------|--------|
+| `GET` | `/` (paginated under `/projects/categories`) | Lists **platform defaults** and categories created by the **current company**. Each item includes **`canEdit`** / **`canDelete`** (`false` for platform-managed rows). |
+| `GET` | `/all` | **Dropdown**: categories from super-admin company + current company, sorted by name. Query `isActive` optional — omit for all, `true` active only, `false` inactive only. **No** `canEdit` / `canDelete`. |
+| `GET` | `/:id` | Single category if tenant or super-admin company; includes **`canEdit`** / **`canDelete`**. |
+| `POST` | `/` | Create a category for the **current company** only. |
+| `PATCH` | `/:id/status` | Body `{ "isActive": boolean }`; **403** if owned by super-admin company. |
+| `PUT` / `DELETE` | `/:id` | **403** if platform-managed from tenant workspace. |
+
+**Super admin** (`SUPER_ADMIN`), base path `/api/v2/superAdmin/project-categories`:
+
+- Full CRUD for categories owned by the **super-admin company** (platform defaults).
+- `PATCH /{id}/status` — body `{ "isActive": boolean }` to toggle active/inactive.
+- List/detail responses use the standard **`ProjectCategory`** shape without `canEdit` / `canDelete`.
+
+OpenAPI: **`ProjectCategoryCompanyWorkspace`** for company-admin paginated list and GET-by-id.
+
+## Clients API (company admin)
+
+Base path `/api/v2/admin/clients` (requires `COMPANY_ADMIN` and company context). New clients are stamped with **`createdCompanyId`** from the current company.
+
+| Method | Path | Purpose |
+|--------|------|--------|
+| `GET` | `/` (paginated) | Paginated list; query `search`, `isActive`, sort, page/limit. |
+| `GET` | `/all` | Full list for dropdowns (no pagination), **only clients created by the current company**, sorted by name. Query `isActive` optional — omit for all, `true` / `false` to filter; empty `isActive=` omitted. |
+| `POST` | `/` | Create client (`name` required; optional `email`, `phone`, `isActive`, `clientMetadata`). |
+| `GET` | `/:id` | Detail. |
+| `PUT` | `/:id` | Update fields. |
+| `PATCH` | `/:id/status` | Body `{ "isActive": boolean }` only; **404** if the client was not created by the current company. |
+| `DELETE` | `/:id` | Soft delete. |
+
+**Employees (people)** — same base path prefix `/api/v2/admin/employees`:
+
+| Method | Path | Purpose |
+|--------|------|--------|
+| `GET` | `/employees` | Paginated list; query: `search`, `jobTitleId`, `isActive`, sort, page/limit. |
+| `GET` | `/employees/all` | Full list (no pagination) with same filters; sorted by last/first name. |
+| `POST` | `/employees` | Create (`firstName`, `lastName`, `email`, `jobTitleId`, optional `phone`, `salary`, `employeeMetadata`, `isActive`). Email unique per company (non-deleted). |
+| `GET` | `/employees/:id` | Detail including nested `jobTitle` summary. |
+| `PUT` | `/employees/:id` | Update fields. |
+| `PATCH` | `/employees/:id/status` | Body `{ "isActive": boolean }` only. |
+| `POST` | `/employees/assign-role` | Body `{ "employeeId", "roleId" }` — first time provisions Keycloak + user + `company_users` and sets `employee.companyUserId`; later calls update role only. Default Keycloak password `admin` (realm may enforce stricter rules). |
+| `DELETE` | `/employees/:id` | Soft delete. |
+
+---
+
 ## Troubleshooting
 
 ### Keycloak Not Starting
@@ -424,5 +522,5 @@ npm test
 
 ---
 
-**Last Updated**: December 2024
+**Last Updated**: March 2026
 

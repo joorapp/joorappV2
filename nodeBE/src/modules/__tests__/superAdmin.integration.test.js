@@ -92,10 +92,18 @@ describe('Super Admin API Integration', () => {
         replacements: { testUserId: testUser.id },
         type: sequelize.QueryTypes.UPDATE
       });
-      await User.destroy({
-        where: {
-          id: { [Op.ne]: testUser.id }
-        }
+      // User data persists to avoid Keycloak sync issues
+      
+      // Ensure COMPANY_ADMIN role exists
+      await CompanyRole.findOrCreate({
+        where: { code: 'COMPANY_ADMIN' },
+        defaults: {
+          name: 'Company Admin',
+          code: 'COMPANY_ADMIN',
+          description: 'Company Admin Role',
+          isActive: true
+        },
+        context: { userId: testUser.id }
       });
     } else {
       await cleanDatabase();
@@ -152,7 +160,8 @@ describe('Super Admin API Integration', () => {
     it('should create company when authenticated as super admin', async () => {
       const companyData = {
         name: `Test Company ${Date.now()}`,
-        description: 'Test company description'
+        description: 'Test company description',
+        email: `contact-${Date.now()}@example.com`
       };
 
       const response = await request(app)
@@ -172,7 +181,7 @@ describe('Super Admin API Integration', () => {
       const companyData = {
         name: `Test Company ${Date.now()}`,
         description: 'Test company description',
-        email: 'contact@example.com',
+        email: `contact-${Date.now()}@example.com`,
         phone: '+1 234-567-8900',
         buildingAddress: 'Suite 100',
         streetAddress: '123 Main Street',
@@ -207,7 +216,8 @@ describe('Super Admin API Integration', () => {
 
     it('should use default status NEW when status not provided', async () => {
       const companyData = {
-        name: `Test Company ${Date.now()}`
+        name: `Test Company ${Date.now()}`,
+        email: `contact-${Date.now()}@example.com`
       };
 
       const response = await request(app)
@@ -222,7 +232,8 @@ describe('Super Admin API Integration', () => {
     it('should return 400 when status is invalid', async () => {
       const companyData = {
         name: `Test Company ${Date.now()}`,
-        status: 'INVALID_STATUS'
+        status: 'INVALID_STATUS',
+        email: `contact-${Date.now()}@example.com`
       };
 
       const response = await request(app)
@@ -903,7 +914,7 @@ describe('Super Admin API Integration', () => {
       const userId2 = createResponse2.body.data.id;
 
       const response = await request(app)
-        .get('/api/v2/superAdmin/users')
+        .get('/api/v2/superAdmin/users?limit=50')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -1528,7 +1539,8 @@ describe('Super Admin API Integration', () => {
       // Create company
       const companyData = {
         name: `Test Company ${Date.now()}`,
-        description: 'Test company'
+        description: 'Test company',
+        email: `contact-${Date.now()}@example.com`
       };
 
       const response = await request(app)

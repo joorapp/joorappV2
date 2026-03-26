@@ -1,0 +1,53 @@
+---
+description: How to split complex modules with multiple sub-entities into multiple controllers
+globs: ["nodeBE/src/modules/**/*.js"]
+alwaysApply: false
+---
+# Controller Splitting Pattern (Sub-Entities)
+
+When a module acts as a domain boundary (e.g., `admin` or `superAdmin`) but manages multiple distinct sub-entities (e.g., Users, Clients, Projects), **DO NOT** put all handler functions into a single monolithic `{module}Controller.js` file.
+
+Instead, split the controllers by entity within the same module folder.
+
+## Implementation Rules
+1. **Routing acts as the glue**: The `{module}Routes.js` file must remain the single source of truth for the module's routing. It will import handlers from multiple sub-controllers and mount them to the router.
+2. **Naming Convention**: Name the split controllers based on the entity they manage: `{entity}Controller.js` (e.g., `clientController.js`, `projectController.js`).
+3. **Location**: Place these sub-controllers directly inside the module folder alongside the main controller.
+
+## Example Directory Structure
+```text
+src/modules/admin/
+├── adminRoutes.js           # Main router for /api/v2/admin
+├── adminController.js       # Core admin logic / User management
+├── clientController.js      # Client management logic (/api/v2/admin/clients)
+├── projectController.js     # Project management logic (/api/v2/admin/projects)
+└── index.js                 # Exports the adminRoutes
+```
+
+## Example Routing Setup (`adminRoutes.js`)
+```javascript
+import express from 'express';
+// Import from multiple controllers
+import * as adminController from './adminController.js';
+import * as clientController from './clientController.js';
+import * as projectController from './projectController.js';
+
+const router = express.Router();
+
+// --- Admin Core Routes ---
+router.post('/users', adminController.createUser);
+
+// --- Client Routes ---
+router.post('/clients', clientController.createClient);
+router.get('/clients', clientController.listClients);
+
+// --- Project Routes ---
+router.post('/projects', projectController.createProject);
+
+export default router;
+```
+
+## Why we do this
+- **Maintainability**: Prevents controllers from exceeding 500-1000 lines of code.
+- **Separation of Concerns**: Keeps `Client` logic separate from `Project` logic, making bugs easier to isolate.
+- **Service Mapping**: It naturally maps 1-to-1 with your service layer (e.g., `clientController.js` mostly calls `clientService.js`).
