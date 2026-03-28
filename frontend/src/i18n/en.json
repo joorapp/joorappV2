@@ -168,6 +168,17 @@
     "create": "Create",
     "salary": "Salary",
     "jobTitle": "Job Title",
+    "enterSalary": "Enter salary",
+    "enterJobTitle": "Enter job title",
+    "enterFirstName": "Enter first name",
+    "enterLastName": "Enter last name",
+    "enterEmail": "Enter email",
+    "enterPhone": "Enter phone",
+    "enterBuildingAddress": "Enter building address",
+    "enterStreetAddress": "Enter street address",
+    "jobTitles": "Job Titles",
+    "projectTypes": "Project Types",
+    "projectCategories": "Project Categories",
     "errors": {
       "fillAllFields": "Please fill in all fields",
       "selectPlan": "Please select a plan"

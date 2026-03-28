@@ -271,6 +271,31 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = () => {
                   <span>{t('Navigation.notifications')}</span>
                 </Link>
               </li>
+              <li>
+                <Link className="has-arrow" to="/superadmin/Settings">
+                  <i className='bx bx-cog'></i>
+                  <span>{t('Navigation.settings')}</span>
+                </Link>
+                <ul className="sub-menu mm-collapse" aria-expanded="false">
+                  <li>
+                    <Link  to="/superadmin/Settings/project-types">
+                      {t('Common.projectTypes')}
+                    </Link>
+                  </li>
+              
+                  <li>
+                    <Link to="/superadmin/Settings/project-categories">
+                      {t('Common.projectCategories')}
+                    </Link>
+                  </li>
+              
+                  <li>
+                    <Link to="/superadmin/Settings/job-titles">
+                      {t('Common.jobTitles')}
+                    </Link>
+                  </li>
+                </ul>
+              </li>
 
             </ul>
           </div>
