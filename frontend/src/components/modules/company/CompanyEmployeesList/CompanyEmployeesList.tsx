@@ -719,14 +719,14 @@ const CompanyEmployeesList = () => {
             </div>
             <div className="col-md-12 mb-3">
               <Label className="form-label fw-semibold">
-                {t('SubscriptionPlans.price')}
+                {t('Common.salary')}
               </Label>
               <Input
                 type="number"
                 min="0"
                 value={newEmployee.salary}
                 onChange={(e) => handleNewEmployeeChange('salary', e.target.value)}
-                placeholder={t('SubscriptionPlans.enterPrice')}
+                placeholder={t('Common.enterSalary')}
                 invalid={!!createErrors.salary}
               />
               {createErrors.salary && (
