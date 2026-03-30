@@ -34,6 +34,7 @@ const CompanyRoutes = () => {
         <Route path="clients/:clientId/overview" element={<CompanyClientOverview />} />
         <Route path="clients/:clientId/transactions" element={<CompanyClientTransactions />} />
         <Route path="clients/create" element={<CompanyClientCreate />} />
+        <Route path="clients/update" element={<Navigate to="/company/clients/create" replace />} />
         <Route path="clients/invoices" element={<CompanyClientInvoiceList />} />
         <Route path="clients/types" element={<CompanyClientTypes />} />
         <Route path="employees" element={<CompanyEmployeesList />} />
