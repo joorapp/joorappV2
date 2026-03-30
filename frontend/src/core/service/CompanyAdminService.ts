@@ -21,6 +21,10 @@ export interface GetClientsParams {
 }
 
 export default class CompanyAdminService {
+  static getAllClients() {
+    return HttpUtil.get(API_ROUTES.COMPANYADMIN.GET_ALL_CLIENTS);
+  }
+
   static getClients(params: GetClientsParams = {}) {
     const { page = 1, limit = 10, search = "", isActive } = params;
     const query = new URLSearchParams();

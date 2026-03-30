@@ -17,9 +17,146 @@ import {
   Row,
 } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
+import CompanyAdminService from '../../../../core/service/CompanyAdminService';
+import { showErrorToast, showSuccessToast } from '../../../../core/utils/toast';
 
 type CustomerType = 'SUPPLIER' | 'INDIVIDUAL';
 type CreateTabId = 'otherDetails' | 'address' | 'contactPersons' | 'remarks';
+type ContactPersonForm = {
+  id: string;
+  salutation: string;
+  firstName: string;
+  lastName: string;
+  emailAddress: string;
+  workPhoneCode: string;
+  workPhone: string;
+  mobileCode: string;
+  mobile: string;
+};
+
+type ClientFormSnapshot = {
+  customerType: CustomerType;
+  primarySalutation: string;
+  primaryFirstName: string;
+  primaryLastName: string;
+  companyName: string;
+  displayName: string;
+  currency: 'AED';
+  emailAddress: string;
+  customerNumber: string;
+  phoneCountryCode: string;
+  phoneWork: string;
+  phoneMobile: string;
+  customerLanguage: string;
+  taxRate: string;
+  companyId: string;
+  paymentTerms: 'dueOnReceipt';
+  enablePortal: boolean;
+  billingAttention: string;
+  billingCountryRegion: string;
+  billingStreet1: string;
+  billingStreet2: string;
+  billingCity: string;
+  billingState: string;
+  billingZipCode: string;
+  billingPhoneCode: string;
+  billingPhone: string;
+  billingFaxNumber: string;
+  shippingAttention: string;
+  shippingCountryRegion: string;
+  shippingStreet1: string;
+  shippingStreet2: string;
+  shippingCity: string;
+  shippingState: string;
+  shippingZipCode: string;
+  shippingPhoneCode: string;
+  shippingPhone: string;
+  shippingFaxNumber: string;
+  contactPersons: ContactPersonForm[];
+  remarksText: string;
+  documentNames: string[];
+};
+
+const normalizeContactPersons = (contactPersons: ContactPersonForm[]) =>
+  contactPersons.map((person) => ({
+    salutation: person.salutation,
+    firstName: person.firstName.trim(),
+    lastName: person.lastName.trim(),
+    emailAddress: person.emailAddress.trim(),
+    workPhoneCode: person.workPhoneCode,
+    workPhone: person.workPhone.trim(),
+    mobileCode: person.mobileCode,
+    mobile: person.mobile.trim(),
+  }));
+
+const buildClientRequestPayload = (form: ClientFormSnapshot) => {
+  const name =
+    form.companyName.trim() ||
+    [form.primaryFirstName.trim(), form.primaryLastName.trim()].filter(Boolean).join(' ') ||
+    form.displayName.trim();
+  const phone = form.phoneMobile.trim()
+    ? `${form.phoneCountryCode}${form.phoneMobile.trim()}`
+    : `${form.phoneCountryCode}${form.phoneWork.trim()}`;
+
+  return {
+    name,
+    email: form.emailAddress.trim(),
+    phone,
+    isActive: true,
+    clientMetadata: {
+      customerType: form.customerType,
+      primaryContact: {
+        salutation: form.primarySalutation,
+        firstName: form.primaryFirstName.trim(),
+        lastName: form.primaryLastName.trim(),
+      },
+      displayName: form.displayName,
+      currency: form.currency,
+      customerNumber: form.customerNumber,
+      phone: {
+        countryCode: form.phoneCountryCode,
+        work: form.phoneWork.trim(),
+        mobile: form.phoneMobile.trim(),
+      },
+      customerLanguage: form.customerLanguage,
+      otherDetails: {
+        taxRate: form.taxRate,
+        companyId: form.companyId.trim(),
+        paymentTerms: form.paymentTerms,
+        enablePortal: form.enablePortal,
+        documents: form.documentNames,
+      },
+      address: {
+        billing: {
+          attention: form.billingAttention.trim(),
+          countryRegion: form.billingCountryRegion,
+          street1: form.billingStreet1.trim(),
+          street2: form.billingStreet2.trim(),
+          city: form.billingCity.trim(),
+          state: form.billingState,
+          zipCode: form.billingZipCode.trim(),
+          phoneCode: form.billingPhoneCode,
+          phone: form.billingPhone.trim(),
+          faxNumber: form.billingFaxNumber.trim(),
+        },
+        shipping: {
+          attention: form.shippingAttention.trim(),
+          countryRegion: form.shippingCountryRegion,
+          street1: form.shippingStreet1.trim(),
+          street2: form.shippingStreet2.trim(),
+          city: form.shippingCity.trim(),
+          state: form.shippingState,
+          zipCode: form.shippingZipCode.trim(),
+          phoneCode: form.shippingPhoneCode,
+          phone: form.shippingPhone.trim(),
+          faxNumber: form.shippingFaxNumber.trim(),
+        },
+      },
+      contactPersons: normalizeContactPersons(form.contactPersons),
+      remarks: form.remarksText.trim(),
+    },
+  };
+};
 
 const CompanyClientCreate = () => {
   const { t } = useTranslation();
@@ -70,18 +207,6 @@ const CompanyClientCreate = () => {
   const [shippingPhone, setShippingPhone] = useState('');
   const [shippingFaxNumber, setShippingFaxNumber] = useState('');
 
-  type ContactPersonForm = {
-    id: string;
-    salutation: string;
-    firstName: string;
-    lastName: string;
-    emailAddress: string;
-    workPhoneCode: string;
-    workPhone: string;
-    mobileCode: string;
-    mobile: string;
-  };
-
   const emptyContactPerson = (): ContactPersonForm => ({
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     salutation: 'Mr',
@@ -97,6 +222,8 @@ const CompanyClientCreate = () => {
   const [contactPersons, setContactPersons] = useState<ContactPersonForm[]>([emptyContactPerson(), emptyContactPerson()]);
 
   const [remarksText, setRemarksText] = useState('');
+  const [documentNames, setDocumentNames] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const tabs: Array<{ id: CreateTabId; label: string }> = useMemo(
     () => [
@@ -107,6 +234,76 @@ const CompanyClientCreate = () => {
     ],
     [t]
   );
+
+  const getFormSnapshot = (): ClientFormSnapshot => ({
+    customerType,
+    primarySalutation,
+    primaryFirstName,
+    primaryLastName,
+    companyName,
+    displayName,
+    currency,
+    emailAddress,
+    customerNumber,
+    phoneCountryCode,
+    phoneWork,
+    phoneMobile,
+    customerLanguage,
+    taxRate,
+    companyId,
+    paymentTerms,
+    enablePortal,
+    billingAttention,
+    billingCountryRegion,
+    billingStreet1,
+    billingStreet2,
+    billingCity,
+    billingState,
+    billingZipCode,
+    billingPhoneCode,
+    billingPhone,
+    billingFaxNumber,
+    shippingAttention,
+    shippingCountryRegion,
+    shippingStreet1,
+    shippingStreet2,
+    shippingCity,
+    shippingState,
+    shippingZipCode,
+    shippingPhoneCode,
+    shippingPhone,
+    shippingFaxNumber,
+    contactPersons,
+    remarksText,
+    documentNames,
+  });
+
+  const handleSaveClient = async () => {
+    const payload = buildClientRequestPayload(getFormSnapshot());
+
+    if (!payload.name || !payload.email || !payload.phone) {
+      showErrorToast('Please fill name, email, and phone before saving.');
+      return;
+    }
+
+    console.log('createClient payload:', payload);
+    return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await CompanyAdminService.createClient(payload);
+      const successMessage = response?.data?.message || t('Common.savedSuccessfully');
+      showSuccessToast(successMessage);
+      navigate('/company/clients');
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        'Failed to create client. Please check the form and try again.';
+      showErrorToast(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -442,7 +639,16 @@ const CompanyClientCreate = () => {
                     </span>
                   </Col>
                   <Col md="6">
-                    <input id="client-documents" type="file" multiple className="d-none" />
+                    <input
+                      id="client-documents"
+                      type="file"
+                      multiple
+                      className="d-none"
+                      onChange={(e) => {
+                        const names = Array.from(e.target.files || []).map((file) => file.name);
+                        setDocumentNames(names);
+                      }}
+                    />
 
                     <div className="d-flex flex-column gap-2">
                       <Label
@@ -730,8 +936,8 @@ const CompanyClientCreate = () => {
           {/* Footer buttons */}
           <div className="position-sticky bottom-0 bg-white border-top pt-3 mt-4">
             <div className="d-flex gap-2">
-              <Button color="primary" type="button">
-                {t('Common.save')}
+              <Button color="primary" type="button" onClick={handleSaveClient} disabled={isSubmitting}>
+                {isSubmitting ? t('Common.loading') || 'Loading...' : t('Common.save')}
               </Button>
               <Button
                 color="secondary"
