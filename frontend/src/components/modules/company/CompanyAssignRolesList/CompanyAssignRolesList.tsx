@@ -16,7 +16,6 @@ import {
   Row,
   Table,
 } from 'reactstrap';
-import { showSuccessToast } from '../../../../core/utils/toast';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
 
 interface RoleAssignment {
@@ -30,6 +29,26 @@ interface RoleAssignment {
   isActive: boolean;
   lastUpdatedAt?: string;
 }
+
+type NewRoleAssignmentForm = {
+  employeeName: string;
+  email: string;
+  phone: string;
+  jobTitle: string;
+  currentRole: string;
+  applicationRole: string;
+  isActive: boolean;
+};
+
+const emptyNewRoleAssignment = (): NewRoleAssignmentForm => ({
+  employeeName: '',
+  email: '',
+  phone: '',
+  jobTitle: '',
+  currentRole: '',
+  applicationRole: '',
+  isActive: true,
+});
 
 const INITIAL_ASSIGNMENTS: RoleAssignment[] = [
   {
@@ -83,9 +102,12 @@ const CompanyAssignRolesList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [assignments, setAssignments] = useState<RoleAssignment[]>(INITIAL_ASSIGNMENTS);
   const [manageModalOpen, setManageModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<RoleAssignment | null>(null);
-  const [selectedAppRole, setSelectedAppRole] = useState<string>('');
-  const [modalPassword, setModalPassword] = useState<string>('');
+  const [deleteTarget, setDeleteTarget] = useState<RoleAssignment | null>(null);
+  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null);
+  const [newAssignment, setNewAssignment] = useState<NewRoleAssignmentForm>(emptyNewRoleAssignment);
 
   const getInitials = (name: string): string => {
     const parts = name.trim().split(' ').filter(Boolean);
@@ -139,25 +161,103 @@ const CompanyAssignRolesList = () => {
   }, [assignments, searchTerm]);
 
   const handleOpenManageModal = (assignment: RoleAssignment) => {
+    setEditingAssignmentId(assignment.id);
+    setNewAssignment({
+      employeeName: assignment.employeeName,
+      email: assignment.email,
+      phone: assignment.phone,
+      jobTitle: assignment.jobTitle,
+      currentRole: assignment.currentRole,
+      applicationRole: assignment.applicationRole,
+      isActive: assignment.isActive,
+    });
+    setManageModalOpen(true);
+  };
+
+  const handleOpenViewModal = (assignment: RoleAssignment) => {
     setSelectedAssignment(assignment);
-    setSelectedAppRole(assignment.applicationRole || '');
-    setModalPassword('');
+    setViewModalOpen(true);
+  };
+
+  const handleOpenAssignRolesFromHeader = () => {
+    setEditingAssignmentId(null);
+    setNewAssignment(emptyNewRoleAssignment());
     setManageModalOpen(true);
   };
 
   const handleCloseManageModal = () => {
     setManageModalOpen(false);
-    setSelectedAssignment(null);
-    setSelectedAppRole('');
-    setModalPassword('');
+    setEditingAssignmentId(null);
+    setNewAssignment(emptyNewRoleAssignment());
   };
 
-  const handleOpenAssignRolesFromHeader = () => {
-    if (!assignments.length) {
+  const handleCloseViewModal = () => {
+    setViewModalOpen(false);
+    setSelectedAssignment(null);
+  };
+
+  const handleOpenDeleteModal = (assignment: RoleAssignment) => {
+    setDeleteTarget(assignment);
+    setDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setDeleteTarget(null);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteTarget) {
+      setAssignments((prev) => prev.filter((item) => item.id !== deleteTarget.id));
+      if (selectedAssignment?.id === deleteTarget.id) {
+        setSelectedAssignment(null);
+        setViewModalOpen(false);
+      }
+    }
+    handleCloseDeleteModal();
+  };
+
+  const handleSaveAssignRole = () => {
+    if (!newAssignment.employeeName.trim() || !newAssignment.applicationRole.trim()) {
       return;
     }
-    const firstAssignment = assignments[0];
-    handleOpenManageModal(firstAssignment);
+
+    if (editingAssignmentId) {
+      setAssignments((prev) =>
+        prev.map((item) =>
+          item.id === editingAssignmentId
+            ? {
+                ...item,
+                employeeName: newAssignment.employeeName.trim(),
+                email: newAssignment.email.trim(),
+                phone: newAssignment.phone.trim(),
+                jobTitle: newAssignment.jobTitle.trim(),
+                currentRole: newAssignment.currentRole.trim() || newAssignment.jobTitle.trim(),
+                applicationRole: newAssignment.applicationRole,
+                isActive: newAssignment.isActive,
+                lastUpdatedAt: new Date().toISOString(),
+              }
+            : item
+        )
+      );
+    } else {
+      const id = `E-${Date.now().toString().slice(-6)}`;
+      setAssignments((prev) => [
+        {
+          id,
+          employeeName: newAssignment.employeeName.trim(),
+          email: newAssignment.email.trim(),
+          phone: newAssignment.phone.trim(),
+          jobTitle: newAssignment.jobTitle.trim(),
+          currentRole: newAssignment.currentRole.trim() || newAssignment.jobTitle.trim(),
+          applicationRole: newAssignment.applicationRole,
+          isActive: newAssignment.isActive,
+          lastUpdatedAt: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+    }
+    handleCloseManageModal();
   };
 
   return (
@@ -185,7 +285,7 @@ const CompanyAssignRolesList = () => {
                   className="btn-rounded waves-effect d-inline-flex align-items-center waves-light"
                   onClick={handleOpenAssignRolesFromHeader}
                 >
-                  <i className="bx bx-shield-quarter me-1"></i>
+                  <i className="bx bx-plus me-1"></i>
                   {t('EmployeeLists.assignRoles')}
                 </Button>
               </div>
@@ -252,7 +352,7 @@ const CompanyAssignRolesList = () => {
                                 color="outline-primary"
                                 className="border-0 btn-sm"
                                 title={t('Common.view')}
-                                onClick={() => handleOpenManageModal(item)}
+                                onClick={() => handleOpenViewModal(item)}
                               >
                                 <i className="mdi mdi-eye"></i>
                               </Button>
@@ -268,6 +368,7 @@ const CompanyAssignRolesList = () => {
                                 color="outline-danger"
                                 className="border-0 btn-sm"
                                 title={t('Common.delete')}
+                                onClick={() => handleOpenDeleteModal(item)}
                               >
                                 <i className="mdi mdi-delete"></i>
                               </Button>
@@ -292,92 +393,68 @@ const CompanyAssignRolesList = () => {
         </Col>
       </Row>
 
-      <Modal isOpen={manageModalOpen} toggle={handleCloseManageModal} size="lg" centered>
+      <Modal isOpen={manageModalOpen} toggle={handleCloseManageModal} centered>
         <ModalHeader toggle={handleCloseManageModal}>
-          {t('AssignRoles.modal.title')}
+          {t('EmployeeLists.assignRoles')}
         </ModalHeader>
         <ModalBody>
-          {selectedAssignment ? (
-            <Row className="m-0">
-              <div className="col-md-12 mb-4 d-flex flex-column align-items-center">
-                <div className="profile-photo-upload position-relative d-flex align-items-center justify-content-center">
-                  <div
-                    className="avatar-lg rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                    style={{ backgroundColor: '#34c38f', minWidth: 56, minHeight: 56 }}
-                  >
-                    {getInitials(selectedAssignment.employeeName)}
-                  </div>
-                </div>
-                <div className="mt-3 text-center">
-                  <h5 className="mb-1 fw-bold">{selectedAssignment.employeeName}</h5>
-                  <p className="mb-0 text-muted font-size-12">{selectedAssignment.email}</p>
-                </div>
-              </div>
-
-              <Col md="6" className="mb-3">
-                <Label className="form-label fw-semibold text-muted">
-                  {t('Common.id')}
-                </Label>
-                <Input value={selectedAssignment.id} disabled />
-              </Col>
-              <Col md="6" className="mb-3">
-                <Label className="form-label fw-semibold text-muted">
-                  {t('Common.phone')}
-                </Label>
-                <Input value={selectedAssignment.phone} disabled />
-              </Col>
-
-              <Col md="6" className="mb-3">
-                <Label className="form-label fw-semibold text-muted">
-                  {t('EmployeeLists.jobTitle')}
-                </Label>
-                <Input value={selectedAssignment.jobTitle} disabled />
-              </Col>
-              <Col md="6" className="mb-3">
-                <Label className="form-label fw-semibold text-muted">
-                  {t('AssignRoles.modal.currentRole')}
-                </Label>
-                <div className="d-flex align-items-center">
-                  <Badge color="light" className="badge-soft-primary font-size-12">
-                    {selectedAssignment.currentRole}
-                  </Badge>
-                </div>
-              </Col>
-
-              <Col md="6" className="mb-3">
-                <Label className="form-label fw-semibold">
-                  {t('AssignRoles.modal.selectRole')}
-                </Label>
-                <Input
-                  type="select"
-                  value={selectedAppRole}
-                  onChange={(e) => setSelectedAppRole(e.target.value)}
-                >
-                  <option value="">{t('Common.select')}</option>
-                  <option value="COMPANY_USER">
-                    {t('EmployeeLists.keycloakGlobalRoleCOMPANY_USER')}
-                  </option>
-                  <option value="COMPANY_ADMIN">
-                    {t('EmployeeLists.keycloakGlobalRoleCOMPANY_ADMIN')}
-                  </option>
-                  <option value="SUPER_ADMIN">
-                    {t('EmployeeLists.keycloakGlobalRoleSUPER_ADMIN')}
-                  </option>
-                </Input>
-              </Col>
-              <Col md="6" className="mb-3">
-                <Label className="form-label fw-semibold">
-                  {t('UserList.password')}
-                </Label>
-                <Input
-                  type="password"
-                  value={modalPassword}
-                  onChange={(e) => setModalPassword(e.target.value)}
-                  placeholder={t('UserList.enterPassword')}
-                />
-              </Col>
-            </Row>
-          ) : null}
+          <Row>
+            <Col md="12" className="mb-3">
+              <Label className="form-label">{t('EmployeeLists.employee')}</Label>
+              <Input
+              type="select"
+                value={newAssignment.employeeName}
+                onChange={(e) => setNewAssignment((prev) => ({ ...prev, employeeName: e.target.value }))}
+                placeholder={t('EmployeeLists.employee')}
+              >
+                <option value="">{t('Common.select')}</option>
+                {assignments.map((assignment) => (
+                  <option key={assignment.id} value={assignment.employeeName}>{assignment.employeeName}</option>
+                ))}
+              </Input>
+            </Col>
+            <Col md="6" className="mb-3">
+              <Label className="form-label">{t('Common.email')}</Label>
+              <Input
+                type="email"
+                value={newAssignment.email}
+                onChange={(e) => setNewAssignment((prev) => ({ ...prev, email: e.target.value }))}
+                placeholder={t('Common.email')}
+              />
+            </Col>
+            <Col md="6" className="mb-3">
+              <Label className="form-label">{t('Common.phone')}</Label>
+              <Input
+                value={newAssignment.phone}
+                onChange={(e) => setNewAssignment((prev) => ({ ...prev, phone: e.target.value }))}
+                placeholder={t('Common.phone')}
+              />
+            </Col>
+            <Col md="6" className="mb-3">
+              <Label className="form-label">{t('EmployeeLists.jobTitle')}</Label>
+              <Input
+                value={newAssignment.jobTitle}
+                onChange={(e) => setNewAssignment((prev) => ({ ...prev, jobTitle: e.target.value }))}
+                placeholder={t('EmployeeLists.jobTitle')}
+              />
+            </Col>
+            
+            <Col md="6" className="mb-3">
+              <Label className="form-label">{t('AssignRoles.modal.selectRole')}</Label>
+              <Input
+                type="select"
+                value={newAssignment.applicationRole}
+                onChange={(e) =>
+                  setNewAssignment((prev) => ({ ...prev, applicationRole: e.target.value }))
+                }
+              >
+                <option value="">{t('Common.select')}</option>
+                <option value="COMPANY_USER">{t('EmployeeLists.keycloakGlobalRoleCOMPANY_USER')}</option>
+                <option value="COMPANY_ADMIN">{t('EmployeeLists.keycloakGlobalRoleCOMPANY_ADMIN')}</option>
+                <option value="SUPER_ADMIN">{t('EmployeeLists.keycloakGlobalRoleSUPER_ADMIN')}</option>
+              </Input>
+            </Col>
+          </Row>
         </ModalBody>
         <ModalFooter>
           <Button color="secondary" onClick={handleCloseManageModal}>
@@ -385,13 +462,77 @@ const CompanyAssignRolesList = () => {
           </Button>
           <Button
             color="primary"
-            onClick={handleCloseManageModal}
-            disabled={!selectedAppRole}
+            onClick={handleSaveAssignRole}
+            disabled={!newAssignment.employeeName.trim() || !newAssignment.applicationRole.trim()}
           >
             {t('Common.save')}
           </Button>
         </ModalFooter>
       </Modal>
+
+      <Modal isOpen={viewModalOpen} toggle={handleCloseViewModal} centered size="lg">
+        <ModalHeader toggle={handleCloseViewModal}>{t('Common.view')}</ModalHeader>
+        <ModalBody>
+          {selectedAssignment ? (
+            <Row className="g-3">
+              <Col md="12">
+                <div className="d-flex align-items-center p-3 rounded  bg-light-subtle">
+                  <div
+                    className={`avatar-md ${getAvatarColor(selectedAssignment.employeeName)} rounded-circle d-flex align-items-center justify-content-center text-white fw-semibold me-3`}
+                  >
+                    {getInitials(selectedAssignment.employeeName)}
+                  </div>
+                  <div className="flex-grow-1">
+                    <h5 className="mb-1">{selectedAssignment.employeeName}</h5>
+                    <p className="mb-0 text-muted">{selectedAssignment.email || '—'}</p>
+                    <p className="mb-0 text-muted">Phone: {selectedAssignment.phone || '—'}</p>
+                    <p className="mb-0 text-muted">Job Title: {selectedAssignment.jobTitle || '—'}</p>
+                  </div>
+                  <div className="d-flex flex-column gap-1 align-items-end">
+                    <Badge className="bg-primary-subtle text-primary">
+                      {selectedAssignment.applicationRole}
+                    </Badge>
+                    {getStatusBadge(selectedAssignment.isActive)}
+                  </div>
+                </div>
+              </Col>
+             
+            </Row>
+          ) : null}
+        </ModalBody>
+        <ModalFooter>
+          <Button color="secondary" onClick={handleCloseViewModal}>
+            {t('Common.close')}
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      <Modal isOpen={deleteModalOpen} toggle={handleCloseDeleteModal} centered>
+        <ModalBody className="p-4 p-md-5 text-center">
+          <div className="mb-4">
+            <div
+              className="mx-auto rounded-circle d-flex align-items-center justify-content-center"
+             
+            >
+              <i className="bx bx-trash text-danger" style={{ fontSize: 44 }} />
+            </div>
+          </div>
+          <h3 className="mb-3 fw-semibold">Confirm to delete</h3>
+          <p className="text-muted mb-4">
+            Do you really want to delete assignment for{' '}
+            <span className="fw-semibold text-dark">{deleteTarget?.employeeName ?? 'this employee'}</span>?
+          </p>
+          <div className="d-flex justify-content-center gap-2">
+            <Button color="danger" onClick={handleConfirmDelete} className="px-4">
+              {t('Common.delete')}
+            </Button>
+            <Button color="secondary" onClick={handleCloseDeleteModal} className="px-4">
+              {t('Common.cancel')}
+            </Button>
+          </div>
+        </ModalBody>
+      </Modal>
+
     </>
   );
 };

@@ -20,6 +20,9 @@ import SuperAdminDashboard, {
   NotificationList,
 } from './SuperAdminDashboard/SuperAdminDashboard';
 import UserList from './UserList/UserList';
+import SettingsProjectTypes from './Setting/SettingsProjectTypes';
+import SettingsProjectCategories from './Setting/SettingsProjectCategories';
+import SettingsJobTitles from './Setting/SettingsJobTitles';
 
 const SuperAdminRoutes: React.FC = () => {
   return (
@@ -40,6 +43,9 @@ const SuperAdminRoutes: React.FC = () => {
         <Route path="Notifications" element={<NotificationList />} />
         {/* Fallback inside superadmin */}
         <Route path="*" element={<Navigate to="/superadmin" replace />} />
+        <Route path="Settings/project-types" element={<SettingsProjectTypes />} />
+        <Route path="Settings/project-categories" element={<SettingsProjectCategories />} />
+        <Route path="Settings/job-titles" element={<SettingsJobTitles />} />
       </Route>
     </Routes>
   );

@@ -14,7 +14,7 @@ const ProjectDetail = ({ project }) => {
           </div>
 
           <div className="flex-grow-1 overflow-hidden">
-            <h5 className="text-truncate font-size-15">Skote Dashboard UI 2</h5>
+            <h5 className="text-truncate font-size-15">Skote Dashboard UI venu</h5>
             <p className="text-muted">Separate existence is a myth. For science, music, sport, etc.</p>
           </div>
         </div>
