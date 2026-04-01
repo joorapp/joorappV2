@@ -135,22 +135,85 @@ describe('Project Controller', () => {
 
   describe('createProject', () => {
     it('should create project successfully', async () => {
-      req.body = { clientId: uuidv4(), name: 'Test Project' };
+      const clientId = uuidv4();
+      const projectTypeId = uuidv4();
+      const projectCategoryId = uuidv4();
+      req.body = {
+        clientId,
+        projectTypeId,
+        projectCategoryId,
+        name: 'Test Project'
+      };
       const mockProject = { id: uuidv4(), name: 'Test Project' };
-      
+
       mockCreateProject.mockResolvedValue(mockProject);
 
       await projectController.createProject(req, res);
 
-      expect(mockCreateProject).toHaveBeenCalled();
+      expect(mockCreateProject).toHaveBeenCalledWith(
+        {
+          clientId,
+          projectTypeId,
+          projectCategoryId,
+          name: 'Test Project',
+          description: undefined,
+          status: undefined,
+          startDate: undefined,
+          endDate: undefined,
+          projectMetadata: undefined
+        },
+        { userId: req.user.id, companyId: req.company.id, requestId: req.id }
+      );
       expect(res.status).toHaveBeenCalledWith(201);
       expect(mockSuccessResponse).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestError when company context is missing', async () => {
+      req.company = undefined;
+      req.body = { clientId: uuidv4(), projectTypeId: uuidv4(), projectCategoryId: uuidv4(), name: 'X' };
+      await expect(projectController.createProject(req, res)).rejects.toThrow(BadRequestError);
     });
 
     it('should throw ForbiddenError if not admin', async () => {
       mockIsCompanyAdmin.mockReturnValue(false);
 
       await expect(projectController.createProject(req, res)).rejects.toThrow(ForbiddenError);
+    });
+  });
+
+  describe('updateProject', () => {
+    it('should update project and pass company context', async () => {
+      const id = uuidv4();
+      const projectTypeId = uuidv4();
+      req.params = { id };
+      req.body = { name: 'Updated', projectTypeId };
+
+      mockUpdateProject.mockResolvedValue({ id, name: 'Updated' });
+
+      await projectController.updateProject(req, res);
+
+      expect(mockUpdateProject).toHaveBeenCalledWith(
+        id,
+        {
+          name: 'Updated',
+          description: undefined,
+          status: undefined,
+          startDate: undefined,
+          endDate: undefined,
+          projectMetadata: undefined,
+          projectTypeId,
+          projectCategoryId: undefined
+        },
+        { userId: req.user.id, companyId: req.company.id, requestId: req.id }
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should throw BadRequestError without company context', async () => {
+      req.company = undefined;
+      req.params = { id: uuidv4() };
+      req.body = { name: 'X' };
+      await expect(projectController.updateProject(req, res)).rejects.toThrow(BadRequestError);
     });
   });
 

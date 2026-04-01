@@ -2534,7 +2534,10 @@ router.delete(
  *     tags:
  *       - Admin Projects
  *     summary: Create a new project
- *     description: Creates a new project. Requires COMPANY_ADMIN role.
+ *     description: >
+ *       Creates a new project. Requires COMPANY_ADMIN role and company context.
+ *       Client must belong to the current company. Type and category must be visible to that client’s company
+ *       (same rules as project type/category dropdowns: tenant plus platform defaults) and active.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -2545,9 +2548,17 @@ router.delete(
  *             type: object
  *             required:
  *               - clientId
+ *               - projectTypeId
+ *               - projectCategoryId
  *               - name
  *             properties:
  *               clientId:
+ *                 type: string
+ *                 format: uuid
+ *               projectTypeId:
+ *                 type: string
+ *                 format: uuid
+ *               projectCategoryId:
  *                 type: string
  *                 format: uuid
  *               name:
@@ -2682,6 +2693,9 @@ router.get('/projects/:id', authMiddleware, companyContextMiddleware, asyncHandl
  *     tags:
  *       - Admin Projects
  *     summary: Update project
+ *     description: >
+ *       Company context required. Project’s client must belong to the current company.
+ *       Optional projectTypeId and projectCategoryId; when provided, each must be active and visible to that client’s company.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -2707,6 +2721,12 @@ router.get('/projects/:id', authMiddleware, companyContextMiddleware, asyncHandl
  *                 format: date
  *               projectMetadata:
  *                 type: object
+ *               projectTypeId:
+ *                 type: string
+ *                 format: uuid
+ *               projectCategoryId:
+ *                 type: string
+ *                 format: uuid
  *     responses:
  *       200:
  *         description: Project updated successfully

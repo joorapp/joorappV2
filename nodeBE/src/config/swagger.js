@@ -1831,6 +1831,24 @@ const swaggerDefinition = {
         required: ['id', 'name', 'isActive']
       },
       // Project entity schema
+      ProjectTypeSummary: {
+        type: 'object',
+        description: 'Minimal project type embedded on a project',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          projectType: { type: 'string', description: 'Display name' }
+        },
+        required: ['id', 'projectType']
+      },
+      ProjectCategorySummary: {
+        type: 'object',
+        description: 'Minimal project category embedded on a project',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          projectCategory: { type: 'string', description: 'Display name' }
+        },
+        required: ['id', 'projectCategory']
+      },
       Project: {
         type: 'object',
         properties: {
@@ -1845,6 +1863,16 @@ const swaggerDefinition = {
             format: 'uuid',
             description: 'Associated Client UUID',
             example: '550e8400-e29b-41d4-a716-446655440010'
+          },
+          projectTypeId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Project type UUID (tenant or platform default)'
+          },
+          projectCategoryId: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Project category UUID (tenant or platform default)'
           },
           name: {
             type: 'string',
@@ -1887,6 +1915,12 @@ const swaggerDefinition = {
           client: {
             $ref: '#/components/schemas/Client'
           },
+          projectType: {
+            $ref: '#/components/schemas/ProjectTypeSummary'
+          },
+          projectCategory: {
+            $ref: '#/components/schemas/ProjectCategorySummary'
+          },
           createdDate: {
             type: 'string',
             format: 'date-time',
@@ -1900,7 +1934,7 @@ const swaggerDefinition = {
             example: '2024-11-23T12:00:00.000Z'
           }
         },
-        required: ['id', 'clientId', 'name', 'status']
+        required: ['id', 'clientId', 'projectTypeId', 'projectCategoryId', 'name', 'status']
       },
       // =====================================================
       // Parameter Schemas
