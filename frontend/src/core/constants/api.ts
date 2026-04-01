@@ -49,6 +49,7 @@ const API_ROUTES = {
   COMPANYADMIN: {
    CREATE_CLIENT: API_PATH + "/admin/clients",
    GET_CLIENTS: API_PATH + "/admin/clients",
+   GET_ALL_CLIENTS: API_PATH + "/admin/clients/all",
    GET_CLIENT_BY_ID: API_PATH + "/admin/clients/<clientId>",
    UPDATE_CLIENT: API_PATH + "/admin/clients/<clientId>",
    DELETE_CLIENT: API_PATH + "/admin/clients/<clientId>",

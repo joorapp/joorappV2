@@ -1,0 +1,67 @@
+import React from "react";
+import PropTypes from "prop-types";
+import { map, get } from "lodash";
+import { Card, CardBody, Col, Row } from "reactstrap";
+
+const ProjectDetail = ({ project }) => {
+  return (
+    <Card>
+      <CardBody>
+        <div className="d-flex">
+          {/* Fallback avatar (img-1.png is not present in this repo) */}
+          <div className="avatar-sm me-4 rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center">
+            <i className="bx bx-building font-size-24" />
+          </div>
+
+          <div className="flex-grow-1 overflow-hidden">
+            <h5 className="text-truncate font-size-15">Skote Dashboard UI venu</h5>
+            <p className="text-muted">Separate existence is a myth. For science, music, sport, etc.</p>
+          </div>
+        </div>
+
+        <h5 className="font-size-15 mt-4">Project Details :</h5>
+
+        <p className="text-muted">
+          {get(project, "projectDetails.description")}
+        </p>
+
+        <div className="text-muted mt-4">
+          {project.projectDetails &&
+            map(project.projectDetails.points, (point, index) => (
+              <p key={index}>
+                <i className="mdi mdi-chevron-right text-primary me-1" />{" "}
+                {point}
+              </p>
+            ))}
+        </div>
+
+        <Row className="task-dates">
+          <Col sm="4" xs="6">
+            <div className="mt-4">
+              <h5 className="font-size-14">
+                <i className="bx bx-calendar me-1 text-primary" /> Start Date
+              </h5>
+              <p className="text-muted mb-0">08 Sept, 2019</p>
+            </div>
+          </Col>
+
+          <Col sm="4" xs="6">
+            <div className="mt-4">
+              <h5 className="font-size-14">
+                <i className="bx bx-calendar-check me-1 text-primary" /> Due
+                Date
+              </h5>
+              <p className="text-muted mb-0">12 Oct, 2019</p>
+            </div>
+          </Col>
+        </Row>
+      </CardBody>
+    </Card>
+  );
+};
+
+ProjectDetail.propTypes = {
+  project: PropTypes.object,
+};
+
+export default ProjectDetail;

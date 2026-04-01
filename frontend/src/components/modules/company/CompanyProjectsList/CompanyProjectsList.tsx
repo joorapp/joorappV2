@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import {
   Badge,
   Button,
@@ -20,7 +21,8 @@ import {
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
 import Pagination from '../../../common/Pagination/Pagination';
 import { validateRequired } from '../../../../core/utils/Utils';
-import { showSuccessToast } from '../../../../core/utils/toast';
+import { showErrorToast, showSuccessToast } from '../../../../core/utils/toast';
+import CompanyAdminService from '../../../../core/service/CompanyAdminService';
 
 interface Project {
   id: string;
@@ -158,13 +160,10 @@ const initialNewProject: NewProjectForm = {
   remarks: '',
 };
 
-const DUMMY_CLIENTS = [
-  { id: '1', name: 'Gulf Properties LLC' },
-  { id: '2', name: 'Emirates Housing' },
-  { id: '3', name: 'Delta Investments' },
-  { id: '4', name: 'Logistics Plus' },
-  { id: '5', name: 'Luxury Estates' },
-];
+type ClientOption = {
+  id: string;
+  name: string;
+};
 
 const DUMMY_PROJECT_TYPES = ['Commercial', 'Residential', 'Industrial'];
 const DUMMY_PROJECT_CATEGORIES = ['High-rise', 'Multi-unit', 'Interior', 'Warehouse', 'Villa'];
@@ -177,6 +176,7 @@ const ACCEPTED_DRAWING_TYPES = 'application/pdf,image/*';
 
 const CompanyProjectsList = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
   const [currentPage, setCurrentPage] = useState(1);
@@ -185,6 +185,45 @@ const CompanyProjectsList = () => {
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof NewProjectForm, string>>>({});
   const [drawingFile, setDrawingFile] = useState<File | null>(null);
   const [drawingFileError, setDrawingFileError] = useState<string | null>(null);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [isClientsLoading, setIsClientsLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAllClients = async () => {
+      setIsClientsLoading(true);
+      try {
+        const response = await CompanyAdminService.getAllClients();
+        const responseClients = Array.isArray(response?.data?.data) ? response.data.data : [];
+        const mappedClients: ClientOption[] = responseClients
+          .map((client: { id?: string; name?: string }) => ({
+            id: client?.id ?? '',
+            name: client?.name ?? '',
+          }))
+          .filter((client: ClientOption) => client.id && client.name);
+
+        if (isMounted) {
+          setClients(mappedClients);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setClients([]);
+        }
+        showErrorToast('Failed to load clients');
+      } finally {
+        if (isMounted) {
+          setIsClientsLoading(false);
+        }
+      }
+    };
+
+    fetchAllClients();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredProjects = useMemo(() => {
     if (!searchTerm.trim()) return projects;
@@ -309,7 +348,7 @@ const CompanyProjectsList = () => {
       return;
     }
 
-    const clientName = DUMMY_CLIENTS.find((c) => c.id === newProject.client)?.name ?? newProject.client;
+    const clientName = clients.find((c) => c.id === newProject.client)?.name ?? newProject.client;
     const projectCostNum = parseFloat(newProject.projectCost) || 0;
     const nextId = `PRJ-${1000 + projects.length + 1}`;
     const startDate = newProject.startDate || new Date().toISOString().slice(0, 10);
@@ -333,6 +372,10 @@ const CompanyProjectsList = () => {
     setProjects((prev) => [created, ...prev]);
     showSuccessToast(t('CompanyProjectsList.createdSuccessfully'));
     handleCloseCreateModal();
+  };
+
+  const handleOpenProjectOverview = (project: Project) => {
+    navigate(`/company/projects/${project.id}/overview`, { state: { project } });
   };
 
   return (
@@ -394,7 +437,16 @@ const CompanyProjectsList = () => {
                           <td>
                             <span className="fw-medium">{project.id}</span>
                           </td>
-                          <td>{project.name}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-link p-0 text-decoration-none fw-medium"
+                              onClick={() => handleOpenProjectOverview(project)}
+                              title={t('CompanyProjectsList.openOverview')}
+                            >
+                              {project.name}
+                            </button>
+                          </td>
                           <td>{project.clientName}</td>
                           <td>{project.projectManager ?? '—'}</td>
                           <td>{project.location ?? '—'}</td>
@@ -527,8 +579,12 @@ const CompanyProjectsList = () => {
                 onChange={(e) => handleNewProjectChange('client', e.target.value)}
                 invalid={!!formErrors.client}
               >
-                <option value="">{t('CompanyProjectsList.form.selectClient')}</option>
-                {DUMMY_CLIENTS.map((c) => (
+                <option value="">
+                  {isClientsLoading
+                    ? t('Common.loading') || 'Loading...'
+                    : t('CompanyProjectsList.form.selectClient')}
+                </option>
+                {clients.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </Input>
