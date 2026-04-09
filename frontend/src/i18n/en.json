@@ -110,6 +110,7 @@
     "pending": "Pending"
   },
   "Common": {
+    "all": "All",
     "id": "ID",
     "name": "Name",
     "streetAddress": "Street Address",
@@ -457,6 +458,8 @@
     "employeeDeletedSuccessfully": "Employee deleted successfully",
     "editEmployee": "Edit Employee",
     "deleteConfirmation": "Are you sure you want to delete this employee? This action cannot be undone.",
+    "confirmActivateStatus": "Are you sure you want to activate this employee?",
+    "confirmDeactivateStatus": "Are you sure you want to deactivate this employee?",
     "enterFirstName": "Enter first name",
     "enterLastName": "Enter last name",
     "enterEmail": "Enter email address",
@@ -1001,6 +1004,7 @@
     "customerOwnerPrefix": "Customer Owner: Assign a user as the customer owner to provide access only to the data of this customer.",
     "learnMore": "Learn More",
     "attention": "Attention",
+    "country": "Country",
     "countryRegion": "Country/Region",
     "street1": "Street 1",
     "street2": "Street 2",
@@ -1165,6 +1169,8 @@
     "updatedSuccessfully": "Project type updated successfully",
     "deletedSuccessfully": "Project type deleted successfully",
     "deleteConfirmation": "Do you really want to delete project type",
+    "confirmActivateStatus": "Do you want to mark this project type as Active?",
+    "confirmDeactivateStatus": "Do you want to mark this project type as Inactive?",
     "noProjectTypesFound": "No project types found",
     "table": {
       "id": "ID",
@@ -1193,6 +1199,8 @@
     "updatedSuccessfully": "Project category updated successfully",
     "deletedSuccessfully": "Project category deleted successfully",
     "deleteConfirmation": "Do you really want to delete project category",
+    "confirmActivateStatus": "Do you want to mark this project category as Active?",
+    "confirmDeactivateStatus": "Do you want to mark this project category as Inactive?",
     "noProjectCategoriesFound": "No project categories found",
     "table": {
       "id": "ID",
@@ -1217,6 +1225,11 @@
     "breadcrumbItem": "Job Titles",
     "addJobTitle": "Add job title",
     "createdSuccessfully": "Job title created successfully",
+    "updatedSuccessfully": "Job title updated successfully",
+    "deletedSuccessfully": "Job title deleted successfully",
+    "confirmActivateStatus": "Are you sure you want to activate this job title?",
+    "confirmDeactivateStatus": "Are you sure you want to deactivate this job title?",
+    "deleteConfirmation": "Are you sure you want to delete",
     "noJobTitlesFound": "No job titles found",
     "table": {
       "id": "ID",
