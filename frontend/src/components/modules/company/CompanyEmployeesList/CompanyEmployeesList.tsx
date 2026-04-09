@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
@@ -21,8 +21,12 @@ import {
 } from 'reactstrap';
 import { showSuccessToast } from '../../../../core/utils/toast';
 import { validateEmail, validateRequired, validatePhone } from '../../../../core/utils/Utils';
+import { STATUS } from '../../../../core/constants/constantValues';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
 import Pagination from '../../../common/Pagination/Pagination';
+import CompanyAdminService from '../../../../core/service/CompanyAdminService';
+import JobTitleModal, { type JobTitleFormData } from '../../../common/JobTitleModal/JobTitleModal';
+import ConfirmModal from '../../../common/ConfirmModal/ConfirmModal';
 
 interface Employee {
   id: string;
@@ -41,6 +45,14 @@ interface Employee {
   keycloakGlobalRole: string;
   isActive: boolean;
   lastLoginAt?: string;
+  jobTitleId?: string;
+  profileImageBase64?: string;
+  profileImageName?: string;
+}
+
+interface JobTitleOption {
+  id: string;
+  jobTitle: string;
 }
 
 type NewEmployeeForm = {
@@ -54,8 +66,10 @@ type NewEmployeeForm = {
   state: string;
   city: string;
   postalCode: string;
-  role: string;
+  jobTitleId: string;
   salary: string;
+  profileImageBase64: string;
+  profileImageName: string;
 };
 
 const INITIAL_EMPLOYEES: Employee[] = [
@@ -152,29 +166,50 @@ const INITIAL_EMPLOYEES: Employee[] = [
 ];
 
 const ITEMS_PER_PAGE = 10;
+void INITIAL_EMPLOYEES;
+const getInitialEmployeeForm = (): NewEmployeeForm => ({
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  buildingAddress: '',
+  streetAddress: '',
+  country: '',
+  state: '',
+  city: '',
+  postalCode: '',
+  jobTitleId: '',
+  salary: '',
+  profileImageBase64: '',
+  profileImageName: '',
+});
 
 const CompanyEmployeesList = () => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
-  const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewLoading, setViewLoading] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [newEmployee, setNewEmployee] = useState<NewEmployeeForm>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    buildingAddress: '',
-    streetAddress: '',
-    country: '',
-    state: '',
-    city: '',
-    postalCode: '',
-    role: '',
-    salary: '',
-  });
+  const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null);
+  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [employeeStatusTarget, setEmployeeStatusTarget] = useState<Employee | null>(null);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [jobTitleModalOpen, setJobTitleModalOpen] = useState(false);
+  const [jobTitleOptions, setJobTitleOptions] = useState<JobTitleOption[]>([]);
+  const [jobTitlesLoading, setJobTitlesLoading] = useState(false);
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const profileImageInputRef = useRef<HTMLInputElement | null>(null);
+  const [newEmployee, setNewEmployee] = useState<NewEmployeeForm>(getInitialEmployeeForm());
   const [createErrors, setCreateErrors] = useState<Record<keyof NewEmployeeForm, string | undefined>>({
     firstName: undefined,
     lastName: undefined,
@@ -186,8 +221,10 @@ const CompanyEmployeesList = () => {
     state: undefined,
     city: undefined,
     postalCode: undefined,
-    role: undefined,
+    jobTitleId: undefined,
     salary: undefined,
+    profileImageBase64: undefined,
+    profileImageName: undefined,
   });
 
   const getInitials = (employee: Employee): string => {
@@ -239,39 +276,165 @@ const CompanyEmployeesList = () => {
     return employee.email;
   };
 
-  const filteredEmployees = useMemo(() => {
-    if (!searchTerm.trim()) return employees;
-    const term = searchTerm.toLowerCase();
-    return employees.filter((employee) => {
-      const name = `${employee.firstName} ${employee.lastName}`.toLowerCase();
-      return (
-        name.includes(term) ||
-        employee.email.toLowerCase().includes(term) ||
-        employee.phone.toLowerCase().includes(term) ||
-        employee.buildingAddress.toLowerCase().includes(term) ||
-        employee.streetAddress.toLowerCase().includes(term) ||
-        employee.country.toLowerCase().includes(term) ||
-        employee.state.toLowerCase().includes(term) ||
-        employee.city.toLowerCase().includes(term) ||
-        employee.postalCode.toLowerCase().includes(term) ||
-        employee.role.toLowerCase().includes(term)
-      );
+  const filteredEmployees = useMemo(() => employees, [employees]);
+  const paginatedEmployees = filteredEmployees;
+
+  const mapEmployeeFromApi = (employee: any): Employee => {
+    const metadata = employee?.employeeMetadata || {};
+    return {
+      id: employee?.id || '',
+      firstName: employee?.firstName || '',
+      lastName: employee?.lastName || '',
+      email: employee?.email || '',
+      phone: employee?.phone || '',
+      buildingAddress: metadata?.buildingAddress || '',
+      streetAddress: metadata?.streetAddress || '',
+      country: metadata?.country || '',
+      state: metadata?.state || '',
+      city: metadata?.city || '',
+      postalCode: metadata?.postalCode || '',
+      role: employee?.jobTitle?.jobTitle || '',
+      jobTitleId: employee?.jobTitleId || employee?.jobTitle?.id || '',
+      salary: Number(employee?.salary || 0),
+      keycloakGlobalRole: employee?.keycloakGlobalRole || '',
+      isActive: Boolean(employee?.isActive),
+      lastLoginAt: employee?.lastLoginAt || undefined,
+      profileImageBase64: metadata?.profileImageBase64 || '',
+      profileImageName: metadata?.profileImageName || '',
+    };
+  };
+
+  const fetchEmployees = useCallback(async (page: number, search: string) => {
+    setLoading(true);
+    try {
+      const response = await CompanyAdminService.getEmployees({
+        page,
+        limit: ITEMS_PER_PAGE,
+        search,
+        sortBy: 'email',
+        sortOrder: 'ASC',
+      });
+
+      const employeesData = response?.data?.data || [];
+      const mappedEmployees: Employee[] = employeesData.map((employee: any) => mapEmployeeFromApi(employee));
+
+      setEmployees(mappedEmployees);
+      setTotalPages(response?.data?.pagination?.pages || 1);
+      setTotalItems(response?.data?.pagination?.total || 0);
+      setCurrentPage(response?.data?.pagination?.page || page);
+    } catch (error) {
+      // Error notifications are handled globally.
+      console.error('Error fetching employees:', error);
+      setEmployees([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchJobTitleOptions = useCallback(async () => {
+    setJobTitlesLoading(true);
+    try {
+      const response = await CompanyAdminService.getAllEmployeeJobTitles({ isActive: true });
+      const options: JobTitleOption[] = (response?.data?.data || [])
+        .map((item: any) => ({
+          id: item?.id || item?.jobTitle || '',
+          jobTitle: item?.jobTitle || '',
+        }))
+        .filter((item: JobTitleOption) => item.jobTitle.trim().length > 0);
+      setJobTitleOptions(options);
+      return options;
+    } catch (error) {
+      // Error notifications are handled globally.
+      console.error('Error fetching job title options:', error);
+      setJobTitleOptions([]);
+      return [] as JobTitleOption[];
+    } finally {
+      setJobTitlesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEmployees(currentPage, searchTerm);
+  }, [currentPage, fetchEmployees]);
+
+  useEffect(() => {
+    fetchJobTitleOptions();
+  }, [fetchJobTitleOptions]);
+
+  useEffect(() => {
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+
+    const timer = setTimeout(() => {
+      if (currentPage === 1) {
+        fetchEmployees(1, searchTerm);
+      } else {
+        setCurrentPage(1);
+      }
+    }, 400);
+
+    setSearchDebounceTimer(timer);
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [searchTerm, currentPage, fetchEmployees]);
+
+  const resetCreateForm = () => {
+    setNewEmployee(getInitialEmployeeForm());
+    setCreateErrors({
+      firstName: undefined,
+      lastName: undefined,
+      email: undefined,
+      phone: undefined,
+      buildingAddress: undefined,
+      streetAddress: undefined,
+      country: undefined,
+      state: undefined,
+      city: undefined,
+      postalCode: undefined,
+      jobTitleId: undefined,
+      salary: undefined,
+      profileImageBase64: undefined,
+      profileImageName: undefined,
     });
-  }, [employees, searchTerm]);
+  };
 
-  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE));
-  const paginatedEmployees = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredEmployees.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredEmployees, currentPage]);
+  const handleOpenCreateModal = () => {
+    setEditingEmployeeId(null);
+    resetCreateForm();
+    setCreateModalOpen(true);
+    fetchJobTitleOptions();
+  };
 
-  const handleView = (employee: Employee) => {
-    setSelectedEmployee(employee);
+  const handleView = async (employee: Employee) => {
     setViewModalOpen(true);
+    setViewLoading(true);
+    try {
+      const response = await CompanyAdminService.getEmployeeById(employee.id);
+      const row = response?.data?.data;
+      if (row) {
+        setSelectedEmployee(mapEmployeeFromApi(row));
+      } else {
+        setSelectedEmployee(employee);
+      }
+    } catch (error) {
+      // Error notifications are handled globally.
+      console.error('Error fetching employee details:', error);
+      setSelectedEmployee(employee);
+    } finally {
+      setViewLoading(false);
+    }
   };
 
   const handleCloseViewModal = () => {
     setViewModalOpen(false);
+    setViewLoading(false);
     setSelectedEmployee(null);
   };
 
@@ -284,20 +447,18 @@ const CompanyEmployeesList = () => {
 
   const handleCloseCreateModal = () => {
     setCreateModalOpen(false);
-    setNewEmployee({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      buildingAddress: '',
-      streetAddress: '',
-      country: '',
-      state: '',
-      city: '',
-      postalCode: '',
-      role: '',
-      salary: '',
-    });
+    setEditingEmployeeId(null);
+    resetCreateForm();
+  };
+
+  const handleEditEmployee = async (employee: Employee) => {
+    const options = await fetchJobTitleOptions();
+    const resolvedJobTitleId =
+      employee.jobTitleId ||
+      options.find((item) => item.jobTitle.toLowerCase() === employee.role.toLowerCase())?.id ||
+      '';
+
+    setEditingEmployeeId(employee.id);
     setCreateErrors({
       firstName: undefined,
       lastName: undefined,
@@ -309,17 +470,78 @@ const CompanyEmployeesList = () => {
       state: undefined,
       city: undefined,
       postalCode: undefined,
-      role: undefined,
+      jobTitleId: undefined,
       salary: undefined,
+      profileImageBase64: undefined,
+      profileImageName: undefined,
     });
+    setNewEmployee({
+      firstName: employee.firstName || '',
+      lastName: employee.lastName || '',
+      email: employee.email || '',
+      phone: employee.phone || '',
+      buildingAddress: employee.buildingAddress || '',
+      streetAddress: employee.streetAddress || '',
+      country: employee.country || '',
+      state: employee.state || '',
+      city: employee.city || '',
+      postalCode: employee.postalCode || '',
+      jobTitleId: resolvedJobTitleId,
+      salary: String(employee.salary || ''),
+      profileImageBase64: employee.profileImageBase64 || '',
+      profileImageName: employee.profileImageName || '',
+    });
+    setCreateModalOpen(true);
   };
 
-  const handleCreateEmployee = () => {
+  const handleCreateJobTitle = async (payload: JobTitleFormData) => {
+    const response = await CompanyAdminService.createEmployeeJobTitle({
+      jobTitle: payload.name.trim(),
+      description: payload.description.trim() || undefined,
+      isActive: payload.status === STATUS.ACTIVE,
+    });
+    const created = response?.data?.data;
+    const createdTitle = created?.jobTitle || payload.name.trim();
+    const createdId = created?.id || '';
+
+    const refreshedOptions = await fetchJobTitleOptions();
+    setNewEmployee((prev) => ({
+      ...prev,
+      jobTitleId:
+        createdId ||
+        refreshedOptions.find((item) => item.jobTitle.toLowerCase() === createdTitle.toLowerCase())
+          ?.id ||
+        prev.jobTitleId,
+    }));
+    setCreateErrors((prev) => ({
+      ...prev,
+      jobTitleId: undefined,
+    }));
+    showSuccessToast(t('CompanyJobTitles.createdSuccessfully'));
+  };
+
+  const handleProfileImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = typeof reader.result === 'string' ? reader.result : '';
+      setNewEmployee((prev) => ({
+        ...prev,
+        profileImageBase64: base64,
+        profileImageName: file.name,
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveEmployee = async () => {
     const firstNameVal = validateRequired(newEmployee.firstName, 'firstName');
     const lastNameVal = validateRequired(newEmployee.lastName, 'lastName');
     const emailVal = validateEmail(newEmployee.email);
     const phoneVal = validatePhone(newEmployee.phone);
-    const roleVal = validateRequired(newEmployee.role, 'role');
+    const jobTitleVal = validateRequired(newEmployee.jobTitleId, 'jobTitle');
 
     const errors: Record<keyof NewEmployeeForm, string | undefined> = {
       firstName: firstNameVal.isValid ? undefined : firstNameVal.errorMessage,
@@ -332,8 +554,10 @@ const CompanyEmployeesList = () => {
       state: undefined,
       city: undefined,
       postalCode: undefined,
-      role: roleVal.isValid ? undefined : roleVal.errorMessage,
+      jobTitleId: jobTitleVal.isValid ? undefined : jobTitleVal.errorMessage,
       salary: undefined,
+      profileImageBase64: undefined,
+      profileImageName: undefined,
     };
 
     if (Object.values(errors).some((e) => e)) {
@@ -341,37 +565,94 @@ const CompanyEmployeesList = () => {
       return;
     }
 
-    const now = new Date().toISOString();
-    const employee: Employee = {
-      id: `E-${Date.now()}`,
-      firstName: newEmployee.firstName.trim(),
-      lastName: newEmployee.lastName.trim(),
-      email: newEmployee.email.trim(),
-      phone: newEmployee.phone.trim(),
-      buildingAddress: newEmployee.buildingAddress.trim(),
-      streetAddress: newEmployee.streetAddress.trim(),
-      country: newEmployee.country.trim(),
-      state: newEmployee.state.trim(),
-      city: newEmployee.city.trim(),
-      postalCode: newEmployee.postalCode.trim(),
-      role: newEmployee.role.trim(),
-      salary: Number(newEmployee.salary) || 0,
-      keycloakGlobalRole: 'COMPANY_USER',
-      isActive: true,
-      lastLoginAt: now,
-    };
+    try {
+      setCreateSubmitting(true);
+      const payload = {
+        firstName: newEmployee.firstName.trim(),
+        lastName: newEmployee.lastName.trim(),
+        email: newEmployee.email.trim(),
+        phone: newEmployee.phone.trim(),
+        jobTitleId: newEmployee.jobTitleId,
+        salary: Number(newEmployee.salary) || 0,
+        isActive: true,
+        employeeMetadata: {
+          buildingAddress: newEmployee.buildingAddress.trim(),
+          streetAddress: newEmployee.streetAddress.trim(),
+          country: newEmployee.country.trim(),
+          state: newEmployee.state.trim(),
+          city: newEmployee.city.trim(),
+          postalCode: newEmployee.postalCode.trim(),
+          profileImageBase64: newEmployee.profileImageBase64,
+          profileImageName: newEmployee.profileImageName,
+        },
+      };
 
-    setEmployees((prev) => [employee, ...prev]);
-    showSuccessToast(t('EmployeeLists.employeeCreatedSuccessfully'));
-    handleCloseCreateModal();
+      if (editingEmployeeId) {
+        await CompanyAdminService.updateEmployee(editingEmployeeId, payload);
+        showSuccessToast(t('EmployeeLists.employeeUpdatedSuccessfully'));
+      } else {
+        await CompanyAdminService.createEmployee(payload);
+        showSuccessToast(t('EmployeeLists.employeeCreatedSuccessfully'));
+      }
+      handleCloseCreateModal();
+      fetchEmployees(1, searchTerm);
+      setCurrentPage(1);
+    } finally {
+      setCreateSubmitting(false);
+    }
   };
 
-  const handleToggleEmployeeStatus = (employeeId: string) => {
-    setEmployees((prev) =>
-      prev.map((emp) =>
-        emp.id === employeeId ? { ...emp, isActive: !emp.isActive } : emp,
-      ),
-    );
+  const handleOpenStatusModal = (employee: Employee) => {
+    setEmployeeStatusTarget(employee);
+    setStatusModalOpen(true);
+  };
+
+  const handleCloseStatusModal = () => {
+    setStatusModalOpen(false);
+    setEmployeeStatusTarget(null);
+  };
+
+  const handleConfirmStatusToggle = async () => {
+    if (!employeeStatusTarget?.id) return;
+
+    try {
+      setStatusLoading(true);
+      await CompanyAdminService.updateEmployeeStatus(
+        employeeStatusTarget.id,
+        !employeeStatusTarget.isActive,
+      );
+      showSuccessToast(t('EmployeeLists.employeeUpdatedSuccessfully'));
+      handleCloseStatusModal();
+      fetchEmployees(1, searchTerm);
+      setCurrentPage(1);
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  const handleOpenDeleteModal = (employee: Employee) => {
+    setEmployeeToDelete(employee);
+    setDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setEmployeeToDelete(null);
+  };
+
+  const handleDeleteEmployee = async () => {
+    if (!employeeToDelete?.id) return;
+
+    try {
+      setDeleteLoading(true);
+      await CompanyAdminService.deleteEmployee(employeeToDelete.id);
+      showSuccessToast(t('EmployeeLists.employeeDeletedSuccessfully'));
+      handleCloseDeleteModal();
+      fetchEmployees(1, searchTerm);
+      setCurrentPage(1);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -407,7 +688,7 @@ const CompanyEmployeesList = () => {
                   <Button
                     color="primary"
                     className="btn-rounded waves-effect d-inline-flex align-items-center waves-light"
-                    onClick={() => setCreateModalOpen(true)}
+                    onClick={handleOpenCreateModal}
                   >
                     <i className="bx bx-plus me-1"></i>
                     {t('EmployeeLists.newEmployee')}
@@ -429,7 +710,14 @@ const CompanyEmployeesList = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedEmployees.length > 0 ? (
+                    {loading ? (
+                      <tr>
+                        <td colSpan={8} className="text-center py-4">
+                          <Spinner size="sm" className="me-2" />
+                          <span>{t('Common.loading')}</span>
+                        </td>
+                      </tr>
+                    ) : paginatedEmployees.length > 0 ? (
                       paginatedEmployees.map((employee) => (
                         <tr key={employee.id}>
                           <td>
@@ -480,7 +768,7 @@ const CompanyEmployeesList = () => {
                                 className="switch switch-success"
                                 id={`employee-status-${employee.id}`}
                                 checked={employee.isActive}
-                                onChange={() => handleToggleEmployeeStatus(employee.id)}
+                                onChange={() => handleOpenStatusModal(employee)}
                               />
                               <label htmlFor={`employee-status-${employee.id}`} />
                               <Button
@@ -495,7 +783,7 @@ const CompanyEmployeesList = () => {
                                 color="outline-secondary"
                                 className="border-0 btn-sm"
                                 title={t('Common.edit')}
-                                
+                                onClick={() => handleEditEmployee(employee)}
                               >
                                 <i className="mdi mdi-pencil"></i>
                               </Button>
@@ -503,7 +791,7 @@ const CompanyEmployeesList = () => {
                                 color="outline-danger"
                                 className="border-0 btn-sm"
                                 title={t('Common.delete')}
-                                
+                                onClick={() => handleOpenDeleteModal(employee)}
                               >
                                 <i className="mdi mdi-delete"></i>
                               </Button>
@@ -522,11 +810,11 @@ const CompanyEmployeesList = () => {
                 </Table>
               </div>
 
-              {filteredEmployees.length > 0 && (
+              {totalItems > 0 && (
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  totalItems={filteredEmployees.length}
+                  totalItems={totalItems}
                   itemsPerPage={ITEMS_PER_PAGE}
                   onPageChange={setCurrentPage}
                 />
@@ -538,7 +826,7 @@ const CompanyEmployeesList = () => {
 
       <Modal isOpen={createModalOpen} toggle={handleCloseCreateModal} size="lg" centered>
         <ModalHeader toggle={handleCloseCreateModal}>
-          {t('EmployeeLists.createEmployee')}
+          {editingEmployeeId ? t('Common.edit') : t('EmployeeLists.createEmployee')}
         </ModalHeader>
         <ModalBody>
           <div className="row m-0">
@@ -547,15 +835,40 @@ const CompanyEmployeesList = () => {
                 {t('NewClients.profilePhoto')}
               </Label>
               <div className="profile-photo-upload position-relative d-flex align-items-center justify-content-center">
-                <svg width="80" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="40" cy="40" r="40" fill="#e1e7ef" />
-                  <circle cx="40" cy="32" r="14" fill="#ced6df" />
-                  <ellipse cx="40" cy="60" rx="22" ry="14" fill="#ced6df" />
-                </svg>
+                {newEmployee.profileImageBase64 ? (
+                  <img
+                    src={newEmployee.profileImageBase64}
+                    alt="profile preview"
+                    className="rounded-circle"
+                    style={{ width: 80, height: 80, objectFit: 'cover' }}
+                  />
+                ) : (
+                  <svg width="80" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="40" cy="40" r="40" fill="#e1e7ef" />
+                    <circle cx="40" cy="32" r="14" fill="#ced6df" />
+                    <ellipse cx="40" cy="60" rx="22" ry="14" fill="#ced6df" />
+                  </svg>
+                )}
                 <div className="profile-upload-button">
-                  <i className="mdi mdi-camera text-primary" />
+                  <button
+                    type="button"
+                    className="btn btn-link p-0 border-0"
+                    onClick={() => profileImageInputRef.current?.click()}
+                  >
+                    <i className="mdi mdi-camera text-primary" />
+                  </button>
                 </div>
               </div>
+              <Input
+                innerRef={profileImageInputRef}
+                type="file"
+                accept="image/*"
+                className="d-none"
+                onChange={handleProfileImageChange}
+              />
+              {newEmployee.profileImageName && (
+                <small className="text-muted mt-1">{newEmployee.profileImageName}</small>
+              )}
               <div className="profile-upload-helper-text">
                 {t('NewClients.uploadProfilePhoto')}
               </div>
@@ -575,7 +888,22 @@ const CompanyEmployeesList = () => {
                 <FormFeedback>{t(createErrors.firstName)}</FormFeedback>
               )}
             </div>
-            
+
+            <div className="col-md-6 mb-3">
+              <Label className="form-label fw-semibold">
+                {t('EmployeeLists.labels.lastName')} <span className="text-danger">*</span>
+              </Label>
+              <Input
+                value={newEmployee.lastName}
+                onChange={(e) => handleNewEmployeeChange('lastName', e.target.value)}
+                placeholder={t('EmployeeLists.enterLastName')}
+                invalid={!!createErrors.lastName}
+              />
+              {createErrors.lastName && (
+                <FormFeedback>{t(createErrors.lastName)}</FormFeedback>
+              )}
+            </div>
+
             <div className="col-md-6 mb-3">
               <Label className="form-label fw-semibold">
                 {t('EmployeeLists.labels.email')} <span className="text-danger">*</span>
@@ -694,30 +1022,35 @@ const CompanyEmployeesList = () => {
                 <Label className="form-label fw-semibold">
                   {t('EmployeeLists.jobTitle')} <span className="text-danger">*</span>
                 </Label>
-                <Link to="/company/employees/job-titles" className="p-0 text-primary d-inline-flex align-items-center">
+                <Button
+                  color="link"
+                  className="p-0 text-primary d-inline-flex align-items-center"
+                  type="button"
+                  onClick={() => setJobTitleModalOpen(true)}
+                >
                   <i className="bx bx-plus me-1" />
                   {t('Common.add')}
-                </Link>
+                </Button>
               </div>
               <Input
                 type="select"
-                value={newEmployee.role}
-                onChange={(e) => handleNewEmployeeChange('role', e.target.value)}
-                invalid={!!createErrors.role}
+                value={newEmployee.jobTitleId}
+                onChange={(e) => handleNewEmployeeChange('jobTitleId', e.target.value)}
+                invalid={!!createErrors.jobTitleId}
+                disabled={jobTitlesLoading}
               >
                 <option value="">{t('Common.select')}</option>
-                <option value="DGM">DGM</option>
-                <option value="Site Supervisor">Site Supervisor</option>
-                <option value="Site Engineer">Site Engineer</option>
-                <option value="Quantity Surveyor">Quantity Surveyor</option>
-                <option value="Store Keeper">Store Keeper</option>
-                <option value="Accountant">Accountant</option>
+                {jobTitleOptions.map((jobTitle) => (
+                  <option key={jobTitle.id} value={jobTitle.id}>
+                    {jobTitle.jobTitle}
+                  </option>
+                ))}
               </Input>
-              {createErrors.role && (
-                <FormFeedback>{t(createErrors.role)}</FormFeedback>
+              {createErrors.jobTitleId && (
+                <FormFeedback>{t(createErrors.jobTitleId)}</FormFeedback>
               )}
             </div>
-            <div className="col-md-12 mb-3">
+            <div className="col-md-6 mb-3">
               <Label className="form-label fw-semibold">
                 {t('Common.salary')}
               </Label>
@@ -739,18 +1072,51 @@ const CompanyEmployeesList = () => {
           <Button color="secondary" onClick={handleCloseCreateModal}>
             {t('Common.cancel')}
           </Button>
-          <Button color="primary" onClick={handleCreateEmployee}>
-            {t('EmployeeLists.createEmployee')}
+          <Button color="primary" onClick={handleSaveEmployee} disabled={createSubmitting}>
+            {editingEmployeeId ? t('Common.update') : t('EmployeeLists.createEmployee')}
           </Button>
         </ModalFooter>
       </Modal>
+
+      <JobTitleModal
+        isOpen={jobTitleModalOpen}
+        toggle={() => setJobTitleModalOpen(false)}
+        onSubmit={handleCreateJobTitle}
+      />
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        toggle={handleCloseDeleteModal}
+        title={t('Common.confirm')}
+        message={t('EmployeeLists.deleteConfirmation')}
+        onConfirm={handleDeleteEmployee}
+        confirmButtonText={t('Common.delete')}
+        cancelButtonText={t('Common.cancel')}
+        isLoading={deleteLoading}
+      />
+
+      <ConfirmModal
+        isOpen={statusModalOpen}
+        toggle={handleCloseStatusModal}
+        title={t('Common.confirm')}
+        message={
+          employeeStatusTarget?.isActive
+            ? t('EmployeeLists.confirmDeactivateStatus')
+            : t('EmployeeLists.confirmActivateStatus')
+        }
+        onConfirm={handleConfirmStatusToggle}
+        confirmButtonText={t('Common.confirm')}
+        cancelButtonText={t('Common.cancel')}
+        confirmButtonColor="primary"
+        isLoading={statusLoading}
+      />
 
       <Modal isOpen={viewModalOpen} toggle={handleCloseViewModal} size="lg" centered>
         <ModalHeader toggle={handleCloseViewModal}>
           {t('EmployeeLists.modal.employeeDetails')}
         </ModalHeader>
         <ModalBody>
-          {selectedEmployee ? (() => {
+          {!viewLoading && selectedEmployee ? (() => {
             const fullAddress = [
               selectedEmployee.buildingAddress,
               selectedEmployee.streetAddress,
@@ -766,12 +1132,21 @@ const CompanyEmployeesList = () => {
               <Row className="m-0">
                 <Col md="12">
                   <div className="d-flex align-items-center gap-3">
-                    <div
-                      className="avatar-lg rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
-                      style={{ backgroundColor: '#34c38f', minWidth: 56, minHeight: 56 }}
-                    >
-                      {getInitials(selectedEmployee)}
-                    </div>
+                    {selectedEmployee.profileImageBase64 ? (
+                      <img
+                        src={selectedEmployee.profileImageBase64}
+                        alt={getEmployeeName(selectedEmployee)}
+                        className="rounded-circle flex-shrink-0"
+                        style={{ width: 56, height: 56, objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div
+                        className="avatar-lg rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                        style={{ backgroundColor: '#34c38f', minWidth: 56, minHeight: 56 }}
+                      >
+                        {getInitials(selectedEmployee)}
+                      </div>
+                    )}
                     <div>
                       <h5 className="mb-1 fw-bold">{getEmployeeName(selectedEmployee)}</h5>
                       <div className="d-flex flex-wrap align-items-center gap-2">

@@ -6,9 +6,8 @@ import {
   Card,
   CardBody,
   Col,
+  FormFeedback,
   Input,
-  InputGroup,
-  InputGroupText,
   Label,
   Nav,
   NavItem,
@@ -21,18 +20,18 @@ import CompanyAdminService from '../../../../core/service/CompanyAdminService';
 import { showErrorToast, showSuccessToast } from '../../../../core/utils/toast';
 
 type CustomerType = 'SUPPLIER' | 'INDIVIDUAL';
-type CreateTabId = 'otherDetails' | 'address' | 'contactPersons' | 'remarks';
+type CreateTabId = 'address' | 'contactPersons' | 'remarks';
 type ContactPersonForm = {
   id: string;
   salutation: string;
   firstName: string;
   lastName: string;
   emailAddress: string;
-  workPhoneCode: string;
   workPhone: string;
-  mobileCode: string;
   mobile: string;
 };
+
+type ContactPersonField = keyof Omit<ContactPersonForm, 'id'>;
 
 type ClientFormSnapshot = {
   customerType: CustomerType;
@@ -40,42 +39,37 @@ type ClientFormSnapshot = {
   primaryFirstName: string;
   primaryLastName: string;
   companyName: string;
-  displayName: string;
-  currency: 'AED';
   emailAddress: string;
-  customerNumber: string;
-  phoneCountryCode: string;
   phoneWork: string;
   phoneMobile: string;
-  customerLanguage: string;
-  taxRate: string;
-  companyId: string;
-  paymentTerms: 'dueOnReceipt';
-  enablePortal: boolean;
-  billingAttention: string;
   billingCountryRegion: string;
-  billingStreet1: string;
-  billingStreet2: string;
+  billingAddress: string;
   billingCity: string;
   billingState: string;
   billingZipCode: string;
-  billingPhoneCode: string;
   billingPhone: string;
-  billingFaxNumber: string;
-  shippingAttention: string;
-  shippingCountryRegion: string;
-  shippingStreet1: string;
-  shippingStreet2: string;
-  shippingCity: string;
-  shippingState: string;
-  shippingZipCode: string;
-  shippingPhoneCode: string;
-  shippingPhone: string;
-  shippingFaxNumber: string;
   contactPersons: ContactPersonForm[];
   remarksText: string;
-  documentNames: string[];
 };
+
+type ClientFieldErrorKey =
+  | 'primarySalutation'
+  | 'primaryFirstName'
+  | 'primaryLastName'
+  | 'companyName'
+  | 'emailAddress'
+  | 'phoneWork'
+  | 'phoneMobile'
+  | 'billingAddress'
+  | 'billingCountryRegion'
+  | 'billingState'
+  | 'billingCity'
+  | 'billingZipCode'
+  | 'billingPhone';
+
+type ClientFieldErrors = Partial<Record<ClientFieldErrorKey, string>>;
+type ContactPersonRowErrors = Partial<Record<ContactPersonField, string>>;
+type ContactPersonErrors = Record<string, ContactPersonRowErrors>;
 
 const normalizeContactPersons = (contactPersons: ContactPersonForm[]) =>
   contactPersons.map((person) => ({
@@ -83,20 +77,17 @@ const normalizeContactPersons = (contactPersons: ContactPersonForm[]) =>
     firstName: person.firstName.trim(),
     lastName: person.lastName.trim(),
     emailAddress: person.emailAddress.trim(),
-    workPhoneCode: person.workPhoneCode,
     workPhone: person.workPhone.trim(),
-    mobileCode: person.mobileCode,
     mobile: person.mobile.trim(),
   }));
 
 const buildClientRequestPayload = (form: ClientFormSnapshot) => {
   const name =
     form.companyName.trim() ||
-    [form.primaryFirstName.trim(), form.primaryLastName.trim()].filter(Boolean).join(' ') ||
-    form.displayName.trim();
+    [form.primaryFirstName.trim(), form.primaryLastName.trim()].filter(Boolean).join(' ');
   const phone = form.phoneMobile.trim()
-    ? `${form.phoneCountryCode}${form.phoneMobile.trim()}`
-    : `${form.phoneCountryCode}${form.phoneWork.trim()}`;
+    ? form.phoneMobile.trim()
+    : form.phoneWork.trim();
 
   return {
     name,
@@ -110,46 +101,20 @@ const buildClientRequestPayload = (form: ClientFormSnapshot) => {
         firstName: form.primaryFirstName.trim(),
         lastName: form.primaryLastName.trim(),
       },
-      displayName: form.displayName,
-      currency: form.currency,
-      customerNumber: form.customerNumber,
       phone: {
-        countryCode: form.phoneCountryCode,
+        // countryCode intentionally removed for now.
         work: form.phoneWork.trim(),
         mobile: form.phoneMobile.trim(),
       },
-      customerLanguage: form.customerLanguage,
-      otherDetails: {
-        taxRate: form.taxRate,
-        companyId: form.companyId.trim(),
-        paymentTerms: form.paymentTerms,
-        enablePortal: form.enablePortal,
-        documents: form.documentNames,
-      },
       address: {
         billing: {
-          attention: form.billingAttention.trim(),
           countryRegion: form.billingCountryRegion,
-          street1: form.billingStreet1.trim(),
-          street2: form.billingStreet2.trim(),
+          street1: form.billingAddress.trim(),
           city: form.billingCity.trim(),
           state: form.billingState,
           zipCode: form.billingZipCode.trim(),
-          phoneCode: form.billingPhoneCode,
+          // phoneCode intentionally removed for now.
           phone: form.billingPhone.trim(),
-          faxNumber: form.billingFaxNumber.trim(),
-        },
-        shipping: {
-          attention: form.shippingAttention.trim(),
-          countryRegion: form.shippingCountryRegion,
-          street1: form.shippingStreet1.trim(),
-          street2: form.shippingStreet2.trim(),
-          city: form.shippingCity.trim(),
-          state: form.shippingState,
-          zipCode: form.shippingZipCode.trim(),
-          phoneCode: form.shippingPhoneCode,
-          phone: form.shippingPhone.trim(),
-          faxNumber: form.shippingFaxNumber.trim(),
         },
       },
       contactPersons: normalizeContactPersons(form.contactPersons),
@@ -158,7 +123,18 @@ const buildClientRequestPayload = (form: ClientFormSnapshot) => {
   };
 };
 
-const CompanyClientCreate = () => {
+interface CreatedClientData {
+  id?: string;
+  name?: string;
+}
+
+interface CompanyClientCreateProps {
+  embedded?: boolean;
+  onCancel?: () => void;
+  onSuccess?: (createdClient?: CreatedClientData) => void;
+}
+
+const CompanyClientCreate = ({ embedded = false, onCancel, onSuccess }: CompanyClientCreateProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -168,44 +144,19 @@ const CompanyClientCreate = () => {
   const [primaryLastName, setPrimaryLastName] = useState('');
 
   const [companyName, setCompanyName] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [currency, setCurrency] = useState<'AED'>('AED');
   const [emailAddress, setEmailAddress] = useState('');
-  const [customerNumber] = useState('CUS-00003');
-  const [phoneCountryCode, setPhoneCountryCode] = useState('+358');
   const [phoneWork, setPhoneWork] = useState('');
   const [phoneMobile, setPhoneMobile] = useState('');
-  const [customerLanguage, setCustomerLanguage] = useState('English');
 
-  const [activeTab, setActiveTab] = useState<CreateTabId>('otherDetails');
-  const [taxRate, setTaxRate] = useState('');
-
-  const [companyId, setCompanyId] = useState('');
-  const [paymentTerms, setPaymentTerms] = useState<'dueOnReceipt'>('dueOnReceipt');
-  const [enablePortal, setEnablePortal] = useState(false);
+  const [activeTab, setActiveTab] = useState<CreateTabId>('address');
 
   // Billing / Shipping address
-  const [billingAttention, setBillingAttention] = useState('');
   const [billingCountryRegion, setBillingCountryRegion] = useState('');
-  const [billingStreet1, setBillingStreet1] = useState('Street 1');
-  const [billingStreet2, setBillingStreet2] = useState('Street 2');
+  const [billingAddress, setBillingAddress] = useState('');
   const [billingCity, setBillingCity] = useState('');
   const [billingState, setBillingState] = useState('');
   const [billingZipCode, setBillingZipCode] = useState('');
-  const [billingPhoneCode, setBillingPhoneCode] = useState('+358');
   const [billingPhone, setBillingPhone] = useState('');
-  const [billingFaxNumber, setBillingFaxNumber] = useState('');
-
-  const [shippingAttention, setShippingAttention] = useState('');
-  const [shippingCountryRegion, setShippingCountryRegion] = useState('');
-  const [shippingStreet1, setShippingStreet1] = useState('Street 1');
-  const [shippingStreet2, setShippingStreet2] = useState('Street 2');
-  const [shippingCity, setShippingCity] = useState('');
-  const [shippingState, setShippingState] = useState('');
-  const [shippingZipCode, setShippingZipCode] = useState('');
-  const [shippingPhoneCode, setShippingPhoneCode] = useState('+358');
-  const [shippingPhone, setShippingPhone] = useState('');
-  const [shippingFaxNumber, setShippingFaxNumber] = useState('');
 
   const emptyContactPerson = (): ContactPersonForm => ({
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -213,21 +164,19 @@ const CompanyClientCreate = () => {
     firstName: '',
     lastName: '',
     emailAddress: '',
-    workPhoneCode: '+358',
     workPhone: '',
-    mobileCode: '+358',
     mobile: '',
   });
 
-  const [contactPersons, setContactPersons] = useState<ContactPersonForm[]>([emptyContactPerson(), emptyContactPerson()]);
+  const [contactPersons, setContactPersons] = useState<ContactPersonForm[]>([emptyContactPerson()]);
 
   const [remarksText, setRemarksText] = useState('');
-  const [documentNames, setDocumentNames] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<ClientFieldErrors>({});
+  const [contactPersonErrors, setContactPersonErrors] = useState<ContactPersonErrors>({});
 
   const tabs: Array<{ id: CreateTabId; label: string }> = useMemo(
     () => [
-      { id: 'otherDetails', label: t('CompanyClientsList.otherDetails') },
       { id: 'address', label: t('Common.address') },
       { id: 'contactPersons', label: t('CompanyClientsList.contactPersons') },
       { id: 'remarks', label: t('CompanyClientsList.remarks') },
@@ -241,60 +190,126 @@ const CompanyClientCreate = () => {
     primaryFirstName,
     primaryLastName,
     companyName,
-    displayName,
-    currency,
     emailAddress,
-    customerNumber,
-    phoneCountryCode,
     phoneWork,
     phoneMobile,
-    customerLanguage,
-    taxRate,
-    companyId,
-    paymentTerms,
-    enablePortal,
-    billingAttention,
     billingCountryRegion,
-    billingStreet1,
-    billingStreet2,
+    billingAddress,
     billingCity,
     billingState,
     billingZipCode,
-    billingPhoneCode,
     billingPhone,
-    billingFaxNumber,
-    shippingAttention,
-    shippingCountryRegion,
-    shippingStreet1,
-    shippingStreet2,
-    shippingCity,
-    shippingState,
-    shippingZipCode,
-    shippingPhoneCode,
-    shippingPhone,
-    shippingFaxNumber,
     contactPersons,
     remarksText,
-    documentNames,
   });
 
-  const handleSaveClient = async () => {
-    const payload = buildClientRequestPayload(getFormSnapshot());
+  const clearFieldError = (field: ClientFieldErrorKey) => {
+    if (!formErrors[field]) {
+      return;
+    }
+    setFormErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
 
-    if (!payload.name || !payload.email || !payload.phone) {
-      showErrorToast('Please fill name, email, and phone before saving.');
+  const handleContactPersonChange = (
+    personId: string,
+    field: ContactPersonField,
+    value: string
+  ) => {
+    setContactPersons((prev) =>
+      prev.map((person) =>
+        person.id === personId ? { ...person, [field]: value } : person
+      )
+    );
+
+    if (contactPersonErrors[personId]?.[field]) {
+      setContactPersonErrors((prev) => {
+        const next = { ...prev };
+        const rowErrors = { ...(next[personId] || {}) };
+        delete rowErrors[field];
+        if (Object.keys(rowErrors).length === 0) {
+          delete next[personId];
+        } else {
+          next[personId] = rowErrors;
+        }
+        return next;
+      });
+    }
+  };
+
+  const handleSaveClient = async () => {
+    const requiredMessage = t('Validation.fieldRequired');
+    const nextFormErrors: ClientFieldErrors = {};
+    const nextContactErrors: ContactPersonErrors = {};
+
+    if (!primarySalutation.trim()) nextFormErrors.primarySalutation = requiredMessage;
+    if (!primaryFirstName.trim()) nextFormErrors.primaryFirstName = requiredMessage;
+    if (!primaryLastName.trim()) nextFormErrors.primaryLastName = requiredMessage;
+    if (!companyName.trim()) nextFormErrors.companyName = requiredMessage;
+    if (!emailAddress.trim()) nextFormErrors.emailAddress = requiredMessage;
+    if (!phoneWork.trim()) nextFormErrors.phoneWork = requiredMessage;
+    if (!phoneMobile.trim()) nextFormErrors.phoneMobile = requiredMessage;
+    if (!billingAddress.trim()) nextFormErrors.billingAddress = requiredMessage;
+    if (!billingCountryRegion.trim()) nextFormErrors.billingCountryRegion = requiredMessage;
+    if (!billingState.trim()) nextFormErrors.billingState = requiredMessage;
+    if (!billingCity.trim()) nextFormErrors.billingCity = requiredMessage;
+    if (!billingZipCode.trim()) nextFormErrors.billingZipCode = requiredMessage;
+    if (!billingPhone.trim()) nextFormErrors.billingPhone = requiredMessage;
+
+    contactPersons.forEach((person) => {
+      const rowErrors: ContactPersonRowErrors = {};
+      if (!person.salutation.trim()) rowErrors.salutation = requiredMessage;
+      if (!person.firstName.trim()) rowErrors.firstName = requiredMessage;
+      if (!person.lastName.trim()) rowErrors.lastName = requiredMessage;
+      if (!person.emailAddress.trim()) rowErrors.emailAddress = requiredMessage;
+      if (!person.workPhone.trim()) rowErrors.workPhone = requiredMessage;
+      if (!person.mobile.trim()) rowErrors.mobile = requiredMessage;
+
+      if (Object.keys(rowErrors).length > 0) {
+        nextContactErrors[person.id] = rowErrors;
+      }
+    });
+
+    setFormErrors(nextFormErrors);
+    setContactPersonErrors(nextContactErrors);
+
+    const hasFieldErrors = Object.keys(nextFormErrors).length > 0;
+    const hasContactErrors = Object.keys(nextContactErrors).length > 0;
+    if (hasContactErrors || hasFieldErrors) {
+      if (hasContactErrors) {
+        setActiveTab('contactPersons');
+      } else if (
+        nextFormErrors.billingAddress ||
+        nextFormErrors.billingCountryRegion ||
+        nextFormErrors.billingState ||
+        nextFormErrors.billingCity ||
+        nextFormErrors.billingZipCode ||
+        nextFormErrors.billingPhone
+      ) {
+        setActiveTab('address');
+      }
       return;
     }
 
+    const payload = buildClientRequestPayload(getFormSnapshot());
+
     console.log('createClient payload:', payload);
-    return;
+    // return;
 
     setIsSubmitting(true);
     try {
       const response = await CompanyAdminService.createClient(payload);
       const successMessage = response?.data?.message || t('Common.savedSuccessfully');
       showSuccessToast(successMessage);
-      navigate('/company/clients');
+      const createdClient = response?.data?.data as CreatedClientData | undefined;
+      if (onSuccess) {
+        onSuccess(createdClient);
+      } else {
+        navigate('/company/clients');
+      }
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
@@ -307,12 +322,14 @@ const CompanyClientCreate = () => {
 
   return (
     <>
-      <Breadcrumbs
-        title={t('CompanyClientsList.newCustomer')}
-        breadcrumbItem={t('CompanyClientsList.newCustomer')}
-        link="/company/clients"
-        breadcrumbParent={t('CompanyClientsList.clients')}
-      />
+      {!embedded && (
+        <Breadcrumbs
+          title={t('CompanyClientsList.newCustomer')}
+          breadcrumbItem={t('CompanyClientsList.newCustomer')}
+          link="/company/clients"
+          breadcrumbParent={t('CompanyClientsList.clients')}
+        />
+      )}
       <Card className="shadow-none">
         <CardBody className="p-4">
           {/* Top fields */}
@@ -366,29 +383,50 @@ const CompanyClientCreate = () => {
                       <Input
                         type="select"
                         value={primarySalutation}
-                        onChange={(e) => setPrimarySalutation(e.target.value)}
+                        onChange={(e) => {
+                          setPrimarySalutation(e.target.value);
+                          clearFieldError('primarySalutation');
+                        }}
+                        invalid={!!formErrors.primarySalutation}
                         aria-label={t('CompanyClientsList.salutation')}
                       >
                         <option value="">{t('Common.select')}</option>
                         <option value="Mr">{t('CompanyClientsList.mr')}</option>
                         <option value="Ms">{t('CompanyClientsList.ms')}</option>
                       </Input>
+                      {formErrors.primarySalutation && (
+                        <FormFeedback>{formErrors.primarySalutation}</FormFeedback>
+                      )}
                     </Col>
                     <Col xs="4" sm="3">
                       <Input
                         type="text"
                         value={primaryFirstName}
-                        onChange={(e) => setPrimaryFirstName(e.target.value)}
+                        onChange={(e) => {
+                          setPrimaryFirstName(e.target.value);
+                          clearFieldError('primaryFirstName');
+                        }}
+                        invalid={!!formErrors.primaryFirstName}
                         placeholder={t('CompanyClientsList.firstName')}
                       />
+                      {formErrors.primaryFirstName && (
+                        <FormFeedback>{formErrors.primaryFirstName}</FormFeedback>
+                      )}
                     </Col>
                     <Col xs="4" sm="3">
                       <Input
                         type="text"
                         value={primaryLastName}
-                        onChange={(e) => setPrimaryLastName(e.target.value)}
+                        onChange={(e) => {
+                          setPrimaryLastName(e.target.value);
+                          clearFieldError('primaryLastName');
+                        }}
+                        invalid={!!formErrors.primaryLastName}
                         placeholder={t('CompanyClientsList.lastName')}
                       />
+                      {formErrors.primaryLastName && (
+                        <FormFeedback>{formErrors.primaryLastName}</FormFeedback>
+                      )}
                     </Col>
                   </Row>
                 </Col>
@@ -402,40 +440,18 @@ const CompanyClientCreate = () => {
                   {t('CompanyClientsList.companyName')}
                 </Col>
                 <Col md="6">
-                  <Input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
-                </Col>
-              </Row>
-            </Col>
-
-            {/* Display Name */}
-            <Col xs="12">
-              <Row className="align-items-center g-3">
-                <Col md="3">
-                  <span className="d-inline-flex align-items-center gap-2">
-                    {t('CompanyClientsList.displayName')}
-                    <span className="text-danger">*</span>
-                    <i className="bx bx-info-circle" aria-hidden />
-                  </span>
-                </Col>
-                <Col md="6">
-                  <Input type="select" value={displayName} onChange={(e) => setDisplayName(e.target.value)}>
-                    <option value="">{t('CompanyClientsList.displayNamePlaceholder')}</option>
-                  </Input>
-                </Col>
-              </Row>
-            </Col>
-
-            {/* Currency */}
-            <Col xs="12">
-              <Row className="align-items-center g-3">
-                <Col md="3">
-                  {t('Common.currency')}
-                </Col>
-                <Col md="6">
-                  <Input type="select" value={currency} onChange={(e) => setCurrency(e.target.value as 'AED')}>
-                    <option value="AED">{t('CompanyClientsList.currencyAedUae')}</option>
-                  </Input>
-                  <small className="text-muted d-block mt-1">{t('CompanyClientsList.currencyHelper')}</small>
+                  <Input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => {
+                      setCompanyName(e.target.value);
+                      clearFieldError('companyName');
+                    }}
+                    invalid={!!formErrors.companyName}
+                  />
+                  {formErrors.companyName && (
+                    <FormFeedback>{formErrors.companyName}</FormFeedback>
+                  )}
                 </Col>
               </Row>
             </Col>
@@ -450,28 +466,18 @@ const CompanyClientCreate = () => {
                   </span>
                 </Col>
                 <Col md="6">
-                  <Input type="email" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} />
-                </Col>
-              </Row>
-            </Col>
-
-            {/* Customer Number */}
-            <Col xs="12">
-              <Row className="align-items-center g-3">
-                <Col md="3">
-                  <span className="d-inline-flex align-items-center gap-2">
-                    {t('CompanyClientsList.customerNumber')}
-                    <span className="text-danger">*</span>
-                    <i className="bx bx-info-circle" aria-hidden />
-                  </span>
-                </Col>
-                <Col md="6">
-                  <InputGroup>
-                    <Input value={customerNumber} readOnly />
-                    <InputGroupText className="bg-white">
-                      <i className="bx bx-cog text-primary" aria-hidden />
-                    </InputGroupText>
-                  </InputGroup>
+                  <Input
+                    type="email"
+                    value={emailAddress}
+                    onChange={(e) => {
+                      setEmailAddress(e.target.value);
+                      clearFieldError('emailAddress');
+                    }}
+                    invalid={!!formErrors.emailAddress}
+                  />
+                  {formErrors.emailAddress && (
+                    <FormFeedback>{formErrors.emailAddress}</FormFeedback>
+                  )}
                 </Col>
               </Row>
             </Col>
@@ -488,60 +494,40 @@ const CompanyClientCreate = () => {
                 <Col md="6">
                   <Row className="g-2">
                     <Col md="6">
-                      <InputGroup>
-                        <Input
-                          type="select"
-                          value={phoneCountryCode}
-                          onChange={(e) => setPhoneCountryCode(e.target.value)}
-                          className="w-auto"
-                        >
-                          <option value="+971">+971</option>
-                          <option value="+358">+358</option>
-                        </Input>
-                        <Input
-                          className="w-50"
-                          type="text"
-                          value={phoneWork}
-                          onChange={(e) => setPhoneWork(e.target.value)}
-                          placeholder={t('CompanyClientsList.workPhone')}
-                        />
-                      </InputGroup>
+                      <Input
+                        type="text"
+                        value={phoneWork}
+                        onChange={(e) => {
+                          setPhoneWork(e.target.value);
+                          clearFieldError('phoneWork');
+                        }}
+                        invalid={!!formErrors.phoneWork}
+                        placeholder={t('CompanyClientsList.workPhone')}
+                      />
+                      {formErrors.phoneWork && (
+                        <FormFeedback>{formErrors.phoneWork}</FormFeedback>
+                      )}
                     </Col>
                     <Col md="6">
-                      <InputGroup>
-                        <Input type="select" value={phoneCountryCode} onChange={(e) => setPhoneCountryCode(e.target.value)} className="w-auto">
-                          <option value={phoneCountryCode}>{phoneCountryCode}</option>
-                        </Input>
-                        <Input
-                          className="w-50"
-                          type="text"
-                          value={phoneMobile}
-                          onChange={(e) => setPhoneMobile(e.target.value)}
-                          placeholder={t('CompanyClientsList.mobile')}
-                        />
-                      </InputGroup>
+                      <Input
+                        type="text"
+                        value={phoneMobile}
+                        onChange={(e) => {
+                          setPhoneMobile(e.target.value);
+                          clearFieldError('phoneMobile');
+                        }}
+                        invalid={!!formErrors.phoneMobile}
+                        placeholder={t('CompanyClientsList.mobile')}
+                      />
+                      {formErrors.phoneMobile && (
+                        <FormFeedback>{formErrors.phoneMobile}</FormFeedback>
+                      )}
                     </Col>
                   </Row>
                 </Col>
               </Row>
             </Col>
 
-            {/* Customer Language */}
-            <Col xs="12">
-              <Row className="align-items-center g-3">
-                <Col md="3">
-                  <span className="d-inline-flex align-items-center gap-2">
-                    {t('CompanyClientsList.customerLanguage')}
-                    <i className="bx bx-info-circle" aria-hidden />
-                  </span>
-                </Col>
-                <Col md="6">
-                  <Input type="select" value={customerLanguage} onChange={(e) => setCustomerLanguage(e.target.value)}>
-                    <option value="English">{t('CompanyClientsList.english')}</option>
-                  </Input>
-                </Col>
-              </Row>
-            </Col>
           </Row>
 
           {/* Tabs */}
@@ -563,251 +549,106 @@ const CompanyClientCreate = () => {
           </Nav>
 
           <div className="mt-3">
-            {activeTab === 'otherDetails' ? (
-              <>
-                <Row className="align-items-center g-3">
-                  <Col md="3">
-                    <span className="d-inline-flex align-items-center gap-2">
-                      {t('CompanyClientsList.taxRate')}
-                      <i className="bx bx-info-circle" aria-hidden />
-                    </span>
-                  </Col>
-                  <Col md="6">
-                    <Input type="select" value={taxRate} onChange={(e) => setTaxRate(e.target.value)}>
-                      <option value="">{t('CompanyClientsList.selectTax')}</option>
-                    </Input>
-                    <small className="text-muted d-block mt-1">{t('CompanyClientsList.taxRateHint')}</small>
-                  </Col>
-                </Row>
-
-                <Row className="align-items-end g-3 mt-2">
-                  <Col md="3">
-                    <span className="d-inline-flex align-items-center gap-2">
-                      {t('CompanyClientsList.companyId')}
-                      <i className="bx bx-info-circle" aria-hidden />
-                    </span>
-                  </Col>
-                  <Col md="6">
-                    <Input type="text" value={companyId} onChange={(e) => setCompanyId(e.target.value)} />
-                  </Col>
-                </Row>
-
-                <Row className="align-items-end g-3 mt-2">
-                  <Col md="3">
-                    <span className="d-inline-flex align-items-center gap-2">
-                      {t('CompanyClientsList.paymentTerms')}
-                    </span>
-                  </Col>
-                  <Col md="6">
-                    <Input
-                      type="select"
-                      value={paymentTerms}
-                      onChange={(e) => setPaymentTerms(e.target.value as 'dueOnReceipt')}
-                    >
-                      <option value="dueOnReceipt">{t('CompanyClientsList.dueOnReceipt')}</option>
-                    </Input>
-                  </Col>
-                </Row>
-
-                <Row className="align-items-center g-3 mt-2">
-                  <Col md="3">
-                    <span className="d-inline-flex align-items-center gap-2">
-                      {t('CompanyClientsList.enablePortal')}
-                      <i className="bx bx-info-circle" aria-hidden />
-                    </span>
-                  </Col>
-                  <Col md="6">
-                    <div className="d-flex align-items-center gap-2">
-                      <Input
-                        id="enablePortal"
-                        type="checkbox"
-                        checked={enablePortal}
-                        onChange={(e) => setEnablePortal(e.target.checked)}
-                        className="m-0"
-                      />
-                      <Label htmlFor="enablePortal" check className="mb-0">
-                        {t('CompanyClientsList.allowPortalAccessToCustomer')}
-                      </Label>
-                    </div>
-                  </Col>
-                </Row>
-
-                <Row className="align-items-center g-3 mt-2">
-                  <Col md="3">
-                    <span className="d-inline-flex align-items-center gap-2">
-                      {t('CompanyClientsList.documents')}
-                    </span>
-                  </Col>
-                  <Col md="6">
-                    <input
-                      id="client-documents"
-                      type="file"
-                      multiple
-                      className="d-none"
-                      onChange={(e) => {
-                        const names = Array.from(e.target.files || []).map((file) => file.name);
-                        setDocumentNames(names);
-                      }}
-                    />
-
-                    <div className="d-flex flex-column gap-2">
-                      <Label
-                        htmlFor="client-documents"
-                        role="button"
-                        className="btn btn-light border rounded-2 text-primary d-flex align-items-center justify-content-center gap-2"
-                      >
-                        <i className="bx bx-upload" aria-hidden />
-                        {t('CompanyClientsList.uploadFile')}
-                      </Label>
-                      <small className="text-muted">{t('CompanyClientsList.documentsHint')}</small>
-                    </div>
-                  </Col>
-                </Row>
-
-                <div className="mt-3">
-                  <Button color="link" className="p-0 text-decoration-none">
-                    {t('CompanyClientsList.addMoreDetails')}
-                  </Button>
-                </div>
-
-                <div className="mt-4">
-                  <p className="text-muted mb-0">
-                    {t('CompanyClientsList.customerOwnerPrefix')}{' '}
-                    <a href="#" className="text-decoration-none">
-                      {t('CompanyClientsList.learnMore')}
-                    </a>
-                  </p>
-                </div>
-              </>
-            ) : activeTab === 'address' ? (
+            {activeTab === 'address' ? (
               <Row className="g-4">
-                <Col md="6">
+                <Col md="12">
                   <h5 className="mb-3">{t('CompanyClientsList.billingAddress')}</h5>
 
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.attention')}</Label>
-                  <Input value={billingAttention} onChange={(e) => setBillingAttention(e.target.value)} className="mb-3" />
+                  <Row className="g-3">
+                    <Col md="6">
+                      <Label className="form-label fw-semibold mb-2">{t('Common.address')}</Label>
+                      <Input
+                        value={billingAddress}
+                        onChange={(e) => {
+                          setBillingAddress(e.target.value);
+                          clearFieldError('billingAddress');
+                        }}
+                        invalid={!!formErrors.billingAddress}
+                        placeholder={t('CompanyClientsList.street1')}
+                      />
+                      {formErrors.billingAddress && (
+                        <FormFeedback>{formErrors.billingAddress}</FormFeedback>
+                      )}
+                    </Col>
 
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.countryRegion')}</Label>
-                  <Input
-                    type="select"
-                    value={billingCountryRegion}
-                    onChange={(e) => setBillingCountryRegion(e.target.value)}
-                    className="mb-3"
-                  >
-                    <option value="">{t('CompanyClientsList.selectOrTypeToAdd')}</option>
-                  </Input>
+                    <Col md="6">
+                      <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.country')}</Label>
+                      <Input
+                        type="text"
+                        value={billingCountryRegion}
+                        onChange={(e) => {
+                          setBillingCountryRegion(e.target.value);
+                          clearFieldError('billingCountryRegion');
+                        }}
+                        invalid={!!formErrors.billingCountryRegion}
+                      />
+                      {formErrors.billingCountryRegion && (
+                        <FormFeedback>{formErrors.billingCountryRegion}</FormFeedback>
+                      )}
+                    </Col>
 
-                  <Label className="form-label fw-semibold mb-2">{t('Common.address')}</Label>
-                  <Input
-                    value={billingStreet1}
-                    onChange={(e) => setBillingStreet1(e.target.value)}
-                    placeholder={t('CompanyClientsList.street1')}
-                    className="mb-2"
-                  />
-                  <Input
-                    value={billingStreet2}
-                    onChange={(e) => setBillingStreet2(e.target.value)}
-                    placeholder={t('CompanyClientsList.street2')}
-                    className="mb-3"
-                  />
+                    <Col md="6">
+                      <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.state')}</Label>
+                      <Input
+                        type="text"
+                        value={billingState}
+                        onChange={(e) => {
+                          setBillingState(e.target.value);
+                          clearFieldError('billingState');
+                        }}
+                        invalid={!!formErrors.billingState}
+                      />
+                      {formErrors.billingState && (
+                        <FormFeedback>{formErrors.billingState}</FormFeedback>
+                      )}
+                    </Col>
 
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.city')}</Label>
-                  <Input value={billingCity} onChange={(e) => setBillingCity(e.target.value)} className="mb-3" />
+                    <Col md="6">
+                      <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.city')}</Label>
+                      <Input
+                        value={billingCity}
+                        onChange={(e) => {
+                          setBillingCity(e.target.value);
+                          clearFieldError('billingCity');
+                        }}
+                        invalid={!!formErrors.billingCity}
+                      />
+                      {formErrors.billingCity && (
+                        <FormFeedback>{formErrors.billingCity}</FormFeedback>
+                      )}
+                    </Col>
 
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.state')}</Label>
-                  <Input type="select" value={billingState} onChange={(e) => setBillingState(e.target.value)} className="mb-3">
-                    <option value="">{t('CompanyClientsList.selectOrTypeToAdd')}</option>
-                  </Input>
+                    <Col md="6">
+                      <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.zipCode')}</Label>
+                      <Input
+                        value={billingZipCode}
+                        onChange={(e) => {
+                          setBillingZipCode(e.target.value);
+                          clearFieldError('billingZipCode');
+                        }}
+                        invalid={!!formErrors.billingZipCode}
+                      />
+                      {formErrors.billingZipCode && (
+                        <FormFeedback>{formErrors.billingZipCode}</FormFeedback>
+                      )}
+                    </Col>
 
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.zipCode')}</Label>
-                  <Input value={billingZipCode} onChange={(e) => setBillingZipCode(e.target.value)} className="mb-3" />
+                    <Col md="6">
+                      <Label className="form-label fw-semibold mb-2">{t('Common.phone')}</Label>
+                      <Input
+                        value={billingPhone}
+                        onChange={(e) => {
+                          setBillingPhone(e.target.value);
+                          clearFieldError('billingPhone');
+                        }}
+                        invalid={!!formErrors.billingPhone}
+                      />
+                      {formErrors.billingPhone && (
+                        <FormFeedback>{formErrors.billingPhone}</FormFeedback>
+                      )}
+                    </Col>
 
-                  <Label className="form-label fw-semibold mb-2">{t('Common.phone')}</Label>
-                  <InputGroup className="mb-3">
-                    <Input type="select" value={billingPhoneCode} onChange={(e) => setBillingPhoneCode(e.target.value)} className="w-auto">
-                      <option value="+358">+358</option>
-                      <option value="+971">+971</option>
-                    </Input>
-                    <Input value={billingPhone} onChange={(e) => setBillingPhone(e.target.value)} />
-                  </InputGroup>
-
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.faxNumber')}</Label>
-                  <Input value={billingFaxNumber} onChange={(e) => setBillingFaxNumber(e.target.value)} />
-                </Col>
-
-                <Col md="6">
-                  <div className="d-flex align-items-center justify-content-between mb-3">
-                    <h5 className="mb-0">{t('CompanyClientsList.shippingAddress')}</h5>
-                    <Button
-                      color="link"
-                      className="p-0 text-primary text-decoration-none"
-                      type="button"
-                      onClick={() => {
-                        setShippingAttention(billingAttention);
-                        setShippingCountryRegion(billingCountryRegion);
-                        setShippingStreet1(billingStreet1);
-                        setShippingStreet2(billingStreet2);
-                        setShippingCity(billingCity);
-                        setShippingState(billingState);
-                        setShippingZipCode(billingZipCode);
-                        setShippingPhoneCode(billingPhoneCode);
-                        setShippingPhone(billingPhone);
-                        setShippingFaxNumber(billingFaxNumber);
-                      }}
-                    >
-                      <i className="bx bx-copy me-1" aria-hidden /> {t('CompanyClientsList.copyBillingAddress')}
-                    </Button>
-                  </div>
-
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.attention')}</Label>
-                  <Input value={shippingAttention} onChange={(e) => setShippingAttention(e.target.value)} className="mb-3" />
-
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.countryRegion')}</Label>
-                  <Input
-                    type="select"
-                    value={shippingCountryRegion}
-                    onChange={(e) => setShippingCountryRegion(e.target.value)}
-                    className="mb-3"
-                  >
-                    <option value="">{t('CompanyClientsList.selectOrTypeToAdd')}</option>
-                  </Input>
-
-                  <Label className="form-label fw-semibold mb-2">{t('Common.address')}</Label>
-                  <Input
-                    value={shippingStreet1}
-                    onChange={(e) => setShippingStreet1(e.target.value)}
-                    placeholder={t('CompanyClientsList.street1')}
-                    className="mb-2"
-                  />
-                  <Input
-                    value={shippingStreet2}
-                    onChange={(e) => setShippingStreet2(e.target.value)}
-                    placeholder={t('CompanyClientsList.street2')}
-                    className="mb-3"
-                  />
-
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.city')}</Label>
-                  <Input value={shippingCity} onChange={(e) => setShippingCity(e.target.value)} className="mb-3" />
-
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.state')}</Label>
-                  <Input type="select" value={shippingState} onChange={(e) => setShippingState(e.target.value)} className="mb-3">
-                    <option value="">{t('CompanyClientsList.selectOrTypeToAdd')}</option>
-                  </Input>
-
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.zipCode')}</Label>
-                  <Input value={shippingZipCode} onChange={(e) => setShippingZipCode(e.target.value)} className="mb-3" />
-
-                  <Label className="form-label fw-semibold mb-2">{t('Common.phone')}</Label>
-                  <InputGroup className="mb-3">
-                    <Input type="select" value={shippingPhoneCode} onChange={(e) => setShippingPhoneCode(e.target.value)} className="w-auto">
-                      <option value="+358">+358</option>
-                      <option value="+971">+971</option>
-                    </Input>
-                    <Input value={shippingPhone} onChange={(e) => setShippingPhone(e.target.value)} />
-                  </InputGroup>
-
-                  <Label className="form-label fw-semibold mb-2">{t('CompanyClientsList.faxNumber')}</Label>
-                  <Input value={shippingFaxNumber} onChange={(e) => setShippingFaxNumber(e.target.value)} />
+                  </Row>
                 </Col>
               </Row>
             ) : activeTab === 'contactPersons' ? (
@@ -829,65 +670,69 @@ const CompanyClientCreate = () => {
                       {contactPersons.map((p) => (
                         <tr key={p.id}>
                           <td>
-                            <Input type="select" value={p.salutation} onChange={(e) => {
-                              const next = contactPersons.map((x) => (x.id === p.id ? { ...x, salutation: e.target.value } : x));
-                              setContactPersons(next);
-                            }}>
+                            <Input
+                              type="select"
+                              value={p.salutation}
+                              onChange={(e) => handleContactPersonChange(p.id, 'salutation', e.target.value)}
+                              invalid={!!contactPersonErrors[p.id]?.salutation}
+                            >
                               <option value="Mr">{t('CompanyClientsList.mr')}</option>
                               <option value="Ms">{t('CompanyClientsList.ms')}</option>
                             </Input>
+                            {contactPersonErrors[p.id]?.salutation && (
+                              <FormFeedback>{contactPersonErrors[p.id]?.salutation}</FormFeedback>
+                            )}
                           </td>
                           <td>
-                            <Input value={p.firstName} onChange={(e) => {
-                              const next = contactPersons.map((x) => (x.id === p.id ? { ...x, firstName: e.target.value } : x));
-                              setContactPersons(next);
-                            }} />
+                            <Input
+                              value={p.firstName}
+                              onChange={(e) => handleContactPersonChange(p.id, 'firstName', e.target.value)}
+                              invalid={!!contactPersonErrors[p.id]?.firstName}
+                            />
+                            {contactPersonErrors[p.id]?.firstName && (
+                              <FormFeedback>{contactPersonErrors[p.id]?.firstName}</FormFeedback>
+                            )}
                           </td>
                           <td>
-                            <Input value={p.lastName} onChange={(e) => {
-                              const next = contactPersons.map((x) => (x.id === p.id ? { ...x, lastName: e.target.value } : x));
-                              setContactPersons(next);
-                            }} />
+                            <Input
+                              value={p.lastName}
+                              onChange={(e) => handleContactPersonChange(p.id, 'lastName', e.target.value)}
+                              invalid={!!contactPersonErrors[p.id]?.lastName}
+                            />
+                            {contactPersonErrors[p.id]?.lastName && (
+                              <FormFeedback>{contactPersonErrors[p.id]?.lastName}</FormFeedback>
+                            )}
                           </td>
                           <td>
                             <Input
                               type="email"
                               value={p.emailAddress}
-                              onChange={(e) => {
-                                const next = contactPersons.map((x) => (x.id === p.id ? { ...x, emailAddress: e.target.value } : x));
-                                setContactPersons(next);
-                              }}
+                              onChange={(e) => handleContactPersonChange(p.id, 'emailAddress', e.target.value)}
+                              invalid={!!contactPersonErrors[p.id]?.emailAddress}
                             />
+                            {contactPersonErrors[p.id]?.emailAddress && (
+                              <FormFeedback>{contactPersonErrors[p.id]?.emailAddress}</FormFeedback>
+                            )}
                           </td>
                           <td>
-                            <InputGroup>
-                              <Input type="select" value={p.workPhoneCode} onChange={(e) => {
-                                const next = contactPersons.map((x) => (x.id === p.id ? { ...x, workPhoneCode: e.target.value } : x));
-                                setContactPersons(next);
-                              }} className="w-auto">
-                                <option value="+358">+358</option>
-                                <option value="+971">+971</option>
-                              </Input>
-                              <Input className="w-50" value={p.workPhone} onChange={(e) => {
-                                const next = contactPersons.map((x) => (x.id === p.id ? { ...x, workPhone: e.target.value } : x));
-                                setContactPersons(next);
-                              }} />
-                            </InputGroup>
+                            <Input
+                              value={p.workPhone}
+                              onChange={(e) => handleContactPersonChange(p.id, 'workPhone', e.target.value)}
+                              invalid={!!contactPersonErrors[p.id]?.workPhone}
+                            />
+                            {contactPersonErrors[p.id]?.workPhone && (
+                              <FormFeedback>{contactPersonErrors[p.id]?.workPhone}</FormFeedback>
+                            )}
                           </td>
                           <td>
-                            <InputGroup>
-                              <Input type="select" value={p.mobileCode} onChange={(e) => {
-                                const next = contactPersons.map((x) => (x.id === p.id ? { ...x, mobileCode: e.target.value } : x));
-                                setContactPersons(next);
-                              }} className="w-auto">
-                                <option value="+358">+358</option>
-                                <option value="+971">+971</option>
-                              </Input>
-                              <Input className="w-50" value={p.mobile} onChange={(e) => {
-                                const next = contactPersons.map((x) => (x.id === p.id ? { ...x, mobile: e.target.value } : x));
-                                setContactPersons(next);
-                              }} />
-                            </InputGroup>
+                            <Input
+                              value={p.mobile}
+                              onChange={(e) => handleContactPersonChange(p.id, 'mobile', e.target.value)}
+                              invalid={!!contactPersonErrors[p.id]?.mobile}
+                            />
+                            {contactPersonErrors[p.id]?.mobile && (
+                              <FormFeedback>{contactPersonErrors[p.id]?.mobile}</FormFeedback>
+                            )}
                           </td>
                           <td className="text-end">
                             <Button
@@ -895,7 +740,17 @@ const CompanyClientCreate = () => {
                               className="p-0 text-danger"
                               type="button"
                               disabled={contactPersons.length <= 1}
-                              onClick={() => setContactPersons((prev) => prev.filter((x) => x.id !== p.id))}
+                              onClick={() => {
+                                setContactPersons((prev) => prev.filter((x) => x.id !== p.id));
+                                setContactPersonErrors((prev) => {
+                                  if (!prev[p.id]) {
+                                    return prev;
+                                  }
+                                  const next = { ...prev };
+                                  delete next[p.id];
+                                  return next;
+                                });
+                              }}
                             >
                               <i className="bx bx-trash fs-18" aria-hidden />
                             </Button>
@@ -943,7 +798,13 @@ const CompanyClientCreate = () => {
                 color="secondary"
                 outline
                 type="button"
-                onClick={() => navigate('/company/clients')}
+                onClick={() => {
+                  if (onCancel) {
+                    onCancel();
+                    return;
+                  }
+                  navigate('/company/clients');
+                }}
               >
                 {t('Common.cancel')}
               </Button>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -16,11 +16,15 @@ import {
   ModalFooter,
   Label,
   FormFeedback,
+  Spinner,
 } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
+import Pagination from '../../../common/Pagination/Pagination';
+import ConfirmModal from '../../../common/ConfirmModal/ConfirmModal';
 import { STATUS } from '../../../../core/constants/constantValues';
 import { validateRequired } from '../../../../core/utils/Utils';
 import { showSuccessToast } from '../../../../core/utils/toast';
+import SuperAdminService from '../../../../core/service/SuperAdminService';
 
 interface ProjectCategory {
   id: string;
@@ -32,40 +36,23 @@ interface ProjectCategory {
 const SettingsProjectCategories = () => {
   const { t } = useTranslation();
 
-  const [projectCategories, setProjectCategories] = useState<ProjectCategory[]>([
-    {
-      id: 'PC-001',
-      name: 'Residential Villa',
-      description: 'Standalone residential villa projects',
-      status: STATUS.ACTIVE,
-    },
-    {
-      id: 'PC-002',
-      name: 'Commercial Project',
-      description: 'Commercial buildings and office projects',
-      status: STATUS.ACTIVE,
-    },
-    {
-      id: 'PC-003',
-      name: 'Industrial Project',
-      description: 'Industrial facilities and factory projects',
-      status: STATUS.ACTIVE,
-    },
-    {
-      id: 'PC-004',
-      name: 'Apartment Bldg',
-      description: 'Multi-unit apartment building projects',
-      status: STATUS.ACTIVE,
-    },
-    {
-      id: 'PC-005',
-      name: 'Hotel Project',
-      description: 'Hotel and hospitality projects',
-      status: STATUS.ACTIVE,
-    },
-  ]);
+  const [projectCategories, setProjectCategories] = useState<ProjectCategory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage] = useState(10);
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [categoryForStatusUpdate, setCategoryForStatusUpdate] = useState<ProjectCategory | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<ProjectCategory | null>(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   type NewCategoryForm = {
     name: string;
@@ -82,30 +69,105 @@ const SettingsProjectCategories = () => {
   });
   const [formErrors, setFormErrors] = useState<Partial<Record<NewCategoryFormField, string>>>({});
 
-  const filteredCategories = useMemo(() => {
-    if (!searchTerm.trim()) return projectCategories;
-    const term = searchTerm.toLowerCase();
-    return projectCategories.filter(
-      (category) =>
-        category.name.toLowerCase().includes(term) ||
-        (category.description && category.description.toLowerCase().includes(term))
-    );
-  }, [projectCategories, searchTerm]);
+  const fetchProjectCategories = useCallback(async (page: number, search: string) => {
+    setLoading(true);
+    try {
+      const response = await SuperAdminService.getProjectCategories({
+        page,
+        limit: itemsPerPage,
+        search,
+        sortBy: 'projectCategory',
+        sortOrder: 'ASC',
+      });
+
+      if (response?.data) {
+        const categoriesData = response.data.data || [];
+        const mappedCategories: ProjectCategory[] = categoriesData.map((category: any) => ({
+          id: category.id || '',
+          name: category.projectCategory || category.name || '',
+          description: category.description || undefined,
+          status: category.isActive ? STATUS.ACTIVE : STATUS.INACTIVE,
+        }));
+
+        setProjectCategories(mappedCategories);
+
+        const pagination = response.data.pagination || {};
+        setTotalPages(pagination.pages || pagination.totalPages || 1);
+        setTotalItems(pagination.total || 0);
+        setCurrentPage(pagination.page || page);
+      }
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error fetching project categories:', error);
+      setProjectCategories([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [itemsPerPage]);
 
   const handleToggleStatus = (category: ProjectCategory) => {
-    setProjectCategories((prev) =>
-      prev.map((item) =>
-        item.id === category.id
-          ? {
-              ...item,
-              status: item.status === STATUS.ACTIVE ? STATUS.INACTIVE : STATUS.ACTIVE,
-            }
-          : item
-      )
-    );
+    setCategoryForStatusUpdate(category);
+    setStatusModalOpen(true);
+  };
+
+  const handleDeleteClick = (category: ProjectCategory) => {
+    setCategoryToDelete(category);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmStatusUpdate = async () => {
+    if (!categoryForStatusUpdate) {
+      return;
+    }
+
+    const nextIsActive = categoryForStatusUpdate.status !== STATUS.ACTIVE;
+    setIsUpdatingStatus(true);
+    try {
+      const response = await SuperAdminService.updateProjectCategoryStatus(
+        categoryForStatusUpdate.id,
+        nextIsActive
+      );
+
+      showSuccessToast(
+        response?.data?.message || t('CompanyProjectCategories.updatedSuccessfully')
+      );
+      await fetchProjectCategories(currentPage, searchTerm);
+      setStatusModalOpen(false);
+      setCategoryForStatusUpdate(null);
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error updating project category status:', error);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleConfirmDeleteCategory = async () => {
+    if (!categoryToDelete) {
+      return;
+    }
+
+    setIsDeletingCategory(true);
+    try {
+      const response = await SuperAdminService.deleteProjectCategory(categoryToDelete.id);
+      showSuccessToast(
+        response?.data?.message || t('CompanyProjectCategories.deletedSuccessfully')
+      );
+      await fetchProjectCategories(currentPage, searchTerm);
+      setDeleteModalOpen(false);
+      setCategoryToDelete(null);
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error deleting project category:', error);
+    } finally {
+      setIsDeletingCategory(false);
+    }
   };
 
   const handleOpenCreateModal = () => {
+    setEditingCategoryId(null);
     setNewCategory({
       name: '',
       description: '',
@@ -117,6 +179,19 @@ const SettingsProjectCategories = () => {
 
   const handleCloseCreateModal = () => {
     setIsCreateModalOpen(false);
+    setEditingCategoryId(null);
+    setFormErrors({});
+  };
+
+  const handleEditCategory = (category: ProjectCategory) => {
+    setEditingCategoryId(category.id);
+    setNewCategory({
+      name: category.name,
+      description: category.description || '',
+      status: category.status === STATUS.ACTIVE ? STATUS.ACTIVE : STATUS.INACTIVE,
+    });
+    setFormErrors({});
+    setIsCreateModalOpen(true);
   };
 
   const handleNewCategoryChange = (field: NewCategoryFormField, value: string) => {
@@ -130,7 +205,8 @@ const SettingsProjectCategories = () => {
     }
   };
 
-  const handleCreateCategory = () => {
+  const handleCreateCategory = async () => {
+    const isEditMode = Boolean(editingCategoryId);
     const nameValidation = validateRequired(newCategory.name, 'name');
     const errors: { name?: string } = {};
     if (!nameValidation.isValid) {
@@ -142,16 +218,65 @@ const SettingsProjectCategories = () => {
       return;
     }
 
-    const newId = String(Date.now());
-    const created: ProjectCategory = {
-      id: newId,
-      name: newCategory.name.trim(),
-      description: newCategory.description.trim() || undefined,
-      status: newCategory.status,
+    setIsCreatingCategory(true);
+    try {
+      const payload = {
+        projectCategory: newCategory.name.trim(),
+        description: newCategory.description.trim(),
+        // Strict mapping required by API contract.
+        isActive: newCategory.status === STATUS.ACTIVE,
+      };
+
+      const response = isEditMode
+        ? await SuperAdminService.updateProjectCategory(editingCategoryId as string, payload)
+        : await SuperAdminService.createProjectCategory(payload);
+
+      showSuccessToast(
+        response?.data?.message ||
+          (isEditMode
+            ? t('CompanyProjectCategories.updatedSuccessfully')
+            : t('CompanyProjectCategories.createdSuccessfully'))
+      );
+      await fetchProjectCategories(currentPage, searchTerm);
+      handleCloseCreateModal();
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error creating project category:', error);
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjectCategories(1, '');
+  }, [fetchProjectCategories]);
+
+  useEffect(() => {
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+      fetchProjectCategories(1, searchTerm);
+    }, 500);
+
+    setSearchDebounceTimer(timer);
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
     };
-    setProjectCategories((prev) => [created, ...prev]);
-    showSuccessToast(t('CompanyProjectCategories.createdSuccessfully'));
-    setIsCreateModalOpen(false);
+  }, [searchTerm, fetchProjectCategories]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchProjectCategories(page, searchTerm);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
   };
 
   const getStatusBadge = (status: string) => {
@@ -186,7 +311,7 @@ const SettingsProjectCategories = () => {
                 type="text"
                 placeholder={t('Common.searchPlaceholder')}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
             </InputGroup>
             <Button
@@ -214,8 +339,15 @@ const SettingsProjectCategories = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredCategories.length > 0 ? (
-                      filteredCategories.map((category) => (
+                    {loading ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-5">
+                          <Spinner color="primary" />
+                          <p className="mt-2 text-muted mb-0">{t('Common.loading')}</p>
+                        </td>
+                      </tr>
+                    ) : projectCategories.length > 0 ? (
+                      projectCategories.map((category) => (
                         <tr key={category.id}>
                           <td>{category.id}</td>
                           <td>{category.name}</td>
@@ -237,6 +369,7 @@ const SettingsProjectCategories = () => {
                                 color="outline-secondary"
                                 className="btn-sm border-0"
                                 title={t('Common.edit')}
+                                onClick={() => handleEditCategory(category)}
                               >
                                 <i className="mdi mdi-pencil"></i>
                               </Button>
@@ -244,6 +377,7 @@ const SettingsProjectCategories = () => {
                                 color="outline-danger"
                                 className="btn-sm border-0"
                                 title={t('Common.delete')}
+                                onClick={() => handleDeleteClick(category)}
                               >
                                 <i className="mdi mdi-delete"></i>
                               </Button>
@@ -263,6 +397,15 @@ const SettingsProjectCategories = () => {
                   </tbody>
                 </Table>
               </div>
+              {!loading && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={handlePageChange}
+                />
+              )}
             </CardBody>
           </Card>
         </Col>
@@ -270,7 +413,9 @@ const SettingsProjectCategories = () => {
 
       <Modal isOpen={isCreateModalOpen} toggle={handleCloseCreateModal} centered>
         <ModalHeader toggle={handleCloseCreateModal}>
-          {t('CompanyProjectCategories.addProjectCategory')}
+          {editingCategoryId
+            ? t('Common.edit')
+            : t('CompanyProjectCategories.addProjectCategory')}
         </ModalHeader>
         <ModalBody>
           <Row>
@@ -315,14 +460,53 @@ const SettingsProjectCategories = () => {
           </Row>
         </ModalBody>
         <ModalFooter>
-          <Button color="secondary" onClick={handleCloseCreateModal}>
+          <Button color="secondary" onClick={handleCloseCreateModal} disabled={isCreatingCategory}>
             {t('Common.cancel')}
           </Button>
-          <Button color="primary" onClick={handleCreateCategory}>
-            {t('Common.create')}
+          <Button color="primary" onClick={handleCreateCategory} disabled={isCreatingCategory}>
+            {isCreatingCategory
+              ? t('Common.loading')
+              : editingCategoryId
+                ? t('Common.update')
+                : t('Common.create')}
           </Button>
         </ModalFooter>
       </Modal>
+
+      <ConfirmModal
+        isOpen={statusModalOpen}
+        toggle={() => {
+          setStatusModalOpen(false);
+          setCategoryForStatusUpdate(null);
+        }}
+        title={t('Common.confirm')}
+        message={
+          categoryForStatusUpdate
+            ? (categoryForStatusUpdate.status === STATUS.ACTIVE
+              ? t('CompanyProjectCategories.confirmDeactivateStatus')
+              : t('CompanyProjectCategories.confirmActivateStatus'))
+            : ''
+        }
+        onConfirm={handleConfirmStatusUpdate}
+        confirmButtonText={t('Common.confirm')}
+        confirmButtonColor="primary"
+        isLoading={isUpdatingStatus}
+      />
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        toggle={() => {
+          setDeleteModalOpen(false);
+          setCategoryToDelete(null);
+        }}
+        message={
+          categoryToDelete
+            ? `${t('CompanyProjectCategories.deleteConfirmation')} ${categoryToDelete.name}?`
+            : ''
+        }
+        onConfirm={handleConfirmDeleteCategory}
+        isLoading={isDeletingCategory}
+      />
     </>
   );
 };

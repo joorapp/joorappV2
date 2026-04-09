@@ -110,6 +110,7 @@
     "pending": "Ausstehend"
   },
   "Common": {
+    "all": "Alle",
     "loading": "Lädt...",
     "error": "Fehler",
     "cancel": "Abbrechen",
@@ -446,6 +447,8 @@
     "employeeDeletedSuccessfully": "Mitarbeiter erfolgreich gelöscht",
     "editEmployee": "Mitarbeiter bearbeiten",
     "deleteConfirmation": "Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "confirmActivateStatus": "Möchten Sie diesen Mitarbeiter wirklich aktivieren?",
+    "confirmDeactivateStatus": "Möchten Sie diesen Mitarbeiter wirklich deaktivieren?",
     "enterFirstName": "Vorname eingeben",
     "enterLastName": "Nachname eingeben",
     "enterEmail": "E-Mail-Adresse eingeben",
@@ -981,6 +984,7 @@
     "customerOwnerPrefix": "Kundeninhaber: Weisen Sie einen Benutzer als Kundeninhaber zu, damit nur dieser Zugriff auf die Daten dieses Kunden erhält.",
     "learnMore": "Mehr erfahren",
     "attention": "Aufmerksamkeit",
+    "country": "Land",
     "countryRegion": "Land/Region",
     "street1": "Straße 1",
     "street2": "Straße 2",
@@ -1189,6 +1193,8 @@
     "updatedSuccessfully": "Projekttyp wurde erfolgreich aktualisiert",
     "deletedSuccessfully": "Projekttyp wurde erfolgreich gelöscht",
     "deleteConfirmation": "Möchten Sie diesen Projekttyp wirklich löschen",
+    "confirmActivateStatus": "Möchten Sie diesen Projekttyp als Aktiv markieren?",
+    "confirmDeactivateStatus": "Möchten Sie diesen Projekttyp als Inaktiv markieren?",
     "noProjectTypesFound": "Keine Projekttypen gefunden",
     "table": {
       "id": "ID",
@@ -1217,6 +1223,8 @@
     "updatedSuccessfully": "Projektkategorie wurde erfolgreich aktualisiert",
     "deletedSuccessfully": "Projektkategorie wurde erfolgreich gelöscht",
     "deleteConfirmation": "Möchten Sie diese Projektkategorie wirklich löschen",
+    "confirmActivateStatus": "Möchten Sie diese Projektkategorie als Aktiv markieren?",
+    "confirmDeactivateStatus": "Möchten Sie diese Projektkategorie als Inaktiv markieren?",
     "noProjectCategoriesFound": "Keine Projektkategorien gefunden",
     "table": {
       "id": "ID",
@@ -1241,6 +1249,11 @@
     "breadcrumbItem": "Stellenbezeichnungen",
     "addJobTitle": "Stellenbezeichnung hinzufügen",
     "createdSuccessfully": "Stellenbezeichnung erfolgreich erstellt",
+    "updatedSuccessfully": "Stellenbezeichnung erfolgreich aktualisiert",
+    "deletedSuccessfully": "Stellenbezeichnung erfolgreich gelöscht",
+    "confirmActivateStatus": "Möchten Sie diese Stellenbezeichnung wirklich aktivieren?",
+    "confirmDeactivateStatus": "Möchten Sie diese Stellenbezeichnung wirklich deaktivieren?",
+    "deleteConfirmation": "Möchten Sie wirklich löschen",
     "noJobTitlesFound": "Keine Stellenbezeichnungen gefunden",
     "table": {
       "id": "ID",

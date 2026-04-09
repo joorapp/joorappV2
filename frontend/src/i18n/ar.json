@@ -110,6 +110,7 @@
     "pending": "قيد الانتظار"
   },
   "Common": {
+    "all": "جميع",
     "loading": "جاري التحميل...",
     "error": "خطأ",
     "cancel": "إلغاء",
@@ -446,6 +447,8 @@
     "employeeDeletedSuccessfully": "تم حذف الموظف بنجاح",
     "editEmployee": "تعديل الموظف",
     "deleteConfirmation": "هل أنت متأكد أنك تريد حذف هذا الموظف؟ لا يمكن التراجع عن هذا الإجراء.",
+    "confirmActivateStatus": "هل أنت متأكد أنك تريد تفعيل هذا الموظف؟",
+    "confirmDeactivateStatus": "هل أنت متأكد أنك تريد تعطيل هذا الموظف؟",
     "enterFirstName": "أدخل الاسم الأول",
     "enterLastName": "أدخل اسم العائلة",
     "enterEmail": "أدخل عنوان البريد الإلكتروني",
@@ -981,6 +984,7 @@
     "customerOwnerPrefix": "مالك العميل: قم بتعيين مستخدم كمالك العميل لمنح وصول فقط إلى بيانات هذا العميل.",
     "learnMore": "اعرف المزيد",
     "attention": "الاهتمام",
+    "country": "الدولة",
     "countryRegion": "الدولة/المنطقة",
     "street1": "الشارع 1",
     "street2": "الشارع 2",
@@ -1189,6 +1193,8 @@
     "updatedSuccessfully": "تم تحديث نوع المشروع بنجاح",
     "deletedSuccessfully": "تم حذف نوع المشروع بنجاح",
     "deleteConfirmation": "هل تريد حقًا حذف نوع المشروع",
+    "confirmActivateStatus": "هل تريد تعيين نوع المشروع هذا كـ نشط؟",
+    "confirmDeactivateStatus": "هل تريد تعيين نوع المشروع هذا كـ غير نشط؟",
     "noProjectTypesFound": "لا توجد أنواع مشاريع",
     "table": {
       "id": "المعرف",
@@ -1217,6 +1223,8 @@
     "updatedSuccessfully": "تم تحديث فئة المشروع بنجاح",
     "deletedSuccessfully": "تم حذف فئة المشروع بنجاح",
     "deleteConfirmation": "هل تريد حقًا حذف فئة المشروع",
+    "confirmActivateStatus": "هل تريد تعيين فئة المشروع هذه كـ نشطة؟",
+    "confirmDeactivateStatus": "هل تريد تعيين فئة المشروع هذه كـ غير نشطة؟",
     "noProjectCategoriesFound": "لا توجد فئات مشاريع",
     "table": {
       "id": "المعرف",
@@ -1241,6 +1249,11 @@
     "breadcrumbItem": "المسميات الوظيفية",
     "addJobTitle": "إضافة مسمى وظيفي",
     "createdSuccessfully": "تم إنشاء المسمى الوظيفي بنجاح",
+    "updatedSuccessfully": "تم تحديث المسمى الوظيفي بنجاح",
+    "deletedSuccessfully": "تم حذف المسمى الوظيفي بنجاح",
+    "confirmActivateStatus": "هل أنت متأكد أنك تريد تفعيل هذا المسمى الوظيفي؟",
+    "confirmDeactivateStatus": "هل أنت متأكد أنك تريد تعطيل هذا المسمى الوظيفي؟",
+    "deleteConfirmation": "هل أنت متأكد أنك تريد حذف",
     "noJobTitlesFound": "لا توجد مسميات وظيفية",
     "table": {
       "id": "المعرف",

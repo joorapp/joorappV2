@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Badge,
@@ -6,120 +6,219 @@ import {
   Card,
   CardBody,
   Col,
-  FormFeedback,
   Input,
   InputGroup,
-  Label,
-  Modal,
-  ModalBody,
-  ModalFooter,
-  ModalHeader,
   Row,
+  Spinner,
   Table,
 } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
+import Pagination from '../../../common/Pagination/Pagination';
+import ConfirmModal from '../../../common/ConfirmModal/ConfirmModal';
 import { STATUS } from '../../../../core/constants/constantValues';
-import { validateRequired } from '../../../../core/utils/Utils';
 import { showSuccessToast } from '../../../../core/utils/toast';
+import JobTitleModal, { type JobTitleFormData } from '../../../common/JobTitleModal/JobTitleModal';
+import CompanyAdminService from '../../../../core/service/CompanyAdminService';
 
 interface JobTitle {
   id: string;
   name: string;
   description?: string;
   status: string;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
-
-const INITIAL_JOB_TITLES: JobTitle[] = [
-  { id: 'JT-001', name: 'Project Manager', description: 'Manages end-to-end project execution', status: STATUS.ACTIVE },
-  { id: 'JT-002', name: 'Site Engineer', description: 'Oversees site execution and quality', status: STATUS.ACTIVE },
-  { id: 'JT-003', name: 'Quantity Surveyor', description: 'Handles quantity takeoff and billing', status: STATUS.ACTIVE },
-  { id: 'JT-004', name: 'Store Keeper', description: 'Manages materials inventory', status: STATUS.INACTIVE },
-];
 
 const CompanyJobTitles = () => {
   const { t } = useTranslation();
 
-  const [jobTitles, setJobTitles] = useState<JobTitle[]>(INITIAL_JOB_TITLES);
+  const [jobTitles, setJobTitles] = useState<JobTitle[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isSavingJobTitle, setIsSavingJobTitle] = useState(false);
+  const [editingJobTitle, setEditingJobTitle] = useState<JobTitle | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage] = useState(10);
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [jobTitleForStatusUpdate, setJobTitleForStatusUpdate] = useState<JobTitle | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [jobTitleToDelete, setJobTitleToDelete] = useState<JobTitle | null>(null);
+  const [isDeletingJobTitle, setIsDeletingJobTitle] = useState(false);
 
-  type NewJobTitleForm = {
-    name: string;
-    description: string;
-    status: string;
-  };
-  type NewJobTitleFormField = keyof NewJobTitleForm;
+  const fetchJobTitles = useCallback(async (page: number, search: string, status: 'all' | 'active' | 'inactive') => {
+    setLoading(true);
+    try {
+      const response = await CompanyAdminService.getEmployeeJobTitles({
+        page,
+        limit: itemsPerPage,
+        search,
+        isActive: status === 'all' ? undefined : status === 'active',
+        sortBy: 'jobTitle',
+        sortOrder: 'ASC',
+      });
 
-  const [newJobTitle, setNewJobTitle] = useState<NewJobTitleForm>({
-    name: '',
-    description: '',
-    status: STATUS.ACTIVE,
-  });
-  const [formErrors, setFormErrors] = useState<Partial<Record<NewJobTitleFormField, string>>>({});
+      const jobTitlesData = response?.data?.data || [];
+      const mappedJobTitles: JobTitle[] = jobTitlesData.map((jobTitle: any) => ({
+        id: jobTitle.id || '',
+        name: jobTitle.jobTitle || '',
+        description: jobTitle.description || undefined,
+        status: jobTitle.isActive ? STATUS.ACTIVE : STATUS.INACTIVE,
+        canEdit: jobTitle.canEdit !== false,
+        canDelete: jobTitle.canDelete !== false,
+      }));
 
-  const filteredJobTitles = useMemo(() => {
-    if (!searchTerm.trim()) return jobTitles;
-    const term = searchTerm.toLowerCase();
-    return jobTitles.filter(
-      (jt) =>
-        jt.name.toLowerCase().includes(term) ||
-        (jt.description && jt.description.toLowerCase().includes(term)),
-    );
-  }, [jobTitles, searchTerm]);
+      setJobTitles(mappedJobTitles);
+
+      const pagination = response?.data?.pagination || {};
+      setTotalPages(pagination.pages || 1);
+      setTotalItems(pagination.total || 0);
+      setCurrentPage(pagination.page || page);
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error fetching job titles:', error);
+      setJobTitles([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [itemsPerPage]);
 
   const handleToggleStatus = (jobTitle: JobTitle) => {
-    setJobTitles((prev) =>
-      prev.map((item) =>
-        item.id === jobTitle.id
-          ? { ...item, status: item.status === STATUS.ACTIVE ? STATUS.INACTIVE : STATUS.ACTIVE }
-          : item,
-      ),
-    );
+    setJobTitleForStatusUpdate(jobTitle);
+    setStatusModalOpen(true);
+  };
+
+  const handleDeleteClick = (jobTitle: JobTitle) => {
+    setJobTitleToDelete(jobTitle);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmStatusUpdate = async () => {
+    if (!jobTitleForStatusUpdate) {
+      return;
+    }
+
+    const nextIsActive = jobTitleForStatusUpdate.status !== STATUS.ACTIVE;
+    setIsUpdatingStatus(true);
+    try {
+      const response = await CompanyAdminService.updateEmployeeJobTitleStatus(
+        jobTitleForStatusUpdate.id,
+        nextIsActive
+      );
+      showSuccessToast(
+        response?.data?.message || t('CompanyJobTitles.updatedSuccessfully')
+      );
+      await fetchJobTitles(currentPage, searchTerm, statusFilter);
+      setStatusModalOpen(false);
+      setJobTitleForStatusUpdate(null);
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error updating job title status:', error);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleConfirmDeleteJobTitle = async () => {
+    if (!jobTitleToDelete) {
+      return;
+    }
+
+    setIsDeletingJobTitle(true);
+    try {
+      const response = await CompanyAdminService.deleteEmployeeJobTitle(jobTitleToDelete.id);
+      showSuccessToast(
+        response?.data?.message || t('CompanyJobTitles.deletedSuccessfully')
+      );
+      await fetchJobTitles(currentPage, searchTerm, statusFilter);
+      setDeleteModalOpen(false);
+      setJobTitleToDelete(null);
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error deleting job title:', error);
+    } finally {
+      setIsDeletingJobTitle(false);
+    }
   };
 
   const handleOpenCreateModal = () => {
-    setNewJobTitle({ name: '', description: '', status: STATUS.ACTIVE });
-    setFormErrors({});
+    setEditingJobTitle(null);
     setIsCreateModalOpen(true);
   };
 
   const handleCloseCreateModal = () => {
     setIsCreateModalOpen(false);
+    setEditingJobTitle(null);
   };
 
-  const handleNewJobTitleChange = (field: NewJobTitleFormField, value: string) => {
-    setNewJobTitle((prev) => ({ ...prev, [field]: value }));
-    if (formErrors[field] !== undefined) {
-      setFormErrors((prev) => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
+  const handleEditJobTitle = (jobTitle: JobTitle) => {
+    setEditingJobTitle(jobTitle);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreateJobTitle = async (payload: JobTitleFormData) => {
+    const isEditMode = Boolean(editingJobTitle);
+    setIsSavingJobTitle(true);
+    try {
+      const requestBody = {
+        jobTitle: payload.name.trim(),
+        description: payload.description.trim() || undefined,
+        isActive: payload.status === STATUS.ACTIVE,
+      };
+
+      const response = isEditMode
+        ? await CompanyAdminService.updateEmployeeJobTitle(editingJobTitle?.id || '', requestBody)
+        : await CompanyAdminService.createEmployeeJobTitle(requestBody);
+
+      showSuccessToast(
+        response?.data?.message ||
+          (isEditMode
+            ? t('CompanyJobTitles.updatedSuccessfully')
+            : t('CompanyJobTitles.createdSuccessfully'))
+      );
+      await fetchJobTitles(currentPage, searchTerm, statusFilter);
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error saving job title:', error);
+      throw error;
+    } finally {
+      setIsSavingJobTitle(false);
     }
   };
 
-  const handleCreateJobTitle = () => {
-    const nameValidation = validateRequired(newJobTitle.name, 'name');
-    const errors: { name?: string } = {};
-    if (!nameValidation.isValid) {
-      errors.name = nameValidation.errorMessage ?? '';
+  useEffect(() => {
+    fetchJobTitles(1, '', 'all');
+  }, [fetchJobTitles]);
+
+  useEffect(() => {
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
     }
 
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+      fetchJobTitles(1, searchTerm, statusFilter);
+    }, 500);
 
-    const created: JobTitle = {
-      id: `JT-${String(Date.now()).slice(-6)}`,
-      name: newJobTitle.name.trim(),
-      description: newJobTitle.description.trim() || undefined,
-      status: newJobTitle.status,
+    setSearchDebounceTimer(timer);
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
     };
+  }, [searchTerm, statusFilter, fetchJobTitles]);
 
-    setJobTitles((prev) => [created, ...prev]);
-    showSuccessToast(t('CompanyJobTitles.createdSuccessfully'));
-    setIsCreateModalOpen(false);
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchJobTitles(page, searchTerm, statusFilter);
   };
 
   const getStatusBadge = (status: string) => {
@@ -147,14 +246,26 @@ const CompanyJobTitles = () => {
           <Card>
             <CardBody>
               <div className="d-flex justify-content-between align-items-center mb-4">
-                <InputGroup className="search-input-group">
+                <div className="d-flex align-items-center gap-2 flex-grow-1 me-2">
+                  <InputGroup className="search-input-group">
+                    <Input
+                      type="text"
+                      placeholder={t('Common.searchPlaceholder')}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </InputGroup>
                   <Input
-                    type="text"
-                    placeholder={t('Common.searchPlaceholder')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </InputGroup>
+                    type="select"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                    style={{ maxWidth: 180 }}
+                  >
+                    <option value="all">{t('Common.all')}</option>
+                    <option value="active">{t('Common.StatusActive')}</option>
+                    <option value="inactive">{t('Common.StatusInactive')}</option>
+                  </Input>
+                </div>
                 <Button
                   color="primary"
                   className="btn-rounded waves-effect d-inline-flex align-items-center waves-light"
@@ -177,8 +288,15 @@ const CompanyJobTitles = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredJobTitles.length > 0 ? (
-                      filteredJobTitles.map((jt) => (
+                    {loading ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-5">
+                          <Spinner color="primary" />
+                          <p className="mt-2 text-muted mb-0">{t('Common.loading')}</p>
+                        </td>
+                      </tr>
+                    ) : jobTitles.length > 0 ? (
+                      jobTitles.map((jt) => (
                         <tr key={jt.id}>
                           <td>{jt.id}</td>
                           <td>{jt.name}</td>
@@ -193,6 +311,7 @@ const CompanyJobTitles = () => {
                                 className="switch switch-success"
                                 id={`job-title-status-${jt.id}`}
                                 checked={jt.status === STATUS.ACTIVE}
+                                disabled={jt.canEdit === false}
                                 onChange={() => handleToggleStatus(jt)}
                               />
                               <label htmlFor={`job-title-status-${jt.id}`} />
@@ -200,6 +319,8 @@ const CompanyJobTitles = () => {
                                 color="outline-secondary"
                                 className="btn-sm border-0"
                                 title={t('Common.edit')}
+                                disabled={jt.canEdit === false}
+                                onClick={() => handleEditJobTitle(jt)}
                               >
                                 <i className="mdi mdi-pencil"></i>
                               </Button>
@@ -207,6 +328,8 @@ const CompanyJobTitles = () => {
                                 color="outline-danger"
                                 className="btn-sm border-0"
                                 title={t('Common.delete')}
+                                disabled={jt.canDelete === false}
+                                onClick={() => handleDeleteClick(jt)}
                               >
                                 <i className="mdi mdi-delete"></i>
                               </Button>
@@ -224,59 +347,73 @@ const CompanyJobTitles = () => {
                   </tbody>
                 </Table>
               </div>
+              {!loading && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={handlePageChange}
+                />
+              )}
             </CardBody>
           </Card>
         </Col>
       </Row>
 
-      <Modal isOpen={isCreateModalOpen} toggle={handleCloseCreateModal} centered>
-        <ModalHeader toggle={handleCloseCreateModal}>{t('CompanyJobTitles.addJobTitle')}</ModalHeader>
-        <ModalBody>
-          <Row>
-            <Col md="12" className="mb-3">
-              <Label className="form-label fw-semibold">
-                {t('CompanyJobTitles.fields.name')} <span className="text-danger">*</span>
-              </Label>
-              <Input
-                value={newJobTitle.name}
-                onChange={(e) => handleNewJobTitleChange('name', e.target.value)}
-                invalid={!!formErrors.name}
-                placeholder={t('CompanyJobTitles.placeholders.name')}
-              />
-              {formErrors.name && <FormFeedback>{t(formErrors.name)}</FormFeedback>}
-            </Col>
-            <Col md="12" className="mb-3">
-              <Label className="form-label fw-semibold">{t('CompanyJobTitles.fields.description')}</Label>
-              <Input
-                type="textarea"
-                rows={3}
-                value={newJobTitle.description}
-                onChange={(e) => handleNewJobTitleChange('description', e.target.value)}
-                placeholder={t('CompanyJobTitles.placeholders.description')}
-              />
-            </Col>
-            <Col md="12">
-              <Label className="form-label fw-semibold">{t('CompanyJobTitles.fields.status')}</Label>
-              <Input
-                type="select"
-                value={newJobTitle.status}
-                onChange={(e) => handleNewJobTitleChange('status', e.target.value)}
-              >
-                <option value={STATUS.ACTIVE}>{t('Common.StatusActive')}</option>
-                <option value={STATUS.INACTIVE}>{t('Common.StatusInactive')}</option>
-              </Input>
-            </Col>
-          </Row>
-        </ModalBody>
-        <ModalFooter>
-          <Button color="secondary" onClick={handleCloseCreateModal}>
-            {t('Common.cancel')}
-          </Button>
-          <Button color="primary" onClick={handleCreateJobTitle}>
-            {t('Common.create')}
-          </Button>
-        </ModalFooter>
-      </Modal>
+      <JobTitleModal
+        isOpen={isCreateModalOpen}
+        toggle={handleCloseCreateModal}
+        onSubmit={handleCreateJobTitle}
+        title={editingJobTitle ? t('Common.edit') : t('CompanyJobTitles.addJobTitle')}
+        submitLabel={
+          isSavingJobTitle
+            ? t('Common.loading')
+            : editingJobTitle
+              ? t('Common.update')
+              : t('Common.create')
+        }
+        initialData={{
+          name: editingJobTitle?.name || '',
+          description: editingJobTitle?.description || '',
+          status: editingJobTitle?.status || STATUS.ACTIVE,
+        }}
+      />
+
+      <ConfirmModal
+        isOpen={statusModalOpen}
+        toggle={() => {
+          setStatusModalOpen(false);
+          setJobTitleForStatusUpdate(null);
+        }}
+        title={t('Common.confirm')}
+        message={
+          jobTitleForStatusUpdate
+            ? (jobTitleForStatusUpdate.status === STATUS.ACTIVE
+              ? t('CompanyJobTitles.confirmDeactivateStatus')
+              : t('CompanyJobTitles.confirmActivateStatus'))
+            : ''
+        }
+        onConfirm={handleConfirmStatusUpdate}
+        confirmButtonText={t('Common.confirm')}
+        confirmButtonColor="primary"
+        isLoading={isUpdatingStatus}
+      />
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        toggle={() => {
+          setDeleteModalOpen(false);
+          setJobTitleToDelete(null);
+        }}
+        message={
+          jobTitleToDelete
+            ? `${t('CompanyJobTitles.deleteConfirmation')} ${jobTitleToDelete.name}?`
+            : ''
+        }
+        onConfirm={handleConfirmDeleteJobTitle}
+        isLoading={isDeletingJobTitle}
+      />
     </>
   );
 };

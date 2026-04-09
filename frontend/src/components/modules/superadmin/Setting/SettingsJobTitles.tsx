@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Badge,
@@ -15,12 +15,16 @@ import {
   ModalFooter,
   ModalHeader,
   Row,
+  Spinner,
   Table,
 } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
+import Pagination from '../../../common/Pagination/Pagination';
+import ConfirmModal from '../../../common/ConfirmModal/ConfirmModal';
 import { STATUS } from '../../../../core/constants/constantValues';
 import { validateRequired } from '../../../../core/utils/Utils';
 import { showSuccessToast } from '../../../../core/utils/toast';
+import SuperAdminService from '../../../../core/service/SuperAdminService';
 
 interface JobTitle {
   id: string;
@@ -29,19 +33,26 @@ interface JobTitle {
   status: string;
 }
 
-const INITIAL_JOB_TITLES: JobTitle[] = [
-  { id: 'JT-001', name: 'Project Manager', description: 'Manages end-to-end project execution', status: STATUS.ACTIVE },
-  { id: 'JT-002', name: 'Site Engineer', description: 'Oversees site execution and quality', status: STATUS.ACTIVE },
-  { id: 'JT-003', name: 'Quantity Surveyor', description: 'Handles quantity takeoff and billing', status: STATUS.ACTIVE },
-  { id: 'JT-004', name: 'Store Keeper', description: 'Manages materials inventory', status: STATUS.INACTIVE },
-];
-
-  const SettingsJobTitles = () => {
+const SettingsJobTitles = () => {
   const { t } = useTranslation();
 
-  const [jobTitles, setJobTitles] = useState<JobTitle[]>(INITIAL_JOB_TITLES);
+  const [jobTitles, setJobTitles] = useState<JobTitle[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isSavingJobTitle, setIsSavingJobTitle] = useState(false);
+  const [editingJobTitleId, setEditingJobTitleId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage] = useState(10);
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [jobTitleForStatusUpdate, setJobTitleForStatusUpdate] = useState<JobTitle | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [jobTitleToDelete, setJobTitleToDelete] = useState<JobTitle | null>(null);
+  const [isDeletingJobTitle, setIsDeletingJobTitle] = useState(false);
 
   type NewJobTitleForm = {
     name: string;
@@ -57,27 +68,105 @@ const INITIAL_JOB_TITLES: JobTitle[] = [
   });
   const [formErrors, setFormErrors] = useState<Partial<Record<NewJobTitleFormField, string>>>({});
 
-  const filteredJobTitles = useMemo(() => {
-    if (!searchTerm.trim()) return jobTitles;
-    const term = searchTerm.toLowerCase();
-    return jobTitles.filter(
-      (jt) =>
-        jt.name.toLowerCase().includes(term) ||
-        (jt.description && jt.description.toLowerCase().includes(term)),
-    );
-  }, [jobTitles, searchTerm]);
+  const fetchJobTitles = useCallback(async (page: number, search: string) => {
+    setLoading(true);
+    try {
+      const response = await SuperAdminService.getJobTitles({
+        page,
+        limit: itemsPerPage,
+        search,
+        sortBy: 'jobTitle',
+        sortOrder: 'ASC',
+      });
+
+      if (response?.data) {
+        const jobTitlesData = response.data.data || [];
+        const mappedJobTitles: JobTitle[] = jobTitlesData.map((jobTitle: any) => ({
+          id: jobTitle.id || '',
+          name: jobTitle.jobTitle || jobTitle.name || '',
+          description: jobTitle.description || undefined,
+          status: jobTitle.isActive ? STATUS.ACTIVE : STATUS.INACTIVE,
+        }));
+
+        setJobTitles(mappedJobTitles);
+
+        const pagination = response.data.pagination || {};
+        setTotalPages(pagination.pages || pagination.totalPages || 1);
+        setTotalItems(pagination.total || 0);
+        setCurrentPage(pagination.page || page);
+      }
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error fetching job titles:', error);
+      setJobTitles([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [itemsPerPage]);
 
   const handleToggleStatus = (jobTitle: JobTitle) => {
-    setJobTitles((prev) =>
-      prev.map((item) =>
-        item.id === jobTitle.id
-          ? { ...item, status: item.status === STATUS.ACTIVE ? STATUS.INACTIVE : STATUS.ACTIVE }
-          : item,
-      ),
-    );
+    setJobTitleForStatusUpdate(jobTitle);
+    setStatusModalOpen(true);
+  };
+
+  const handleDeleteClick = (jobTitle: JobTitle) => {
+    setJobTitleToDelete(jobTitle);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmStatusUpdate = async () => {
+    if (!jobTitleForStatusUpdate) {
+      return;
+    }
+
+    const nextIsActive = jobTitleForStatusUpdate.status !== STATUS.ACTIVE;
+    setIsUpdatingStatus(true);
+    try {
+      const response = await SuperAdminService.updateJobTitleStatus(
+        jobTitleForStatusUpdate.id,
+        nextIsActive
+      );
+
+      showSuccessToast(
+        response?.data?.message || t('CompanyJobTitles.updatedSuccessfully')
+      );
+      await fetchJobTitles(currentPage, searchTerm);
+      setStatusModalOpen(false);
+      setJobTitleForStatusUpdate(null);
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error updating job title status:', error);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleConfirmDeleteJobTitle = async () => {
+    if (!jobTitleToDelete) {
+      return;
+    }
+
+    setIsDeletingJobTitle(true);
+    try {
+      const response = await SuperAdminService.deleteJobTitle(jobTitleToDelete.id);
+      showSuccessToast(
+        response?.data?.message || t('CompanyJobTitles.deletedSuccessfully')
+      );
+      await fetchJobTitles(currentPage, searchTerm);
+      setDeleteModalOpen(false);
+      setJobTitleToDelete(null);
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error deleting job title:', error);
+    } finally {
+      setIsDeletingJobTitle(false);
+    }
   };
 
   const handleOpenCreateModal = () => {
+    setEditingJobTitleId(null);
     setNewJobTitle({ name: '', description: '', status: STATUS.ACTIVE });
     setFormErrors({});
     setIsCreateModalOpen(true);
@@ -85,6 +174,19 @@ const INITIAL_JOB_TITLES: JobTitle[] = [
 
   const handleCloseCreateModal = () => {
     setIsCreateModalOpen(false);
+    setEditingJobTitleId(null);
+    setFormErrors({});
+  };
+
+  const handleEditJobTitle = (jobTitle: JobTitle) => {
+    setEditingJobTitleId(jobTitle.id);
+    setNewJobTitle({
+      name: jobTitle.name,
+      description: jobTitle.description || '',
+      status: jobTitle.status === STATUS.ACTIVE ? STATUS.ACTIVE : STATUS.INACTIVE,
+    });
+    setFormErrors({});
+    setIsCreateModalOpen(true);
   };
 
   const handleNewJobTitleChange = (field: NewJobTitleFormField, value: string) => {
@@ -98,7 +200,8 @@ const INITIAL_JOB_TITLES: JobTitle[] = [
     }
   };
 
-  const handleCreateJobTitle = () => {
+  const handleCreateJobTitle = async () => {
+    const isEditMode = Boolean(editingJobTitleId);
     const nameValidation = validateRequired(newJobTitle.name, 'name');
     const errors: { name?: string } = {};
     if (!nameValidation.isValid) {
@@ -110,16 +213,64 @@ const INITIAL_JOB_TITLES: JobTitle[] = [
       return;
     }
 
-    const created: JobTitle = {
-      id: `JT-${String(Date.now()).slice(-6)}`,
-      name: newJobTitle.name.trim(),
-      description: newJobTitle.description.trim() || undefined,
-      status: newJobTitle.status,
-    };
+    setIsSavingJobTitle(true);
+    try {
+      const payload = {
+        jobTitle: newJobTitle.name.trim(),
+        description: newJobTitle.description.trim(),
+        isActive: newJobTitle.status === STATUS.ACTIVE,
+      };
 
-    setJobTitles((prev) => [created, ...prev]);
-    showSuccessToast(t('CompanyJobTitles.createdSuccessfully'));
-    setIsCreateModalOpen(false);
+      const response = isEditMode
+        ? await SuperAdminService.updateJobTitle(editingJobTitleId as string, payload)
+        : await SuperAdminService.createJobTitle(payload);
+
+      showSuccessToast(
+        response?.data?.message ||
+          (isEditMode
+            ? t('CompanyJobTitles.updatedSuccessfully')
+            : t('CompanyJobTitles.createdSuccessfully'))
+      );
+      await fetchJobTitles(currentPage, searchTerm);
+      handleCloseCreateModal();
+    } catch (error: any) {
+      // Error toast is already handled by the interceptor.
+      console.error('Error saving job title:', error);
+    } finally {
+      setIsSavingJobTitle(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchJobTitles(1, '');
+  }, [fetchJobTitles]);
+
+  useEffect(() => {
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+      fetchJobTitles(1, searchTerm);
+    }, 500);
+
+    setSearchDebounceTimer(timer);
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [searchTerm, fetchJobTitles]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchJobTitles(page, searchTerm);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
   };
 
   const getStatusBadge = (status: string) => {
@@ -139,7 +290,7 @@ const INITIAL_JOB_TITLES: JobTitle[] = [
         title={t('CompanyJobTitles.pageTitle')}
         breadcrumbItem={t('CompanyJobTitles.breadcrumbItem')}
         breadcrumbParent={t('CompanyJobTitles.breadcrumbParent')}
-        link="/company/employees/job-titles"
+        link="/superadmin/Settings/job-titles"
       />
 
       <Row>
@@ -152,7 +303,7 @@ const INITIAL_JOB_TITLES: JobTitle[] = [
                     type="text"
                     placeholder={t('Common.searchPlaceholder')}
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                   />
                 </InputGroup>
                 <Button
@@ -177,8 +328,15 @@ const INITIAL_JOB_TITLES: JobTitle[] = [
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredJobTitles.length > 0 ? (
-                      filteredJobTitles.map((jt) => (
+                    {loading ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-5">
+                          <Spinner color="primary" />
+                          <p className="mt-2 text-muted mb-0">{t('Common.loading')}</p>
+                        </td>
+                      </tr>
+                    ) : jobTitles.length > 0 ? (
+                      jobTitles.map((jt) => (
                         <tr key={jt.id}>
                           <td>{jt.id}</td>
                           <td>{jt.name}</td>
@@ -200,6 +358,7 @@ const INITIAL_JOB_TITLES: JobTitle[] = [
                                 color="outline-secondary"
                                 className="btn-sm border-0"
                                 title={t('Common.edit')}
+                                onClick={() => handleEditJobTitle(jt)}
                               >
                                 <i className="mdi mdi-pencil"></i>
                               </Button>
@@ -207,6 +366,7 @@ const INITIAL_JOB_TITLES: JobTitle[] = [
                                 color="outline-danger"
                                 className="btn-sm border-0"
                                 title={t('Common.delete')}
+                                onClick={() => handleDeleteClick(jt)}
                               >
                                 <i className="mdi mdi-delete"></i>
                               </Button>
@@ -224,13 +384,26 @@ const INITIAL_JOB_TITLES: JobTitle[] = [
                   </tbody>
                 </Table>
               </div>
+              {!loading && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={handlePageChange}
+                />
+              )}
             </CardBody>
           </Card>
         </Col>
       </Row>
 
       <Modal isOpen={isCreateModalOpen} toggle={handleCloseCreateModal} centered>
-        <ModalHeader toggle={handleCloseCreateModal}>{t('CompanyJobTitles.addJobTitle')}</ModalHeader>
+        <ModalHeader toggle={handleCloseCreateModal}>
+          {editingJobTitleId
+            ? t('Common.edit')
+            : t('CompanyJobTitles.addJobTitle')}
+        </ModalHeader>
         <ModalBody>
           <Row>
             <Col md="12" className="mb-3">
@@ -269,14 +442,53 @@ const INITIAL_JOB_TITLES: JobTitle[] = [
           </Row>
         </ModalBody>
         <ModalFooter>
-          <Button color="secondary" onClick={handleCloseCreateModal}>
+          <Button color="secondary" onClick={handleCloseCreateModal} disabled={isSavingJobTitle}>
             {t('Common.cancel')}
           </Button>
-          <Button color="primary" onClick={handleCreateJobTitle}>
-            {t('Common.create')}
+          <Button color="primary" onClick={handleCreateJobTitle} disabled={isSavingJobTitle}>
+            {isSavingJobTitle
+              ? t('Common.loading')
+              : editingJobTitleId
+                ? t('Common.update')
+                : t('Common.create')}
           </Button>
         </ModalFooter>
       </Modal>
+
+      <ConfirmModal
+        isOpen={statusModalOpen}
+        toggle={() => {
+          setStatusModalOpen(false);
+          setJobTitleForStatusUpdate(null);
+        }}
+        title={t('Common.confirm')}
+        message={
+          jobTitleForStatusUpdate
+            ? (jobTitleForStatusUpdate.status === STATUS.ACTIVE
+              ? t('CompanyJobTitles.confirmDeactivateStatus')
+              : t('CompanyJobTitles.confirmActivateStatus'))
+            : ''
+        }
+        onConfirm={handleConfirmStatusUpdate}
+        confirmButtonText={t('Common.confirm')}
+        confirmButtonColor="primary"
+        isLoading={isUpdatingStatus}
+      />
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        toggle={() => {
+          setDeleteModalOpen(false);
+          setJobTitleToDelete(null);
+        }}
+        message={
+          jobTitleToDelete
+            ? `${t('CompanyJobTitles.deleteConfirmation')} ${jobTitleToDelete.name}?`
+            : ''
+        }
+        onConfirm={handleConfirmDeleteJobTitle}
+        isLoading={isDeletingJobTitle}
+      />
     </>
   );
 };

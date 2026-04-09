@@ -23,11 +23,13 @@ import {
   Dropdown,
   DropdownToggle,
   DropdownMenu,
+  Spinner,
 } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
 import Pagination from '../../../common/Pagination/Pagination';
 import { showInfoToast } from '../../../../core/utils/toast';
 import { STATUS } from '../../../../core/constants/constantValues';
+import CompanyAdminService from '../../../../core/service/CompanyAdminService';
 import CompanyClientOverview from './CompanyClientOverview';
 import CompanyClientTransactions from './CompanyClientTransactions';
 
@@ -421,6 +423,7 @@ const INITIAL_CLIENTS: Client[] = [
     totalAmount: 380000.00,
   },
 ];
+void INITIAL_CLIENTS;
 
 const ITEMS_PER_PAGE = 10;
 
@@ -468,8 +471,11 @@ const CompanyClientsList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchTerm] = useState('');
-  const [clients] = useState<Client[]>(INITIAL_CLIENTS);
+  const [clients, setClients] = useState<Client[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'comments' | 'transactions' | 'mails' | 'statement'>('overview');
   /** Full-width table list first; split sidebar + detail after a client is opened. */
@@ -508,21 +514,10 @@ const CompanyClientsList = () => {
   }, [clients, selectedCustomerView]);
 
   const filteredClients = useMemo(() => {
-    if (!searchTerm.trim()) return clientsMatchingView;
-    const term = searchTerm.toLowerCase();
-    return clientsMatchingView.filter(
-      (c) =>
-        c.name.toLowerCase().includes(term) ||
-        c.email.toLowerCase().includes(term) ||
-        (c.phone && c.phone.includes(term))
-    );
-  }, [clientsMatchingView, searchTerm]);
+    return clientsMatchingView;
+  }, [clientsMatchingView]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredClients.length / ITEMS_PER_PAGE));
-  const paginatedClients = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredClients.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredClients, currentPage]);
+  const paginatedClients = filteredClients;
 
   /** Keep detail panel bound to latest row data from `clients` after list updates. */
   const displayClient = useMemo(() => {
@@ -553,6 +548,7 @@ const CompanyClientsList = () => {
       ? t('CompanyClientsList.contactPersonRoleSupplier')
       : t('CompanyClientsList.contactPersonRoleGeneral');
   }, [displayClient, t]);
+  void contactPersonRoleLine;
 
   useEffect(() => {
     if (filteredClients.length === 0) {
@@ -571,6 +567,89 @@ const CompanyClientsList = () => {
   useEffect(() => {
     setActiveDetailTab('overview');
   }, [selectedClient?.id]);
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      setLoading(true);
+      try {
+        const isActiveFilter =
+          selectedCustomerView === 'active'
+            ? true
+            : selectedCustomerView === 'inactive'
+              ? false
+              : undefined;
+
+        const response = await CompanyAdminService.getClients({
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+          search: searchTerm,
+          isActive: isActiveFilter,
+        });
+
+        const list = response?.data?.data || [];
+        const mappedClients: Client[] = list.map((item: any) => ({
+          id: item.id || '',
+          name: item.name || '',
+          email: item.email || '',
+          phone: item.phone || '',
+          buildingAddress: item.buildingAddress || '',
+          streetAddress:
+            item.streetAddress ||
+            item.clientMetadata?.address?.billing?.street1 ||
+            '',
+          country:
+            item.country ||
+            item.clientMetadata?.address?.billing?.countryRegion ||
+            '',
+          state:
+            item.state ||
+            item.clientMetadata?.address?.billing?.state ||
+            '',
+          city:
+            item.city ||
+            item.clientMetadata?.address?.billing?.city ||
+            '',
+          postalCode:
+            item.postalCode ||
+            item.clientMetadata?.address?.billing?.zipCode ||
+            '',
+          description:
+            item.description ||
+            item.clientMetadata?.remarks ||
+            '',
+          type:
+            item.clientMetadata?.customerType || STATUS.GENERAL,
+          status:
+            item.status ||
+            (item.isActive ? STATUS.ACTIVE : STATUS.INACTIVE),
+          createdAt:
+            item.createdAt ||
+            item.createdDate ||
+            '',
+          updatedAt:
+            item.updatedAt ||
+            item.updatedDate ||
+            '',
+          logo: item.logo || null,
+          totalAmount: Number(item.totalAmount || 0),
+        }));
+
+        setClients(mappedClients);
+        setTotalPages(response?.data?.pagination?.pages || 1);
+        setTotalItems(response?.data?.pagination?.total || 0);
+      } catch (error) {
+        // API errors are handled by interceptor.
+        console.error('Error fetching clients:', error);
+        setClients([]);
+        setTotalPages(1);
+        setTotalItems(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClients();
+  }, [currentPage, searchTerm, selectedCustomerView]);
 
   const pickerSearchMatches = (id: CustomerViewId) => {
     const q = viewPickerSearch.trim().toLowerCase();
@@ -608,6 +687,12 @@ const CompanyClientsList = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case STATUS.ACTIVE:
+      case 'ACTIVE':
+        return <Badge color="success">{t('Common.StatusActive')}</Badge>;
+      case STATUS.INACTIVE:
+      case 'INACTIVE':
+        return <Badge color="secondary">{t('Common.StatusInactive')}</Badge>;
       case 'COMPLETED':
         return <Badge color="success">{t('Common.statusCompleted')}</Badge>;
       case 'OVERDUE':
@@ -779,7 +864,11 @@ const CompanyClientsList = () => {
                   </Button>
                 </div>
               </div>
-              {paginatedClients.length > 0 ? (
+              {loading ? (
+                <div className="text-center py-5">
+                  <Spinner color="primary" />
+                </div>
+              ) : paginatedClients.length > 0 ? (
                 <Table responsive className="clients-data-table mb-0">
                   <thead>
                     <tr>
@@ -855,7 +944,7 @@ const CompanyClientsList = () => {
                   className="mt-2"
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  totalItems={filteredClients.length}
+                  totalItems={totalItems}
                   itemsPerPage={ITEMS_PER_PAGE}
                   onPageChange={setCurrentPage}
                 />
@@ -1015,7 +1104,11 @@ const CompanyClientsList = () => {
                         </div>
                       </div>
                     </div>
-                    {paginatedClients.length > 0 ? (
+                    {loading ? (
+                      <div className="text-center py-4">
+                        <Spinner color="primary" />
+                      </div>
+                    ) : paginatedClients.length > 0 ? (
                       <div className="list-group list-group-flush">
                         {paginatedClients.map((client) => {
                           const createdDate = new Date(client.createdAt);

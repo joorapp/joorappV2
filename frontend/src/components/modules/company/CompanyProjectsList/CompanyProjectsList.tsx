@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -8,18 +8,24 @@ import {
   CardBody,
   Col,
   Input,
-  InputGroup,
   Label,
   Modal,
   ModalBody,
   ModalFooter,
   ModalHeader,
   Row,
+  Spinner,
   Table,
   FormFeedback,
 } from 'reactstrap';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
 import Pagination from '../../../common/Pagination/Pagination';
+import CompanyClientCreate from '../CompanyClientsList/CompanyClientCreate';
+import ProjectCategoryModal from '../../../common/ProjectCategoryModal/ProjectCategoryModal';
+import type { ProjectCategoryFormData } from '../../../common/ProjectCategoryModal/ProjectCategoryModal';
+import ProjectTypeModal from '../../../common/ProjectTypeModal/ProjectTypeModal';
+import type { ProjectTypeFormData } from '../../../common/ProjectTypeModal/ProjectTypeModal';
+import { STATUS } from '../../../../core/constants/constantValues';
 import { validateRequired } from '../../../../core/utils/Utils';
 import { showErrorToast, showSuccessToast } from '../../../../core/utils/toast';
 import CompanyAdminService from '../../../../core/service/CompanyAdminService';
@@ -40,89 +46,6 @@ interface Project {
   endDate: string;
   progress?: number;
 }
-
-const INITIAL_PROJECTS: Project[] = [
-  {
-    id: 'PRJ-1001',
-    name: 'Marina Tower Phase 1',
-    clientName: 'Gulf Properties LLC',
-    projectManager: 'Ahmed Khan',
-    location: 'Dubai Marina, Dubai',
-    drawing: 'DRW-MT1-2025.pdf',
-    drawingFileType: 'pdf',
-    type: 'Commercial',
-    category: 'High-rise',
-    projectCost: 2450000,
-    status: 'ACTIVE',
-    startDate: '2025-01-15',
-    endDate: '2026-06-30',
-    progress: 45,
-  },
-  {
-    id: 'PRJ-1002',
-    name: 'Al Nahda Residential Complex',
-    clientName: 'Emirates Housing',
-    projectManager: 'Fatima Al Zahra',
-    location: 'Al Nahda, Sharjah',
-    drawing: 'DRW-ANR-001.pdf',
-    drawingFileType: 'image',
-    type: 'Residential',
-    category: 'Multi-unit',
-    projectCost: 1890000,
-    status: 'ACTIVE',
-    startDate: '2025-03-01',
-    endDate: '2026-12-31',
-    progress: 22,
-  },
-  {
-    id: 'PRJ-1003',
-    name: 'Business Bay Office Fit-out',
-    clientName: 'Delta Investments',
-    projectManager: 'Rahul Menon',
-    location: 'Business Bay, Dubai',
-    drawing: 'DRW-BBO-042.pdf',
-    drawingFileType: 'image',
-    type: 'Commercial',
-    category: 'Interior',
-    projectCost: 520000,
-    status: 'COMPLETED',
-    startDate: '2024-08-01',
-    endDate: '2025-02-28',
-    progress: 100,
-  },
-  {
-    id: 'PRJ-1004',
-    name: 'Sharjah Warehouse Expansion',
-    clientName: 'Logistics Plus',
-    projectManager: 'Ahmed Khan',
-    location: 'Industrial Area, Sharjah',
-    drawing: 'DRW-SWE-012.pdf',
-    drawingFileType: 'pdf',
-    type: 'Industrial',
-    category: 'Warehouse',
-    projectCost: 980000,
-    status: 'PENDING',
-    startDate: '2026-04-01',
-    endDate: '2026-10-31',
-    progress: 0,
-  },
-  {
-    id: 'PRJ-1005',
-    name: 'Palm View Villas',
-    clientName: 'Luxury Estates',
-    projectManager: 'Mohammed Ali',
-    location: 'Palm Jumeirah, Dubai',
-    drawing: 'DRW-PV-008.pdf',
-    drawingFileType: 'pdf',
-    type: 'Residential',
-    category: 'Villa',
-    projectCost: 3100000,
-    status: 'ACTIVE',
-    startDate: '2025-06-15',
-    endDate: '2027-03-31',
-    progress: 18,
-  },
-];
 
 const ITEMS_PER_PAGE = 10;
 
@@ -165,8 +88,20 @@ type ClientOption = {
   name: string;
 };
 
-const DUMMY_PROJECT_TYPES = ['Commercial', 'Residential', 'Industrial'];
-const DUMMY_PROJECT_CATEGORIES = ['High-rise', 'Multi-unit', 'Interior', 'Warehouse', 'Villa'];
+type ProjectCategoryOption = {
+  id: string;
+  name: string;
+  description?: string;
+  status: string;
+};
+
+type ProjectTypeOption = {
+  id: string;
+  name: string;
+  description?: string;
+  status: string;
+};
+
 const DUMMY_STATUSES = ['ACTIVE', 'PENDING', 'COMPLETED', 'ON_HOLD'];
 const DUMMY_MANAGERS = ['Ahmed Khan', 'Fatima Al Zahra', 'Rahul Menon', 'Mohammed Ali', 'Sara Youssef'];
 const DUMMY_STORE_INCHARGE = ['Sara Youssef', 'Rahul Menon', 'Store User 1'];
@@ -177,9 +112,13 @@ const ACCEPTED_DRAWING_TYPES = 'application/pdf,image/*';
 const CompanyProjectsList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isProjectsLoading, setIsProjectsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [clientFilter, setClientFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newProject, setNewProject] = useState<NewProjectForm>(initialNewProject);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof NewProjectForm, string>>>({});
@@ -187,66 +126,175 @@ const CompanyProjectsList = () => {
   const [drawingFileError, setDrawingFileError] = useState<string | null>(null);
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [isClientsLoading, setIsClientsLoading] = useState(false);
+  const [clientCreateModalOpen, setClientCreateModalOpen] = useState(false);
+  const [projectCategories, setProjectCategories] = useState<ProjectCategoryOption[]>([]);
+  const [isProjectCategoriesLoading, setIsProjectCategoriesLoading] = useState(false);
+  const [projectCategoryModalOpen, setProjectCategoryModalOpen] = useState(false);
+  const [isSavingProjectCategory, setIsSavingProjectCategory] = useState(false);
+  const [projectTypes, setProjectTypes] = useState<ProjectTypeOption[]>([]);
+  const [isProjectTypesLoading, setIsProjectTypesLoading] = useState(false);
+  const [projectTypeModalOpen, setProjectTypeModalOpen] = useState(false);
+  const [isSavingProjectType, setIsSavingProjectType] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
+  const mapProjectRow = useCallback((project: any): Project => {
+    const drawingName =
+      project?.drawing ??
+      project?.drawingName ??
+      project?.drawingFileName ??
+      project?.projectDrawing ??
+      '';
+    const lowerDrawingName = String(drawingName || '').toLowerCase();
 
-    const fetchAllClients = async () => {
-      setIsClientsLoading(true);
-      try {
-        const response = await CompanyAdminService.getAllClients();
-        const responseClients = Array.isArray(response?.data?.data) ? response.data.data : [];
-        const mappedClients: ClientOption[] = responseClients
-          .map((client: { id?: string; name?: string }) => ({
-            id: client?.id ?? '',
-            name: client?.name ?? '',
-          }))
-          .filter((client: ClientOption) => client.id && client.name);
+    const rawStatus = project?.status ?? (project?.isActive === false ? 'INACTIVE' : 'ACTIVE');
+    const status = String(rawStatus || 'ACTIVE').toUpperCase();
 
-        if (isMounted) {
-          setClients(mappedClients);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setClients([]);
-        }
-        showErrorToast('Failed to load clients');
-      } finally {
-        if (isMounted) {
-          setIsClientsLoading(false);
-        }
-      }
-    };
-
-    fetchAllClients();
-
-    return () => {
-      isMounted = false;
+    return {
+      id: project?.id ?? project?.projectCode ?? '',
+      name: project?.projectName ?? project?.name ?? '',
+      clientName:
+        project?.client?.name ??
+        project?.clientName ??
+        project?.client?.companyName ??
+        '—',
+      projectManager:
+        project?.projectManager?.name ??
+        project?.projectManagerName ??
+        project?.projectManager ??
+        undefined,
+      location: project?.location ?? project?.projectLocation ?? undefined,
+      drawing: drawingName || undefined,
+      drawingFileType: drawingName
+        ? (lowerDrawingName.endsWith('.pdf') ? 'pdf' : 'image')
+        : undefined,
+      type:
+        project?.projectType?.projectType ??
+        project?.projectTypeName ??
+        project?.projectType ??
+        '',
+      category:
+        project?.projectCategory?.projectCategory ??
+        project?.projectCategoryName ??
+        project?.projectCategory ??
+        '',
+      projectCost:
+        project?.projectCost !== undefined && project?.projectCost !== null
+          ? Number(project.projectCost)
+          : undefined,
+      status,
+      startDate: project?.startDate ?? project?.start_date ?? new Date().toISOString(),
+      endDate: project?.endDate ?? project?.end_date ?? new Date().toISOString(),
+      progress:
+        project?.progress !== undefined && project?.progress !== null
+          ? Number(project.progress)
+          : undefined,
     };
   }, []);
 
-  const filteredProjects = useMemo(() => {
-    if (!searchTerm.trim()) return projects;
-    const term = searchTerm.toLowerCase();
-    return projects.filter(
-      (p) =>
-        p.name.toLowerCase().includes(term) ||
-        p.clientName.toLowerCase().includes(term) ||
-        (p.projectManager && p.projectManager.toLowerCase().includes(term)) ||
-        (p.location && p.location.toLowerCase().includes(term)) ||
-        (p.drawing && p.drawing.toLowerCase().includes(term)) ||
-        p.id.toLowerCase().includes(term) ||
-        p.type.toLowerCase().includes(term) ||
-        p.category.toLowerCase().includes(term) ||
-        p.status.toLowerCase().includes(term)
-    );
-  }, [projects, searchTerm]);
+  const fetchAllClients = useCallback(async () => {
+    setIsClientsLoading(true);
+    try {
+      const response = await CompanyAdminService.getAllClients({ isActive: true });
+      const responseClients = Array.isArray(response?.data?.data) ? response.data.data : [];
+      const mappedClients: ClientOption[] = responseClients
+        .map((client: { id?: string; name?: string }) => ({
+          id: client?.id ?? '',
+          name: client?.name ?? '',
+        }))
+        .filter((client: ClientOption) => client.id && client.name);
+      setClients(mappedClients);
+    } catch (error) {
+      setClients([]);
+      showErrorToast('Failed to load clients');
+    } finally {
+      setIsClientsLoading(false);
+    }
+  }, []);
 
-  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / ITEMS_PER_PAGE));
-  const paginatedProjects = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProjects.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredProjects, currentPage]);
+  const fetchAllProjectCategories = useCallback(async () => {
+    setIsProjectCategoriesLoading(true);
+    try {
+      const response = await CompanyAdminService.getAllProjectCategories({ isActive: true });
+      const responseCategories = Array.isArray(response?.data?.data) ? response.data.data : [];
+      const mappedCategories: ProjectCategoryOption[] = responseCategories
+        .map((category: { id?: string; projectCategory?: string; description?: string; isActive?: boolean }) => ({
+          id: category?.id ?? '',
+          name: category?.projectCategory ?? '',
+          description: category?.description ?? '',
+          status: category?.isActive ? STATUS.ACTIVE : STATUS.INACTIVE,
+        }))
+        .filter((category: ProjectCategoryOption) => category.id && category.name);
+      setProjectCategories(mappedCategories);
+    } catch (error) {
+      setProjectCategories([]);
+      showErrorToast('Failed to load project categories');
+    } finally {
+      setIsProjectCategoriesLoading(false);
+    }
+  }, []);
+
+  const fetchAllProjectTypes = useCallback(async () => {
+    setIsProjectTypesLoading(true);
+    try {
+      const response = await CompanyAdminService.getAllProjectTypes({ isActive: true });
+      const responseTypes = Array.isArray(response?.data?.data) ? response.data.data : [];
+      const mappedTypes: ProjectTypeOption[] = responseTypes
+        .map((type: { id?: string; projectType?: string; description?: string; isActive?: boolean }) => ({
+          id: type?.id ?? '',
+          name: type?.projectType ?? '',
+          description: type?.description ?? '',
+          status: type?.isActive ? STATUS.ACTIVE : STATUS.INACTIVE,
+        }))
+        .filter((type: ProjectTypeOption) => type.id && type.name);
+      setProjectTypes(mappedTypes);
+    } catch (error) {
+      setProjectTypes([]);
+      showErrorToast('Failed to load project types');
+    } finally {
+      setIsProjectTypesLoading(false);
+    }
+  }, []);
+
+  const fetchProjects = useCallback(async () => {
+    setIsProjectsLoading(true);
+    try {
+      const response = await CompanyAdminService.getProjects({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        clientId: clientFilter || undefined,
+        status: statusFilter || undefined,
+      });
+      const data = Array.isArray(response?.data?.data) ? response.data.data : [];
+      const mappedProjects = data.map(mapProjectRow);
+      setProjects(mappedProjects);
+
+      const pagination = response?.data?.pagination;
+      setTotalPages(pagination?.pages || 1);
+      setTotalItems(pagination?.total || 0);
+    } catch (error) {
+      setProjects([]);
+      setTotalPages(1);
+      setTotalItems(0);
+      showErrorToast('Failed to load projects');
+    } finally {
+      setIsProjectsLoading(false);
+    }
+  }, [clientFilter, currentPage, mapProjectRow, statusFilter]);
+
+  useEffect(() => {
+    fetchAllClients();
+  }, [fetchAllClients]);
+
+  useEffect(() => {
+    fetchAllProjectCategories();
+  }, [fetchAllProjectCategories]);
+
+  useEffect(() => {
+    fetchAllProjectTypes();
+  }, [fetchAllProjectTypes]);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -349,8 +397,14 @@ const CompanyProjectsList = () => {
     }
 
     const clientName = clients.find((c) => c.id === newProject.client)?.name ?? newProject.client;
+    const projectTypeName =
+      projectTypes.find((type) => type.id === newProject.projectType)?.name ??
+      newProject.projectType;
+    const projectCategoryName =
+      projectCategories.find((category) => category.id === newProject.projectCategory)?.name ??
+      newProject.projectCategory;
     const projectCostNum = parseFloat(newProject.projectCost) || 0;
-    const nextId = `PRJ-${1000 + projects.length + 1}`;
+    const nextId = `TMP-${Date.now()}`;
     const startDate = newProject.startDate || new Date().toISOString().slice(0, 10);
     const endDate = newProject.endDate || startDate;
 
@@ -361,8 +415,8 @@ const CompanyProjectsList = () => {
       projectManager: newProject.projectManager || undefined,
       location: newProject.location.trim() || undefined,
       drawing: drawingFile?.name?.trim() || undefined,
-      type: newProject.projectType,
-      category: newProject.projectCategory.trim(),
+      type: projectTypeName.trim(),
+      category: projectCategoryName.trim(),
       projectCost: projectCostNum,
       status: newProject.projectStatus,
       startDate,
@@ -372,6 +426,54 @@ const CompanyProjectsList = () => {
     setProjects((prev) => [created, ...prev]);
     showSuccessToast(t('CompanyProjectsList.createdSuccessfully'));
     handleCloseCreateModal();
+  };
+
+  const handleCreateProjectCategory = async (categoryData: ProjectCategoryFormData) => {
+    setIsSavingProjectCategory(true);
+    try {
+      const payload = {
+        projectCategory: categoryData.name.trim(),
+        description: categoryData.description.trim() || undefined,
+        isActive: categoryData.status === STATUS.ACTIVE,
+      };
+      const response = await CompanyAdminService.createProjectCategory(payload);
+      const createdCategoryId = response?.data?.data?.id;
+      await fetchAllProjectCategories();
+      if (createdCategoryId) {
+        handleNewProjectChange('projectCategory', createdCategoryId);
+      }
+      showSuccessToast(response?.data?.message || t('CompanyProjectCategories.createdSuccessfully'));
+    } finally {
+      setIsSavingProjectCategory(false);
+    }
+  };
+
+  const handleCreateProjectType = async (typeData: ProjectTypeFormData) => {
+    setIsSavingProjectType(true);
+    try {
+      const payload = {
+        projectType: typeData.name.trim(),
+        description: typeData.description.trim() || undefined,
+        isActive: typeData.status === STATUS.ACTIVE,
+      };
+      const response = await CompanyAdminService.createProjectType(payload);
+      const createdProjectTypeId = response?.data?.data?.id;
+      await fetchAllProjectTypes();
+      if (createdProjectTypeId) {
+        handleNewProjectChange('projectType', createdProjectTypeId);
+      }
+      showSuccessToast(response?.data?.message || t('CompanyProjectTypes.createdSuccessfully'));
+    } finally {
+      setIsSavingProjectType(false);
+    }
+  };
+
+  const handleClientCreated = async (createdClient?: { id?: string }) => {
+    await fetchAllClients();
+    if (createdClient?.id) {
+      handleNewProjectChange('client', createdClient.id);
+    }
+    setClientCreateModalOpen(false);
   };
 
   const handleOpenProjectOverview = (project: Project) => {
@@ -392,14 +494,40 @@ const CompanyProjectsList = () => {
           <Card>
             <CardBody>
               <div className="d-flex justify-content-between align-items-center mb-4">
-                <InputGroup className="search-input-group">
+                <div className="d-flex align-items-center gap-2 flex-grow-1 me-2">
                   <Input
-                    type="text"
-                    placeholder={t('Common.searchPlaceholder')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </InputGroup>
+                    type="select"
+                    value={clientFilter}
+                    onChange={(e) => {
+                      setCurrentPage(1);
+                      setClientFilter(e.target.value);
+                    }}
+                    style={{ maxWidth: 260 }}
+                  >
+                    <option value="">{t('CompanyProjectsList.form.selectClient')}</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </Input>
+                  <Input
+                    type="select"
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setCurrentPage(1);
+                      setStatusFilter(e.target.value);
+                    }}
+                    style={{ maxWidth: 220 }}
+                  >
+                    <option value="">{t('Common.all')}</option>
+                    {DUMMY_STATUSES.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt === 'ON_HOLD'
+                          ? t('CompanyProjectsList.statusOnHold')
+                          : t(`CompanyProjectsList.status${opt.charAt(0) + opt.slice(1).toLowerCase()}`)}
+                      </option>
+                    ))}
+                  </Input>
+                </div>
                 <Button
                   color="primary"
                   className="btn-rounded waves-effect d-inline-flex align-items-center waves-light"
@@ -431,8 +559,15 @@ const CompanyProjectsList = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedProjects.length > 0 ? (
-                      paginatedProjects.map((project) => (
+                    {isProjectsLoading ? (
+                      <tr>
+                        <td colSpan={14} className="text-center py-5">
+                          <Spinner color="primary" />
+                          <p className="mt-2 text-muted mb-0">{t('Common.loading')}</p>
+                        </td>
+                      </tr>
+                    ) : projects.length > 0 ? (
+                      projects.map((project) => (
                         <tr key={project.id}>
                           <td>
                             <span className="fw-medium">{project.id}</span>
@@ -544,11 +679,11 @@ const CompanyProjectsList = () => {
                 </Table>
               </div>
 
-              {filteredProjects.length > 0 && (
+              {totalItems > 0 && (
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  totalItems={filteredProjects.length}
+                  totalItems={totalItems}
                   itemsPerPage={ITEMS_PER_PAGE}
                   onPageChange={setCurrentPage}
                 />
@@ -569,9 +704,14 @@ const CompanyProjectsList = () => {
                 <Label className="form-label fw-semibold mb-0">
                   {t('CompanyProjectsList.form.client')} <span className="text-danger">*</span>
                 </Label>
-                <span className='border-0 text-primary cursor-pointer' >
+                <Button
+                  type="button"
+                  color="link"
+                  className="p-0 border-0 text-primary"
+                  onClick={() => setClientCreateModalOpen(true)}
+                >
                   + {t('Common.add')}
-                </span>
+                </Button>
               </div>
               <Input
                 type="select"
@@ -595,9 +735,14 @@ const CompanyProjectsList = () => {
                 <Label className="form-label fw-semibold mb-0">
                   {t('CompanyProjectsList.form.projectType')} <span className="text-danger">*</span>
                 </Label>
-                <span className='border-0 text-primary cursor-pointer' >
+                <Button
+                  type="button"
+                  color="link"
+                  className="p-0 border-0 text-primary"
+                  onClick={() => setProjectTypeModalOpen(true)}
+                >
                   + {t('Common.add')}
-                </span>
+                </Button>
               </div>
               <Input
                 type="select"
@@ -605,9 +750,13 @@ const CompanyProjectsList = () => {
                 onChange={(e) => handleNewProjectChange('projectType', e.target.value)}
                 invalid={!!formErrors.projectType}
               >
-                <option value="">{t('CompanyProjectsList.form.selectProjectType')}</option>
-                {DUMMY_PROJECT_TYPES.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                <option value="">
+                  {isProjectTypesLoading
+                    ? t('Common.loading') || 'Loading...'
+                    : t('CompanyProjectsList.form.selectProjectType')}
+                </option>
+                {projectTypes.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.name}</option>
                 ))}
               </Input>
               {formErrors.projectType && <FormFeedback>{t(formErrors.projectType)}</FormFeedback>}
@@ -617,9 +766,14 @@ const CompanyProjectsList = () => {
                 <Label className="form-label fw-semibold mb-0">
                   {t('CompanyProjectsList.form.projectCategory')} <span className="text-danger">*</span>
                 </Label>
-                <span className='border-0 text-primary cursor-pointer' >
+                <Button
+                  type="button"
+                  color="link"
+                  className="p-0 border-0 text-primary"
+                  onClick={() => setProjectCategoryModalOpen(true)}
+                >
                   + {t('Common.add')}
-                </span>
+                </Button>
               </div>
               <Input
                 type="select"
@@ -627,9 +781,13 @@ const CompanyProjectsList = () => {
                 onChange={(e) => handleNewProjectChange('projectCategory', e.target.value)}
                 invalid={!!formErrors.projectCategory}
               >
-                <option value="">{t('CompanyProjectsList.form.selectProjectCategory')}</option>
-                {DUMMY_PROJECT_CATEGORIES.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                <option value="">
+                  {isProjectCategoriesLoading
+                    ? t('Common.loading') || 'Loading...'
+                    : t('CompanyProjectsList.form.selectProjectCategory')}
+                </option>
+                {projectCategories.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.name}</option>
                 ))}
               </Input>
               {formErrors.projectCategory && <FormFeedback>{t(formErrors.projectCategory)}</FormFeedback>}
@@ -822,6 +980,50 @@ const CompanyProjectsList = () => {
             {t('Common.create')}
           </Button>
         </ModalFooter>
+      </Modal>
+
+      <ProjectCategoryModal
+        isOpen={projectCategoryModalOpen}
+        toggle={() => setProjectCategoryModalOpen(false)}
+        onSubmit={handleCreateProjectCategory}
+        title={t('CompanyProjectCategories.addProjectCategory')}
+        submitLabel={isSavingProjectCategory ? t('Common.loading') : t('Common.create')}
+        initialData={{
+          name: '',
+          description: '',
+          status: STATUS.ACTIVE,
+        }}
+      />
+
+      <ProjectTypeModal
+        isOpen={projectTypeModalOpen}
+        toggle={() => setProjectTypeModalOpen(false)}
+        onSubmit={handleCreateProjectType}
+        title={t('CompanyProjectTypes.addProjectType')}
+        submitLabel={isSavingProjectType ? t('Common.loading') : t('Common.create')}
+        initialData={{
+          name: '',
+          description: '',
+          status: STATUS.ACTIVE,
+        }}
+      />
+
+      <Modal
+        isOpen={clientCreateModalOpen}
+        toggle={() => setClientCreateModalOpen(false)}
+        size="xl"
+        centered
+      >
+        <ModalHeader toggle={() => setClientCreateModalOpen(false)}>
+          {t('CompanyClientsList.newCustomer')}
+        </ModalHeader>
+        <ModalBody className="p-0">
+          <CompanyClientCreate
+            embedded
+            onCancel={() => setClientCreateModalOpen(false)}
+            onSuccess={handleClientCreated}
+          />
+        </ModalBody>
       </Modal>
     </>
   );

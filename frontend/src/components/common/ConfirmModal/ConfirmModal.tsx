@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 interface ConfirmModalProps {
   isOpen: boolean;
   toggle: () => void;
+  title?: string;
   message: string;
   onConfirm: () => void | Promise<void>;
   confirmButtonText?: string;
@@ -21,6 +22,7 @@ interface ConfirmModalProps {
 const ConfirmModal = ({
   isOpen,
   toggle,
+  title,
   message,
   onConfirm,
   confirmButtonText,
@@ -41,7 +43,7 @@ const ConfirmModal = ({
           <div className="mb-3">
             <i className="mdi mdi-alert-circle-outline delete-confirm-icon"></i>
           </div>
-          <h4 className="mb-3">{t('Common.confirmToDelete')}</h4>
+          <h4 className="mb-3">{title || t('Common.confirmToDelete')}</h4>
           <p className="text-muted mb-0">{message}</p>
           <div className="d-flex gap-2 justify-content-center mt-3">
             <Button
