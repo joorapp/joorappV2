@@ -33,6 +33,26 @@ const Project = sequelize.define('Project', {
     },
     comment: 'Foreign key to clients table'
   },
+  projectTypeId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'project_type_id',
+    references: {
+      model: 'project_types',
+      key: 'id'
+    },
+    comment: 'Foreign key to project_types'
+  },
+  projectCategoryId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'project_category_id',
+    references: {
+      model: 'project_categories',
+      key: 'id'
+    },
+    comment: 'Foreign key to project_categories'
+  },
   name: {
     type: DataTypes.STRING(255),
     allowNull: false,
@@ -86,6 +106,14 @@ const Project = sequelize.define('Project', {
       name: 'projects_client_id_idx'
     },
     {
+      fields: ['project_type_id'],
+      name: 'projects_project_type_id_idx'
+    },
+    {
+      fields: ['project_category_id'],
+      name: 'projects_project_category_id_idx'
+    },
+    {
       fields: ['status'],
       name: 'projects_status_idx'
     },
@@ -132,6 +160,16 @@ Project.associate = (models) => {
   Project.belongsTo(models.Client, {
     foreignKey: 'clientId',
     as: 'client'
+  });
+
+  Project.belongsTo(models.ProjectType, {
+    foreignKey: 'projectTypeId',
+    as: 'projectType'
+  });
+
+  Project.belongsTo(models.ProjectCategory, {
+    foreignKey: 'projectCategoryId',
+    as: 'projectCategory'
   });
 
   // Project hasMany ProjectUsers

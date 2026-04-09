@@ -42,22 +42,40 @@ export const createProject = async (req, res) => {
   
   try {
     checkAdminPermission(req);
+    const companyId = requireCompanyContext(req);
 
-    const { clientId, name, description, status, startDate, endDate, projectMetadata } = req.body;
-
-    validateRequired({ clientId, name }, req.id);
-    validateUUID(clientId, 'clientId', req.id);
-    validateString(name, 'name', { minLength: 1, maxLength: 255 }, req.id);
-
-    const project = await projectService.createProject({
+    const {
       clientId,
+      projectTypeId,
+      projectCategoryId,
       name,
       description,
       status,
       startDate,
       endDate,
       projectMetadata
-    }, { userId: req.user.id });
+    } = req.body;
+
+    validateRequired({ clientId, name, projectTypeId, projectCategoryId }, req.id);
+    validateUUID(clientId, 'clientId', req.id);
+    validateUUID(projectTypeId, 'projectTypeId', req.id);
+    validateUUID(projectCategoryId, 'projectCategoryId', req.id);
+    validateString(name, 'name', { minLength: 1, maxLength: 255 }, req.id);
+
+    const project = await projectService.createProject(
+      {
+        clientId,
+        projectTypeId,
+        projectCategoryId,
+        name,
+        description,
+        status,
+        startDate,
+        endDate,
+        projectMetadata
+      },
+      { userId: req.user.id, companyId, requestId: req.id }
+    );
 
     const duration = Date.now() - startTime;
     logger.info('Project created successfully', { requestId: req.id, projectId: project.id, duration: `${duration}ms` });
@@ -100,24 +118,38 @@ export const updateProject = async (req, res) => {
   
   try {
     checkAdminPermission(req);
+    const companyId = requireCompanyContext(req);
 
     const { id } = req.params;
     validateUUID(id, 'id', req.id);
 
-    const { name, description, status, startDate, endDate, projectMetadata } = req.body;
+    const { name, description, status, startDate, endDate, projectMetadata, projectTypeId, projectCategoryId } =
+      req.body;
 
     if (name !== undefined) {
       validateString(name, 'name', { minLength: 1, maxLength: 255 }, req.id);
     }
+    if (projectTypeId !== undefined) {
+      validateUUID(projectTypeId, 'projectTypeId', req.id);
+    }
+    if (projectCategoryId !== undefined) {
+      validateUUID(projectCategoryId, 'projectCategoryId', req.id);
+    }
 
-    const project = await projectService.updateProject(id, {
-      name,
-      description,
-      status,
-      startDate,
-      endDate,
-      projectMetadata
-    }, { userId: req.user.id });
+    const project = await projectService.updateProject(
+      id,
+      {
+        name,
+        description,
+        status,
+        startDate,
+        endDate,
+        projectMetadata,
+        projectTypeId,
+        projectCategoryId
+      },
+      { userId: req.user.id, companyId, requestId: req.id }
+    );
 
     const duration = Date.now() - startTime;
     logger.info('Project updated successfully', { requestId: req.id, projectId: id, duration: `${duration}ms` });
