@@ -11,6 +11,7 @@ import { buildPaginationQuery, buildSortQuery } from '../../utils/businessHelper
 import { isCompanyAdmin } from '../../constants/keycloakRoles.js';
 import { ForbiddenError, BadRequestError } from '../../utils/errors.js';
 import * as clientService from '../../services/clientService.js';
+import * as clientTypeService from '../../services/clientTypeService.js';
 
 const logger = createModuleLogger('clientController');
 
@@ -248,4 +249,194 @@ export const deleteClient = async (req, res) => {
     logger.error('Delete client failed', { requestId: req.id, error: error.message });
     throw error;
   }
+};
+
+// --- Client types (reference data; same ownership rules as project types) ---
+
+export const createClientType = async (req, res) => {
+  const startTime = Date.now();
+  checkPermission(req);
+  const companyId = requireCompanyContext(req);
+
+  const { clientType, description, isActive } = req.body;
+  validateRequired({ clientType }, req.id);
+  validateString(clientType, 'clientType', { minLength: 1, maxLength: 255 }, req.id);
+  if (description !== undefined && description !== null) {
+    validateString(description, 'description', { required: false, maxLength: 5000 }, req.id);
+  }
+  let resolvedActive = true;
+  if (isActive !== undefined && isActive !== null) {
+    resolvedActive = validateBoolean(isActive, 'isActive', { required: true }, req.id);
+  }
+
+  const created = await clientTypeService.createClientType(
+    { clientType, description, isActive: resolvedActive },
+    { userId: req.user.id, companyId }
+  );
+
+  logBusiness('Client type created (company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    clientTypeId: created.id
+  });
+
+  res.status(201).json(successResponse('Client type created successfully', created, {}, req, startTime));
+};
+
+export const listClientTypes = async (req, res) => {
+  const startTime = Date.now();
+  checkPermission(req);
+  const companyId = requireCompanyContext(req);
+
+  const { page, limit, offset } = buildPaginationQuery(req.query, { defaultLimit: 10, maxLimit: 100 }, req.id);
+  const isActive = req.query.isActive !== undefined ? req.query.isActive === 'true' : undefined;
+  const search = req.query.search ? String(req.query.search).trim() : undefined;
+  if (search) {
+    validateString(search, 'search', { minLength: 1, maxLength: 255 }, req.id);
+  }
+
+  const sortBy = req.query.sortBy || 'clientType';
+  const sortOrder = req.query.sortOrder || 'ASC';
+  const allowedSortFields = ['clientType', 'createdDate', 'isActive'];
+  const order = buildSortQuery(sortBy, sortOrder, allowedSortFields, {
+    defaultSort: 'clientType',
+    defaultOrder: 'ASC'
+  });
+
+  const result = await clientTypeService.listClientTypesForCompany(
+    companyId,
+    { isActive, search },
+    { page, limit, offset },
+    order,
+    { requestId: req.id }
+  );
+
+  res.status(200).json(
+    paginatedResponse(
+      'Client types retrieved successfully',
+      result.clientTypes,
+      { page, limit, total: result.total },
+      {},
+      req,
+      startTime
+    )
+  );
+};
+
+export const listAllClientTypes = async (req, res) => {
+  const startTime = Date.now();
+  checkPermission(req);
+  const companyId = requireCompanyContext(req);
+
+  const search = req.query.search ? String(req.query.search).trim() : undefined;
+  if (search) {
+    validateString(search, 'search', { minLength: 1, maxLength: 255 }, req.id);
+  }
+
+  const isActive =
+    req.query.isActive !== undefined && req.query.isActive !== ''
+      ? req.query.isActive === 'true'
+      : undefined;
+
+  const items = await clientTypeService.listAllClientTypesForDropdown(companyId, {
+    search,
+    isActive,
+    requestId: req.id
+  });
+
+  res.status(200).json(successResponse('Client types retrieved successfully', items, {}, req, startTime));
+};
+
+export const getClientTypeById = async (req, res) => {
+  const startTime = Date.now();
+  checkPermission(req);
+  const companyId = requireCompanyContext(req);
+  validateUUID(req.params.id, 'id', req.id);
+
+  const row = await clientTypeService.getClientTypeByIdForCompany(req.params.id, companyId, {
+    requestId: req.id
+  });
+  res.status(200).json(successResponse('Client type retrieved successfully', row, {}, req, startTime));
+};
+
+export const updateClientType = async (req, res) => {
+  const startTime = Date.now();
+  checkPermission(req);
+  const companyId = requireCompanyContext(req);
+  validateUUID(req.params.id, 'id', req.id);
+
+  const { clientType, description, isActive } = req.body;
+  const payload = {};
+  if (clientType !== undefined) {
+    validateString(clientType, 'clientType', { minLength: 1, maxLength: 255 }, req.id);
+    payload.clientType = clientType;
+  }
+  if (description !== undefined) {
+    validateString(description, 'description', { required: false, maxLength: 5000 }, req.id);
+    payload.description = description;
+  }
+  if (isActive !== undefined) {
+    payload.isActive = validateBoolean(isActive, 'isActive', { required: true }, req.id);
+  }
+
+  const updated = await clientTypeService.updateClientTypeForCompany(
+    req.params.id,
+    payload,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Client type updated (company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    clientTypeId: updated.id
+  });
+
+  res.status(200).json(successResponse('Client type updated successfully', updated, {}, req, startTime));
+};
+
+export const patchClientTypeStatus = async (req, res) => {
+  const startTime = Date.now();
+  checkPermission(req);
+  const companyId = requireCompanyContext(req);
+  validateUUID(req.params.id, 'id', req.id);
+
+  const isActive = validateBoolean(req.body.isActive, 'isActive', { required: true }, req.id);
+
+  const updated = await clientTypeService.setClientTypeActiveStatusForCompany(
+    req.params.id,
+    isActive,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Client type status updated (company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    clientTypeId: updated.id,
+    isActive
+  });
+
+  res.status(200).json(successResponse('Client type status updated successfully', updated, {}, req, startTime));
+};
+
+export const deleteClientType = async (req, res) => {
+  const startTime = Date.now();
+  checkPermission(req);
+  const companyId = requireCompanyContext(req);
+  validateUUID(req.params.id, 'id', req.id);
+
+  await clientTypeService.deleteClientTypeForCompany(req.params.id, { userId: req.user.id, requestId: req.id }, companyId);
+
+  logBusiness('Client type deleted (company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    clientTypeId: req.params.id
+  });
+
+  res.status(200).json(successResponse('Client type deleted successfully', null, {}, req, startTime));
 };

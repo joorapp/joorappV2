@@ -992,6 +992,337 @@ router.get('/clients', authMiddleware, companyContextMiddleware, asyncHandler(cl
  */
 router.get('/clients/all', authMiddleware, companyContextMiddleware, asyncHandler(clientController.listAllClients));
 
+// =====================================================
+// Client types (reference data; register before /clients/:id)
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/types/all:
+ *   get:
+ *     tags:
+ *       - Admin Clients
+ *     summary: List all client types for dropdowns
+ *     description: >
+ *       Returns client types from the super admin company plus the current company, sorted by name.
+ *       Query isActive: omit for all; true for active only; false for inactive only.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active flag; omit to return both active and inactive
+ *     responses:
+ *       200:
+ *         description: Client types retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ClientType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/clients/types/all',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(clientController.listAllClientTypes)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/types:
+ *   post:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Create client type for current company
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ClientTypeCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ClientType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post(
+  '/clients/types',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(clientController.createClientType)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/types:
+ *   get:
+ *     tags:
+ *       - Admin Clients
+ *     summary: List client types for current company (paginated)
+ *     description: Returns types owned by the super admin company (platform defaults) plus the current company. Each item includes canEdit and canDelete (false for platform-managed types).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Paginated client types
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ClientTypeCompanyWorkspace'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/clients/types',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(clientController.listClientTypes)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/types/{id}:
+ *   get:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Get client type by ID (tenant or platform default)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Client type
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ClientTypeCompanyWorkspace'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get(
+  '/clients/types/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(clientController.getClientTypeById)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/types/{id}:
+ *   put:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Update client type (current company)
+ *     description: Forbidden when the type is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ClientTypeUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ClientType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or type is platform-managed and cannot be changed from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put(
+  '/clients/types/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(clientController.updateClientType)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/types/{id}/status:
+ *   patch:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Set client type active or inactive (current company)
+ *     description: Forbidden when the type is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ClientType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or type is platform-managed and cannot be changed from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch(
+  '/clients/types/:id/status',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(clientController.patchClientTypeStatus)
+);
+
+/**
+ * @swagger
+ * /api/v2/admin/clients/types/{id}:
+ *   delete:
+ *     tags:
+ *       - Admin Clients
+ *     summary: Delete client type (current company)
+ *     description: Forbidden when the type is owned by the super admin company (platform-managed).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         description: Admin required, or type is platform-managed and cannot be deleted from a company workspace
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete(
+  '/clients/types/:id',
+  authMiddleware,
+  companyContextMiddleware,
+  asyncHandler(clientController.deleteClientType)
+);
+
 /**
  * @swagger
  * /api/v2/admin/clients/{id}:
@@ -2536,7 +2867,7 @@ router.delete(
  *     summary: Create a new project
  *     description: >
  *       Creates a new project. Requires COMPANY_ADMIN role and company context.
- *       Client must belong to the current company. Type and category must be visible to that client’s company
+ *       Client must belong to the current company. Project type and category must be visible to that client’s company
  *       (same rules as project type/category dropdowns: tenant plus platform defaults) and active.
  *     security:
  *       - bearerAuth: []

@@ -123,8 +123,16 @@ export const updateProject = async (req, res) => {
     const { id } = req.params;
     validateUUID(id, 'id', req.id);
 
-    const { name, description, status, startDate, endDate, projectMetadata, projectTypeId, projectCategoryId } =
-      req.body;
+    const {
+      name,
+      description,
+      status,
+      startDate,
+      endDate,
+      projectMetadata,
+      projectTypeId,
+      projectCategoryId
+    } = req.body;
 
     if (name !== undefined) {
       validateString(name, 'name', { minLength: 1, maxLength: 255 }, req.id);

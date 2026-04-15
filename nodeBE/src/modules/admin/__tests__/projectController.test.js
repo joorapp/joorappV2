@@ -170,7 +170,12 @@ describe('Project Controller', () => {
 
     it('should throw BadRequestError when company context is missing', async () => {
       req.company = undefined;
-      req.body = { clientId: uuidv4(), projectTypeId: uuidv4(), projectCategoryId: uuidv4(), name: 'X' };
+      req.body = {
+        clientId: uuidv4(),
+        projectTypeId: uuidv4(),
+        projectCategoryId: uuidv4(),
+        name: 'X'
+      };
       await expect(projectController.createProject(req, res)).rejects.toThrow(BadRequestError);
     });
 
