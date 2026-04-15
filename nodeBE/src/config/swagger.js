@@ -1363,6 +1363,120 @@ const swaggerDefinition = {
           }
         }
       },
+      ClientType: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Client type UUID',
+            example: '550e8400-e29b-41d4-a716-446655440033'
+          },
+          clientType: {
+            type: 'string',
+            maxLength: 255,
+            description: 'Client type name',
+            example: 'Enterprise'
+          },
+          description: {
+            type: 'string',
+            nullable: true,
+            description: 'Optional description',
+            example: 'Large organization accounts'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the client type is active',
+            example: true
+          },
+          createdDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          updatedDate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+            example: '2024-11-23T12:00:00.000Z'
+          },
+          version: {
+            type: 'integer',
+            description: 'Optimistic locking version',
+            example: 1
+          }
+        },
+        required: ['id', 'clientType', 'isActive']
+      },
+      ClientTypeCompanyWorkspace: {
+        allOf: [
+          { $ref: '#/components/schemas/ClientType' },
+          {
+            type: 'object',
+            description:
+              'Client type in company-admin context. Platform-managed types (super admin company) include canEdit and canDelete false.',
+            properties: {
+              canEdit: {
+                type: 'boolean',
+                description: 'True when the type was created by the current company (tenant may edit)',
+                example: true
+              },
+              canDelete: {
+                type: 'boolean',
+                description: 'True when the type was created by the current company (tenant may delete)',
+                example: false
+              }
+            },
+            required: ['canEdit', 'canDelete']
+          }
+        ]
+      },
+      ClientTypeCreateRequest: {
+        type: 'object',
+        required: ['clientType'],
+        properties: {
+          clientType: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Client type name',
+            example: 'SMB'
+          },
+          description: {
+            type: 'string',
+            description: 'Optional description',
+            example: 'Small and medium business'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the client type is active',
+            example: true
+          }
+        }
+      },
+      ClientTypeUpdateRequest: {
+        type: 'object',
+        properties: {
+          clientType: {
+            type: 'string',
+            minLength: 1,
+            maxLength: 255,
+            description: 'Client type name',
+            example: 'Mid-market'
+          },
+          description: {
+            type: 'string',
+            description: 'Optional description',
+            example: 'Updated description'
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Whether the client type is active',
+            example: false
+          }
+        }
+      },
       EmployeeJobTitleSummary: {
         type: 'object',
         nullable: true,

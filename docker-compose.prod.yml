@@ -1,0 +1,108 @@
+# JoorApp V2 — production stack (from repository root)
+# Usage: docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Prerequisites: create .env.production (see PRODUCTION_ENV.md). Run DB migrations once after Postgres is up.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: joorapp-postgres-prod
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./nodeBE/postgres_init/init-create-extra-dbs.sql:/docker-entrypoint-initdb.d/01-create-extra-dbs.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_internal
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.6
+    container_name: joorapp-keycloak-prod
+    command: ["start", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB_NAME}
+      KC_DB_USERNAME: ${DB_USER}
+      KC_DB_PASSWORD: ${DB_PASSWORD}
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: "8080"
+      # Reverse proxy (TLS terminates at Nginx / Caddy / load balancer on the host)
+      KC_PROXY: edge
+      KC_HOSTNAME: ${KC_HOSTNAME}
+      KC_HOSTNAME_STRICT: "true"
+    volumes:
+      - ./nodeBE/keycloak_data/realm-export.json:/opt/keycloak/data/import/realm.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Keycloak 25 image includes curl; if healthcheck fails, verify with: docker exec joorapp-keycloak-prod curl -sf http://127.0.0.1:8080/health/ready
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 15
+      start_period: 90s
+    networks:
+      - app_internal
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./nodeBE
+      dockerfile: Dockerfile
+    image: joorapp-backend:${IMAGE_TAG:-prod}
+    container_name: joorapp-backend-prod
+    env_file:
+      - .env.production
+    environment:
+      # Overrides host-oriented defaults from .env files
+      DB_HOST: postgres
+      DB_PORT: "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - app_internal
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_API_TIMEOUT: ${VITE_API_TIMEOUT:-10000}
+    image: joorapp-frontend:${IMAGE_TAG:-prod}
+    container_name: joorapp-frontend-prod
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    depends_on:
+      - backend
+    networks:
+      - app_internal
+      - web_public
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    name: joorapp-postgres-data-prod
+
+networks:
+  app_internal:
+    driver: bridge
+    name: joorapp-prod-internal
+  web_public:
+    driver: bridge
+    name: joorapp-prod-public

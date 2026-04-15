@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const envPath = path.resolve(__dirname, '.env');
 
-// Verify .env file exists and load it
+// Load .env when present; in Docker/K8s, variables are often injected without a file
 if (existsSync(envPath)) {
   const result = dotenv.config({ path: envPath, override: true });
   if (result.error) {
@@ -21,9 +21,9 @@ if (existsSync(envPath)) {
     process.exit(1);
   }
 } else {
-  console.error(`❌ Error: .env file not found at: ${envPath}`);
-  console.error('   Please create a .env file in the nodeBE directory');
-  process.exit(1);
+  console.warn(
+    `⚠️  No .env file at ${envPath} — using process environment only (e.g. Docker Compose env)`
+  );
 }
 
 import { createApp, registeredModules } from './src/app.js';

@@ -6,6 +6,7 @@
 
 import dotenv from 'dotenv';
 import path from 'path';
+import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Sequelize } from 'sequelize';
@@ -27,12 +28,18 @@ if (dbType === 'test') {
   envPath = path.resolve(__dirname, '../.env');
 }
 
-const result = dotenv.config({ path: envPath });
-
-if (result.error) {
-  console.error(`❌ Failed to load environment file: ${envPath}`);
-  console.error(result.error.message);
-  process.exit(1);
+if (existsSync(envPath)) {
+  const result = dotenv.config({ path: envPath });
+  if (result.error) {
+    console.error(`❌ Failed to load environment file: ${envPath}`);
+    console.error(result.error.message);
+    process.exit(1);
+  }
+} else {
+  console.warn(
+    `⚠️  No env file at ${envPath} — using process environment only (e.g. Docker)`
+  );
+  dotenv.config();
 }
 
 console.log(`\n📊 Database Migration Tool`);

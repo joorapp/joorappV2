@@ -47,6 +47,12 @@ import {
   updateSuperAdminProjectType,
   patchSuperAdminProjectTypeStatus,
   deleteSuperAdminProjectType,
+  createSuperAdminClientType,
+  listSuperAdminClientTypes,
+  getSuperAdminClientTypeById,
+  updateSuperAdminClientType,
+  patchSuperAdminClientTypeStatus,
+  deleteSuperAdminClientType,
   createSuperAdminProjectCategory,
   listSuperAdminProjectCategories,
   getSuperAdminProjectCategoryById,
@@ -1389,6 +1395,252 @@ router.patch('/project-types/:id/status', authMiddleware, asyncHandler(patchSupe
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.delete('/project-types/:id', authMiddleware, asyncHandler(deleteSuperAdminProjectType));
+
+// =====================================================
+// Client types (system company defaults)
+// =====================================================
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/client-types:
+ *   post:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Create client type (system company)
+ *     description: Creates a default client type owned by the super admin company. Requires SUPER_ADMIN.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ClientTypeCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Client type created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ClientType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post('/client-types', authMiddleware, asyncHandler(createSuperAdminClientType));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/client-types:
+ *   get:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: List client types (system company, paginated)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/PageQueryParam'
+ *       - $ref: '#/components/parameters/LimitQueryParam'
+ *       - $ref: '#/components/parameters/SearchQueryParam'
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - $ref: '#/components/parameters/SortByQueryParam'
+ *       - $ref: '#/components/parameters/SortOrderQueryParam'
+ *     responses:
+ *       200:
+ *         description: Client types retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/PaginatedResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ClientType'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/client-types', authMiddleware, asyncHandler(listSuperAdminClientTypes));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/client-types/{id}:
+ *   get:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Get client type by ID (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Client type retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ClientType'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get('/client-types/:id', authMiddleware, asyncHandler(getSuperAdminClientTypeById));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/client-types/{id}:
+ *   put:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Update client type (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ClientTypeUpdateRequest'
+ *     responses:
+ *       200:
+ *         description: Client type updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ClientType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.put('/client-types/:id', authMiddleware, asyncHandler(updateSuperAdminClientType));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/client-types/{id}/status:
+ *   patch:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Set client type active or inactive (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Client type status updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/ClientType'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch('/client-types/:id/status', authMiddleware, asyncHandler(patchSuperAdminClientTypeStatus));
+
+/**
+ * @swagger
+ * /api/v2/superAdmin/client-types/{id}:
+ *   delete:
+ *     tags:
+ *       - SuperAdmin
+ *     summary: Delete client type (system company)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/UuidPathParam'
+ *     responses:
+ *       200:
+ *         description: Client type deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: 'null'
+ *       401:
+ *         $ref: '#/components/responses/AuthenticationRequired'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete('/client-types/:id', authMiddleware, asyncHandler(deleteSuperAdminClientType));
 
 // =====================================================
 // Project categories (system company defaults)

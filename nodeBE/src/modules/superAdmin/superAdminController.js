@@ -19,6 +19,7 @@ import * as userService from '../../services/userService.js';
 import * as companyUserService from '../../services/companyUserService.js';
 import * as jobTitleService from '../../services/jobTitleService.js';
 import * as projectTypeService from '../../services/projectTypeService.js';
+import * as clientTypeService from '../../services/clientTypeService.js';
 import * as projectCategoryService from '../../services/projectCategoryService.js';
 import { getSuperAdminCompanyId } from '../../services/systemCompanyService.js';
 import { KEYCLOAK_GLOBAL_ROLE_VALUES } from '../../constants/keycloakRoles.js';
@@ -2642,6 +2643,226 @@ export const deleteSuperAdminProjectType = async (req, res) => {
   });
 
   res.status(200).json(successResponse('Project type deleted successfully', null, {}, req, startTime));
+};
+
+// =====================================================
+// Client types (system company defaults)
+// =====================================================
+
+/**
+ * Create client type owned by super admin company
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const createSuperAdminClientType = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  const { clientType, description, isActive } = req.body;
+  validateRequired({ clientType }, req.id);
+  validateString(clientType, 'clientType', { minLength: 1, maxLength: 255 }, req.id);
+  if (description !== undefined && description !== null) {
+    validateString(description, 'description', { required: false, maxLength: 5000 }, req.id);
+  }
+  let resolvedActive = true;
+  if (isActive !== undefined && isActive !== null) {
+    resolvedActive = validateBoolean(isActive, 'isActive', { required: true }, req.id);
+  }
+
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const created = await clientTypeService.createClientType(
+    { clientType, description, isActive: resolvedActive },
+    { userId: req.user.id, companyId }
+  );
+
+  logBusiness('Client type created (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    clientTypeId: created.id
+  });
+
+  res.status(201).json(successResponse('Client type created successfully', created, {}, req, startTime));
+};
+
+/**
+ * List client types for super admin company (paginated)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const listSuperAdminClientTypes = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  const { page, limit, offset } = buildPaginationQuery(req.query, { defaultLimit: 10, maxLimit: 100 }, req.id);
+  const isActive = req.query.isActive !== undefined ? req.query.isActive === 'true' : undefined;
+  const search = req.query.search ? String(req.query.search).trim() : undefined;
+  if (search) {
+    validateString(search, 'search', { minLength: 1, maxLength: 255 }, req.id);
+  }
+
+  const sortBy = req.query.sortBy || 'clientType';
+  const sortOrder = req.query.sortOrder || 'ASC';
+  const allowedSortFields = ['clientType', 'createdDate', 'isActive'];
+  const order = buildSortQuery(sortBy, sortOrder, allowedSortFields, {
+    defaultSort: 'clientType',
+    defaultOrder: 'ASC'
+  });
+
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const result = await clientTypeService.listClientTypesForCompany(
+    companyId,
+    { isActive, search },
+    { page, limit, offset },
+    order,
+    { requestId: req.id, workspace: 'superAdmin' }
+  );
+
+  res.status(200).json(
+    paginatedResponse(
+      'Client types retrieved successfully',
+      result.clientTypes,
+      { page, limit, total: result.total },
+      {},
+      req,
+      startTime
+    )
+  );
+};
+
+/**
+ * Get client type by id (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const getSuperAdminClientTypeById = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const row = await clientTypeService.getClientTypeByIdForCompany(req.params.id, companyId, {
+    requestId: req.id,
+    workspace: 'superAdmin'
+  });
+
+  res.status(200).json(successResponse('Client type retrieved successfully', row, {}, req, startTime));
+};
+
+/**
+ * Update client type (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const updateSuperAdminClientType = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+
+  const { clientType, description, isActive } = req.body;
+  const payload = {};
+  if (clientType !== undefined) {
+    validateString(clientType, 'clientType', { minLength: 1, maxLength: 255 }, req.id);
+    payload.clientType = clientType;
+  }
+  if (description !== undefined) {
+    validateString(description, 'description', { required: false, maxLength: 5000 }, req.id);
+    payload.description = description;
+  }
+  if (isActive !== undefined) {
+    payload.isActive = validateBoolean(isActive, 'isActive', { required: true }, req.id);
+  }
+
+  const updated = await clientTypeService.updateClientTypeForCompany(
+    req.params.id,
+    payload,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Client type updated (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    clientTypeId: updated.id
+  });
+
+  res.status(200).json(successResponse('Client type updated successfully', updated, {}, req, startTime));
+};
+
+/**
+ * PATCH active / inactive for client type (system company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const patchSuperAdminClientTypeStatus = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+  const isActive = validateBoolean(req.body.isActive, 'isActive', { required: true }, req.id);
+
+  const updated = await clientTypeService.setClientTypeActiveStatusForCompany(
+    req.params.id,
+    isActive,
+    { userId: req.user.id, requestId: req.id },
+    companyId
+  );
+
+  logBusiness('Client type status updated (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    clientTypeId: updated.id,
+    isActive
+  });
+
+  res.status(200).json(successResponse('Client type status updated successfully', updated, {}, req, startTime));
+};
+
+/**
+ * Delete client type (super admin company only)
+ * @param {Object} req
+ * @param {Object} res
+ */
+export const deleteSuperAdminClientType = async (req, res) => {
+  const startTime = Date.now();
+
+  if (!req.user || !isSuperAdmin(req.user.keycloakGlobalRole)) {
+    throw new ForbiddenError('Super admin access required', { requestId: req.id, userId: req.user?.id });
+  }
+
+  validateUUID(req.params.id, 'id', req.id);
+  const companyId = await getSuperAdminCompanyId({ requestId: req.id });
+
+  await clientTypeService.deleteClientTypeForCompany(req.params.id, { userId: req.user.id, requestId: req.id }, companyId);
+
+  logBusiness('Client type deleted (super admin company)', {
+    requestId: req.id,
+    userId: req.user.id,
+    companyId,
+    clientTypeId: req.params.id
+  });
+
+  res.status(200).json(successResponse('Client type deleted successfully', null, {}, req, startTime));
 };
 
 // =====================================================

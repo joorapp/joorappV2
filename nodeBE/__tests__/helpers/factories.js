@@ -138,6 +138,20 @@ export const createProjectCategoryData = (overrides = {}) => {
 };
 
 /**
+ * Create ClientType test data
+ * @param {Object} overrides
+ * @returns {Object}
+ */
+export const createClientTypeData = (overrides = {}) => {
+  return {
+    clientType: generateUniqueName('Client Type'),
+    description: 'Test client type description',
+    isActive: true,
+    ...overrides
+  };
+};
+
+/**
  * Create Employee test data (for Employee.create with audit context)
  * @param {string} jobTitleId - Required FK to job_titles
  * @param {Object} overrides
