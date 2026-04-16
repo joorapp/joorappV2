@@ -349,12 +349,6 @@ const EmployeeLists = () => {
     }
   };
 
-  // Delete employee handler
-  const handleDelete = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setDeleteModalOpen(true);
-  };
-
   // Confirm delete
   const confirmDelete = async () => {
     if (selectedEmployee) {

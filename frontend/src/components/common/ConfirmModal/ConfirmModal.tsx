@@ -4,7 +4,7 @@
  * This is a reusable confirmation modal component that can be used across the application
  */
 
-import { Modal, ModalBody, ModalFooter, Button } from 'reactstrap';
+import { Modal, ModalBody, Button } from 'reactstrap';
 import { useTranslation } from 'react-i18next';
 
 interface ConfirmModalProps {

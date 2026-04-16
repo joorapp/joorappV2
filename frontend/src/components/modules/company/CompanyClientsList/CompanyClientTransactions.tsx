@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Badge, Button, Card, CardBody, Dropdown, DropdownItem, DropdownMenu, DropdownToggle, Input, InputGroup, Label, Table } from 'reactstrap';
-import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
+import { Badge, Card, CardBody, Table } from 'reactstrap';
 import Pagination from '../../../common/Pagination/Pagination';
 import './CompanyClientsList.scss';
 
@@ -88,7 +87,6 @@ const formatAedAmount = (amount: number) =>
 
 const CompanyClientTransactions = (props: Props) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
   const location = useLocation();
 
@@ -101,10 +99,9 @@ const CompanyClientTransactions = (props: Props) => {
     return effectiveClient;
   }, [clientId, effectiveClient]);
 
-  const [paymentSearchTerm, setPaymentSearchTerm] = useState('');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState<'ALL' | PaymentStatus>('ALL');
+  const [paymentSearchTerm] = useState('');
+  const paymentStatusFilter: 'ALL' | PaymentStatus = 'ALL';
   const [paymentCurrentPage, setPaymentCurrentPage] = useState(1);
-  const [paymentFilterDropdownOpen, setPaymentFilterDropdownOpen] = useState(false);
 
   const [loadingPayments] = useState(false);
 
@@ -114,12 +111,6 @@ const CompanyClientTransactions = (props: Props) => {
     if (Number.isNaN(date.getTime())) return '—';
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
-
-  const formatPaymentAmountBadge = (amount: number) => (
-    <Badge color="primary" className="d-inline-flex align-items-center justify-content-center">
-      {formatAedAmount(amount)}
-    </Badge>
-  );
 
   const getPaymentStatusBadge = (status: PaymentStatus) => {
     switch (status) {
@@ -161,11 +152,6 @@ const CompanyClientTransactions = (props: Props) => {
     const start = (paymentCurrentPage - 1) * ITEMS_PER_PAGE;
     return paymentsForClient.slice(start, start + ITEMS_PER_PAGE);
   }, [paymentsForClient, paymentCurrentPage]);
-
-  const handlePaymentStatusChange = (value: 'ALL' | PaymentStatus) => {
-    setPaymentStatusFilter(value);
-    setPaymentCurrentPage(1);
-  };
 
   const handlePaymentPageChange = (page: number) => {
     setPaymentCurrentPage(page);
