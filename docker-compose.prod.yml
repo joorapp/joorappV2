@@ -62,6 +62,8 @@ services:
       dockerfile: Dockerfile
     image: joorapp-backend:${IMAGE_TAG:-prod}
     container_name: joorapp-backend-prod
+    ports:
+      - "${PORT}:3030"
     env_file:
       - .env.production
     environment:
@@ -87,7 +89,7 @@ services:
     image: joorapp-frontend:${IMAGE_TAG:-prod}
     container_name: joorapp-frontend-prod
     ports:
-      - "${HTTP_PORT:-80}:80"
+      - "${HTTP_PORT}:80"
     depends_on:
       - backend
     networks:
