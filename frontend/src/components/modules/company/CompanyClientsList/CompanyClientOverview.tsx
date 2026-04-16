@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Card, CardBody, Dropdown, DropdownItem, DropdownMenu, DropdownToggle, Label, Table, Button } from 'reactstrap';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
 import './CompanyClientsList.scss';
@@ -44,7 +44,6 @@ const INCOME_CHART_Y_LABELS = ['5K', '4K', '3K', '2K', '1K', '0'] as const;
 const CompanyClientOverview = (props: Props) => {
   const { displayClient: displayClientProp } = props;
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
   const location = useLocation();
 

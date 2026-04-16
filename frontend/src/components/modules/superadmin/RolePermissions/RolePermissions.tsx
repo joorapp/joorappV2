@@ -54,7 +54,6 @@ const RolePermissions = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [rolePermissions, setRolePermissions] = useState<RolePermission[]>([]);
-  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [createPermissionModalOpen, setCreatePermissionModalOpen] = useState(false);
   const [newPermission, setNewPermission] = useState({

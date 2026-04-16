@@ -19,7 +19,6 @@ import SuperAdminDashboard, {
   Profile,
   NotificationList,
 } from './SuperAdminDashboard/SuperAdminDashboard';
-import UserList from './UserList/UserList';
 import SettingsProjectTypes from './Setting/SettingsProjectTypes';
 import SettingsProjectCategories from './Setting/SettingsProjectCategories';
 import SettingsJobTitles from './Setting/SettingsJobTitles';
