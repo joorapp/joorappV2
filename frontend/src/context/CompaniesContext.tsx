@@ -69,7 +69,7 @@ export const CompaniesProvider = ({ children }: CompaniesProviderProps) => {
     return [];
   });
   
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   // Sync to localStorage whenever companies change
   useEffect(() => {

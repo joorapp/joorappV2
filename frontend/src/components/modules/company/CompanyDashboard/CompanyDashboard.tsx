@@ -6,7 +6,6 @@ import profileImg from '../../../../assets/images/profile-img.png';
 import clientLogo from '../../../../assets/images/client_logo.png';
 import CompanyHeader from '../CompanyHeader/CompanyHeader';
 import CompanySidebar from '../CompanySidebar/CompanySidebar';
-import CompanyFooter from '../CompanyFooter/CompanyFooter';
 import Breadcrumbs from '../../../common/Breadcrumbs/Breadcrumbs';
 import StackedColumnChart from '../../../common/StackedColumnChart/StackedColumnChart';
 import ApexRadial from '../../../common/ApexRadial/ApexRadial';

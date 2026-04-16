@@ -47,11 +47,11 @@ services:
         condition: service_healthy
     # Keycloak 25 image includes curl; if healthcheck fails, verify with: docker exec joorapp-keycloak-prod curl -sf http://127.0.0.1:8080/health/ready
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health/ready"]
-      interval: 30s
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 && echo -e \"GET /health/live HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && cat <&3 | grep -q \"200 OK\""]
+      interval: 20s
       timeout: 10s
-      retries: 15
-      start_period: 90s
+      retries: 5
+      start_period: 180s # This gives Keycloak 3 mins to finish migrations before Docker starts judging it
     networks:
       - app_internal
     restart: unless-stopped

@@ -45,6 +45,9 @@ const API_ROUTES = {
   COMPANY: {
     GET_COMPANY_PROFILE: API_PATH + "/companies/<companyId>",
     UPDATE_COMPANY_PROFILE: API_PATH + "/companies/<companyId>",
+    GET_CLIENT_PAYMENTS:
+      API_PATH +
+      "/companies/<companyId>/client-payments?page=<page>&limit=<limit>&status=<status>&search=<search>",
   },
   COMPANYADMIN: {
    CREATE_CLIENT: API_PATH + "/admin/clients",
