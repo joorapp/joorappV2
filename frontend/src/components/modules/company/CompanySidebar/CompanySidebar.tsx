@@ -4,8 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import SimpleBar from 'simplebar-react';
 import MetisMenu from 'metismenujs';
-import { useAuth } from '../../../../context/AuthContext';
-import { useCompanies } from '../../../../context/CompaniesContext';
 import logo from '../../../../assets/images/Icon.png';
 import logoDark from '../../../../assets/images/Logo.png';
 import logoLightSvg from '../../../../assets/images/Icon.png';
@@ -21,13 +19,6 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
   const location = useLocation();
   const ref = useRef<any>(null);
   const metisMenuRef = useRef<MetisMenu | null>(null);
-  const { logout } = useAuth();
-  const { clearCompanies } = useCompanies();
-
-  const handleLogout = () => {
-    clearCompanies();
-    logout();
-  };
 
   const activateParentDropdown = useCallback((item: HTMLElement) => {
     item.classList.add('active');
