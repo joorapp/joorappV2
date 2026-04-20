@@ -12,7 +12,7 @@ alwaysApply: true
 - Use `@keycloak/keycloak-admin-client` for admin operations
 - All Keycloak API calls must be logged using Winston
 - Handle Keycloak errors gracefully with proper error messages
-- Available functions: `getPublicKey()`, `verifyToken()`, `getUserFromToken()`, `getAdminClient()`, `loginUser()`, `refreshToken()`, `logoutUser()`
+- Available functions: `getPublicKey()`, `verifyToken()`, `getUserFromToken()`, `getAdminClient()`, `executeAdminTask()` (preferred for Admin REST calls — 401 retry + re-auth), `loginUser()`, `refreshToken()`, `logoutUser()`
 
 ## Keycloak Configuration
 
@@ -66,6 +66,7 @@ await kcAdminClient.auth({
 ## User Management
 
 - All user creation/updates should sync with Keycloak
+- Use `executeAdminTask(async (kcAdminClient) => { ... })` for admin REST calls (not bare `getAdminClient()`), so 401 from idle/revoked sessions triggers one re-auth retry
 - Use Keycloak admin client for user operations
 - Log all user management operations
 - Handle Keycloak API errors appropriately

@@ -24,7 +24,7 @@ jest.unstable_mockModule('../../repositories/userRepository.js', () => ({
 
 // Mock Keycloak service
 jest.unstable_mockModule('../keycloakService.js', () => ({
-  getAdminClient: jest.fn()
+  executeAdminTask: jest.fn()
 }));
 
 // Mock User model (used in createUserInDB and updateUserInDB)
@@ -82,7 +82,7 @@ describe('User Service', () => {
       lastName: mockUser.lastName
     });
     mockKeycloakAdminClient = createMockKeycloakAdminClient();
-    keycloakService.getAdminClient.mockResolvedValue(mockKeycloakAdminClient);
+    keycloakService.executeAdminTask.mockImplementation(async (task) => task(mockKeycloakAdminClient));
   });
 
   describe('getUserById', () => {
@@ -248,7 +248,7 @@ describe('User Service', () => {
       const result = await userService.checkUserExistsInKeycloak('user@example.com');
 
       // Assert
-      expect(keycloakService.getAdminClient).toHaveBeenCalled();
+      expect(keycloakService.executeAdminTask).toHaveBeenCalled();
       expect(mockKeycloakAdminClient.users.find).toHaveBeenCalledWith({
         email: 'user@example.com',
         exact: true

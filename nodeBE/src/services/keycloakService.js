@@ -48,8 +48,8 @@ let kcAdminClient = null;
 /** Wall-clock ms when the current admin access token expires (from JWT `exp`). */
 let adminTokenExpiryTimeMs = null;
 
-/** Proactive refresh: re-auth this many seconds before Keycloak expires the access token. */
-const ADMIN_TOKEN_REFRESH_BUFFER_MS = 30_000;
+/** Proactive refresh: re-auth this many ms before Keycloak expires the access token (clock drift safety net). */
+const ADMIN_TOKEN_REFRESH_BUFFER_MS = 60_000;
 
 /** In-flight admin auth promise so concurrent callers share one `auth()` (single-flight). */
 let adminAuthInFlight = null;
@@ -389,6 +389,71 @@ export const getAdminClient = async () => {
     logError('Failed to get Keycloak admin client', error);
     throw error;
   }
+};
+
+/**
+ * True if an error from Keycloak Admin HTTP layer represents 401 Unauthorized.
+ * Supports Axios-shaped errors from `@keycloak/keycloak-admin-client`.
+ *
+ * @param {unknown} error - Caught error
+ * @returns {boolean}
+ */
+const isAdminApiUnauthorized = (error) => {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const status = error.response?.status ?? error.responseStatus;
+  return status === 401;
+};
+
+/**
+ * Run a callback with an authenticated Keycloak admin client.
+ * On 401 (e.g. server-side session idle while JWT `exp` still valid), clears the cached client,
+ * re-authenticates with `client_credentials`, and retries the callback exactly once.
+ *
+ * @param {(client: import('@keycloak/keycloak-admin-client').default) => Promise<*>} task - Admin API work
+ * @returns {Promise<*>} Result of `task`
+ * @throws {Error} Propagates non-401 errors, or the last error if retry also fails
+ */
+export const executeAdminTask = async (task) => {
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const client = await initializeAdminClient();
+    try {
+      const result = await task(client);
+      if (attempt === 1) {
+        logger.info(
+          'Keycloak admin operation succeeded after re-authentication (401 retry path).',
+          {
+            event: 'KEYCLOAK_ADMIN_401_RETRY_SUCCESS',
+            attempt: 2
+          }
+        );
+      }
+      return result;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0 && isAdminApiUnauthorized(error)) {
+        logger.warn(
+          '401 detected (likely session timeout). Clearing client and re-authenticating...',
+          {
+            event: 'KEYCLOAK_ADMIN_401_RETRY',
+            willRetryOnce: true,
+            httpStatus: error.response?.status ?? error.responseStatus
+          }
+        );
+        logger.warn('KEYCLOAK_ADMIN_401_RETRY: retrying the same admin operation once after fresh client_credentials auth.', {
+          event: 'KEYCLOAK_ADMIN_401_RETRY',
+          phase: 'reauth_before_retry'
+        });
+        kcAdminClient = null;
+        adminTokenExpiryTimeMs = null;
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError;
 };
 
 /**
