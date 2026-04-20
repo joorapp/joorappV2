@@ -38,7 +38,7 @@ if (existsSync(envPath)) {
 }
 
 import { initializeDatabase, closeDatabase } from '../src/config/database.js';
-import { getAdminClient } from '../src/services/keycloakService.js';
+import { executeAdminTask } from '../src/services/keycloakService.js';
 import { createModuleLogger, logInfo, logError, logWarn } from '../src/utils/logger.js';
 import { SUPER_ADMIN_COMPANY_NAME,SUPER_ADMIN_COMPANY_DESCRIPTION, SUPER_ADMIN_DEFAULT_ROLE_NAME, SUPER_ADMIN_DEFAULT_ROLE_CODE } from '../src/constants/superAdmin.js';
 
@@ -493,8 +493,6 @@ const createCompanyUserLink = async (superAdminUser, joorAppCompany, companyAdmi
  * @returns {Promise<void>}
  */
 const configureFirstSuperAdmin = async () => {
-  let kcAdminClient = null;
-
   try {
     logger.info('🚀 Starting first super admin configuration...\n');
 
@@ -509,14 +507,13 @@ const configureFirstSuperAdmin = async () => {
     initializeModels();
     logger.info('✅ Models initialized');
 
-    // Step 3: Get Keycloak admin client (using service account)
+    // Step 3–4: Service-account auth + create/verify Keycloak user (401 self-heal via executeAdminTask)
     logger.info('Step 3: Authenticating Keycloak admin client...');
-    kcAdminClient = await getAdminClient();
-    logger.info('✅ Keycloak admin client authenticated\n');
-
-    // Step 4: Create Keycloak user
-    logger.info('Step 4: Creating Keycloak user...');
-    const keycloakUser = await createKeycloakUser(kcAdminClient);
+    const keycloakUser = await executeAdminTask(async (kcAdminClient) => {
+      logger.info('✅ Keycloak admin client authenticated\n');
+      logger.info('Step 4: Creating Keycloak user...');
+      return await createKeycloakUser(kcAdminClient);
+    });
     logger.info(`✅ Keycloak user: ${keycloakUser.email} (ID: ${keycloakUser.id})\n`);
 
     // Step 5: Create database user

@@ -32,7 +32,7 @@ if (existsSync(envPath)) {
 }
 
 import { initializeDatabase } from '../src/config/database.js';
-import { getAdminClient } from '../src/services/keycloakService.js';
+import { executeAdminTask } from '../src/services/keycloakService.js';
 import { logInfo, logError, logWarn } from '../src/utils/logger.js';
 
 // Note: createUserInDB will be imported dynamically after database is initialized
@@ -64,12 +64,12 @@ const TEST_USERS = [
 
 /**
  * Create or update test user in Keycloak and database
- * @param {Object} kcAdminClient - Keycloak admin client
  * @param {Object} userConfig - User configuration
  * @returns {Promise<Object>} Created or updated user object with database info
  */
-const createTestUser = async (kcAdminClient, userConfig) => {
+const createTestUser = async (userConfig) => {
   try {
+    return await executeAdminTask(async (kcAdminClient) => {
     logInfo(`Checking if test user exists: ${userConfig.email}`);
 
     // Check if user already exists in Keycloak
@@ -224,6 +224,7 @@ const createTestUser = async (kcAdminClient, userConfig) => {
       // Return Keycloak user even if DB creation fails
       return { keycloakUser, dbUser: null };
     }
+    });
   } catch (error) {
     logError(`Failed to create/update test user: ${userConfig.email}`, error);
     throw error;
@@ -242,16 +243,16 @@ const setupTestUsers = async () => {
     await initializeDatabase();
     logInfo('✅ Database initialized');
     
-    // Get Keycloak admin client
-    const kcAdminClient = await getAdminClient();
-    logInfo('✅ Keycloak admin client connected');
+    await executeAdminTask(async () => {
+      logInfo('✅ Keycloak admin client authenticated (service account)');
+    });
     logInfo('');
     
     // Create all test users
     const results = [];
     for (const userConfig of TEST_USERS) {
       try {
-        const { keycloakUser, dbUser } = await createTestUser(kcAdminClient, userConfig);
+        const { keycloakUser, dbUser } = await createTestUser(userConfig);
         results.push({ 
           success: true, 
           email: userConfig.email, 
