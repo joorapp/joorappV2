@@ -42,48 +42,115 @@ let publicKeyCache = {
   ttl: 60 * 60 * 1000 // 1 hour in milliseconds
 };
 
-// Keycloak admin client instance
+// Keycloak admin client instance (client_credentials; access token has finite lifetime)
 let kcAdminClient = null;
 
+/** Wall-clock ms when the current admin access token expires (from JWT `exp`). */
+let adminTokenExpiryTimeMs = null;
+
+/** Proactive refresh: re-auth this many seconds before Keycloak expires the access token. */
+const ADMIN_TOKEN_REFRESH_BUFFER_MS = 30_000;
+
+/** In-flight admin auth promise so concurrent callers share one `auth()` (single-flight). */
+let adminAuthInFlight = null;
+
 /**
- * Initialize Keycloak admin client
+ * Derive absolute expiry time from the admin access token JWT (`exp` claim).
+ * Matches Keycloak's `expires_in` semantics; `auth()` does not expose `expires_in` to callers.
+ *
+ * @param {string|undefined} accessToken - Bearer access token from Keycloak
+ * @returns {number | null} Expiry as epoch milliseconds, or null if not decodable
+ */
+const getAdminTokenExpiryTimeMs = (accessToken) => {
+  if (!accessToken) {
+    return null;
+  }
+  const decoded = jwt.decode(accessToken);
+  if (!decoded || typeof decoded.exp !== 'number') {
+    return null;
+  }
+  return decoded.exp * 1000;
+};
+
+/**
+ * True if cached client should still be used (token exists and is not within refresh buffer of expiry).
+ *
+ * @returns {boolean}
+ */
+const isAdminClientTokenFresh = () => {
+  if (!kcAdminClient || adminTokenExpiryTimeMs == null) {
+    return false;
+  }
+  return Date.now() < adminTokenExpiryTimeMs - ADMIN_TOKEN_REFRESH_BUFFER_MS;
+};
+
+/**
+ * Run client_credentials auth, set `kcAdminClient` + `adminTokenExpiryTimeMs` together (single update site).
+ *
+ * @returns {Promise<KcAdminClient>} Authenticated admin client
+ */
+const authenticateAdminClientOnce = async () => {
+  const config = validateAndGetConfig();
+
+  const client = new KcAdminClient({
+    baseUrl: config.KEYCLOAK_URL,
+    realmName: config.KEYCLOAK_REALM
+  });
+
+  await client.auth({
+    grantType: 'client_credentials',
+    clientId: config.KEYCLOAK_CLIENT_ID,
+    clientSecret: config.KEYCLOAK_CLIENT_SECRET
+  });
+
+  let expiryMs = getAdminTokenExpiryTimeMs(client.accessToken);
+
+  if (expiryMs == null) {
+    logger.warn(
+      'Admin access token missing exp claim; using 60s fallback — verify Keycloak client_credentials tokens'
+    );
+    expiryMs = Date.now() + 60_000;
+  }
+
+  kcAdminClient = client;
+  adminTokenExpiryTimeMs = expiryMs;
+
+  logger.info('Keycloak admin client authenticated successfully', {
+    tokenExpiresAt: new Date(adminTokenExpiryTimeMs).toISOString(),
+    refreshBufferSeconds: ADMIN_TOKEN_REFRESH_BUFFER_MS / 1000
+  });
+
+  return kcAdminClient;
+};
+
+/**
+ * Initialize Keycloak admin client with proactive token refresh and single-flight re-auth.
+ *
  * @returns {Promise<KcAdminClient>} Authenticated admin client
  */
 const initializeAdminClient = async () => {
-  // If client exists and is authenticated, return it
-  if (kcAdminClient) {
-    // Verify the client is still authenticated by checking if token exists
-    // If not, we'll re-authenticate
-    try {
-      return kcAdminClient;
-    } catch (error) {
-      // If client exists but is not authenticated, reset it
-      kcAdminClient = null;
-    }
-  }
-
-  try {
-    const config = validateAndGetConfig();
-    
-    kcAdminClient = new KcAdminClient({
-      baseUrl: config.KEYCLOAK_URL,
-      realmName: config.KEYCLOAK_REALM
-    });
-
-    await kcAdminClient.auth({
-      grantType: 'client_credentials',
-      clientId: config.KEYCLOAK_CLIENT_ID,
-      clientSecret: config.KEYCLOAK_CLIENT_SECRET
-    });
-
-    logger.info('Keycloak admin client authenticated successfully');
+  if (isAdminClientTokenFresh()) {
     return kcAdminClient;
-  } catch (error) {
-    logError('Failed to authenticate Keycloak admin client', error);
-    // Reset client on failure so next attempt will retry
-    kcAdminClient = null;
-    throw new Error(`Keycloak admin client authentication failed: ${error.message}`);
   }
+
+  if (adminAuthInFlight) {
+    return adminAuthInFlight;
+  }
+
+  adminAuthInFlight = (async () => {
+    try {
+      return await authenticateAdminClientOnce();
+    } catch (error) {
+      logError('Failed to authenticate Keycloak admin client', error);
+      kcAdminClient = null;
+      adminTokenExpiryTimeMs = null;
+      throw new Error(`Keycloak admin client authentication failed: ${error.message}`);
+    } finally {
+      adminAuthInFlight = null;
+    }
+  })();
+
+  return adminAuthInFlight;
 };
 
 /**

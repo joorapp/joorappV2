@@ -1,4 +1,4 @@
-# JoorApp V2 — production stack (from repository root)
+# JoorApp V2  ^`^t production stack (from repository root)
 # Usage: docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 #
 # Prerequisites: create .env.production (see PRODUCTION_ENV.md). Run DB migrations once after Postgres is up.
@@ -27,6 +27,8 @@ services:
     image: quay.io/keycloak/keycloak:25.0.6
     container_name: joorapp-keycloak-prod
     command: ["start", "--import-realm"]
+    ports:
+      - "127.0.0.1:8080:8080"
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
@@ -37,9 +39,12 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_HTTP_PORT: "8080"
       # Reverse proxy (TLS terminates at Nginx / Caddy / load balancer on the host)
-      KC_PROXY: edge
+      #KC_PROXY: edge
       KC_HOSTNAME: ${KC_HOSTNAME}
       KC_HOSTNAME_STRICT: "true"
+      KC_HOSTNAME_STRICT_HTTPS: "true"
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_PROXY_HEADERS: xforwarded # Tells Keycloak it's behind Nginx
     volumes:
       - ./nodeBE/keycloak_data/realm-export.json:/opt/keycloak/data/import/realm.json:ro
     depends_on:
@@ -57,12 +62,15 @@ services:
     container_name: joorapp-backend-prod
     ports:
       - "${PORT}:3030"
+#    volumes:
+ #     - /home/joorappadmin/joorapp-prod/.env.production:/app/.env:ro
     env_file:
       - .env.production
     environment:
       # Overrides host-oriented defaults from .env files
       DB_HOST: postgres
       DB_PORT: "5432"
+  #  command: ["sh", "-c", "sleep 10000"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,6 +78,9 @@ services:
         condition: service_started
     networks:
       - app_internal
+    extra_hosts:
+      - "www.joorapp.com:host-gateway"
+      - "joorapp.com:host-gateway"
     restart: unless-stopped
 
   frontend:
