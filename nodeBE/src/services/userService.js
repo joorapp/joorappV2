@@ -7,7 +7,7 @@
 
 import { createModuleLogger } from '../utils/logger.js';
 import { userRepository } from '../repositories/userRepository.js';
-import { getAdminClient } from './keycloakService.js';
+import { executeAdminTask } from './keycloakService.js';
 import { ConflictError, NotFoundError, BadRequestError } from '../utils/errors.js';
 import { buildPaginationQuery, buildSortQuery } from '../utils/businessHelpers.js';
 import { KEYCLOAK_GLOBAL_ROLE_VALUES } from '../constants/keycloakRoles.js';
@@ -143,18 +143,19 @@ export const listUsers = async (filters = {}, pagination = {}, sort = []) => {
  */
 export const checkUserExistsInKeycloak = async (email) => {
   logger.debug('Checking if user exists in Keycloak', { email });
-  
-  const kcAdminClient = await getAdminClient();
-  const keycloakUsers = await kcAdminClient.users.find({
-    email: email,
-    exact: true
+
+  return executeAdminTask(async (kcAdminClient) => {
+    const keycloakUsers = await kcAdminClient.users.find({
+      email: email,
+      exact: true
+    });
+
+    if (keycloakUsers && keycloakUsers.length > 0) {
+      return keycloakUsers[0];
+    }
+
+    return null;
   });
-  
-  if (keycloakUsers && keycloakUsers.length > 0) {
-    return keycloakUsers[0];
-  }
-  
-  return null;
 };
 
 /**
@@ -178,59 +179,59 @@ export const checkUserExistsInKeycloak = async (email) => {
  */
 export const createUserInKeycloak = async (userData) => {
   const { email, password, firstName, lastName, keycloakGlobalRole } = userData;
-  
+
   logger.debug('Creating user in Keycloak', { email });
-  
-  const kcAdminClient = await getAdminClient();
-  
-  // Create user
-  const newKeycloakUser = await kcAdminClient.users.create({
-    email: email,
-    firstName: firstName || '',
-    lastName: lastName || '',
-    enabled: true,
-    emailVerified: false,
-    username: email
-  });
-  
-  logger.info('User created in Keycloak', { keycloakId: newKeycloakUser.id, email });
-  
-  // Set password
-  await kcAdminClient.users.resetPassword({
-    id: newKeycloakUser.id,
-    credential: {
-      temporary: false,
-      type: 'password',
-      value: password
-    }
-  });
-  
-  logger.debug('Password set in Keycloak', { keycloakId: newKeycloakUser.id });
-  
-  // Assign global role if specified
-  if (keycloakGlobalRole) {
-    try {
-      const role = await kcAdminClient.roles.findOneByName({
-        name: keycloakGlobalRole
-      });
-      
-      if (role) {
-        await kcAdminClient.users.addRealmRoleMappings({
-          id: newKeycloakUser.id,
-          roles: [role]
-        });
-        logger.info('Global role assigned in Keycloak', { keycloakId: newKeycloakUser.id, role: keycloakGlobalRole });
+
+  return executeAdminTask(async (kcAdminClient) => {
+    // Create user
+    const newKeycloakUser = await kcAdminClient.users.create({
+      email: email,
+      firstName: firstName || '',
+      lastName: lastName || '',
+      enabled: true,
+      emailVerified: false,
+      username: email
+    });
+
+    logger.info('User created in Keycloak', { keycloakId: newKeycloakUser.id, email });
+
+    // Set password
+    await kcAdminClient.users.resetPassword({
+      id: newKeycloakUser.id,
+      credential: {
+        temporary: false,
+        type: 'password',
+        value: password
       }
-    } catch (roleError) {
-      logger.warn('Failed to assign role in Keycloak (continuing)', {
-        keycloakId: newKeycloakUser.id,
-        role: keycloakGlobalRole,
-        error: roleError.message
-      });
+    });
+
+    logger.debug('Password set in Keycloak', { keycloakId: newKeycloakUser.id });
+
+    // Assign global role if specified
+    if (keycloakGlobalRole) {
+      try {
+        const role = await kcAdminClient.roles.findOneByName({
+          name: keycloakGlobalRole
+        });
+
+        if (role) {
+          await kcAdminClient.users.addRealmRoleMappings({
+            id: newKeycloakUser.id,
+            roles: [role]
+          });
+          logger.info('Global role assigned in Keycloak', { keycloakId: newKeycloakUser.id, role: keycloakGlobalRole });
+        }
+      } catch (roleError) {
+        logger.warn('Failed to assign role in Keycloak (continuing)', {
+          keycloakId: newKeycloakUser.id,
+          role: keycloakGlobalRole,
+          error: roleError.message
+        });
+      }
     }
-  }
-  
-  return newKeycloakUser;
+
+    return newKeycloakUser;
+  });
 };
 
 /**
@@ -309,68 +310,68 @@ export const createUserInDB = async (userData, context) => {
  */
 export const updateUserInKeycloak = async (keycloakId, userData) => {
   const { email, firstName, lastName, isActive, password, keycloakGlobalRole, currentRole } = userData;
-  
+
   logger.debug('Updating user in Keycloak', { keycloakId });
-  
-  const kcAdminClient = await getAdminClient();
-  
-  // Update basic fields
-  const keycloakUpdate = {};
-  if (email !== undefined) keycloakUpdate.email = email;
-  if (firstName !== undefined) keycloakUpdate.firstName = firstName;
-  if (lastName !== undefined) keycloakUpdate.lastName = lastName;
-  if (isActive !== undefined) keycloakUpdate.enabled = isActive;
-  
-  if (Object.keys(keycloakUpdate).length > 0) {
-    await kcAdminClient.users.update({ id: keycloakId }, keycloakUpdate);
-    logger.info('User updated in Keycloak', { keycloakId, updates: Object.keys(keycloakUpdate) });
-  }
-  
-  // Update password if provided
-  if (password) {
-    await kcAdminClient.users.resetPassword({
-      id: keycloakId,
-      credential: {
-        temporary: false,
-        type: 'password',
-        value: password
-      }
-    });
-    logger.info('User password updated in Keycloak', { keycloakId });
-  }
-  
-  // Update global role if provided
-  if (keycloakGlobalRole && keycloakGlobalRole !== currentRole) {
-    try {
-      // Get current roles
-      const currentRoles = await kcAdminClient.users.listRealmRoleMappings({ id: keycloakId });
-      
-      // Remove old role if exists
-      const oldRole = currentRoles.find(r => KEYCLOAK_GLOBAL_ROLE_VALUES.includes(r.name));
-      if (oldRole) {
-        await kcAdminClient.users.delRealmRoleMappings({
-          id: keycloakId,
-          roles: [oldRole]
-        });
-      }
-      
-      // Add new role
-      const newRole = await kcAdminClient.roles.findOneByName({ name: keycloakGlobalRole });
-      if (newRole) {
-        await kcAdminClient.users.addRealmRoleMappings({
-          id: keycloakId,
-          roles: [newRole]
-        });
-        logger.info('User global role updated in Keycloak', { keycloakId, oldRole: currentRole, newRole: keycloakGlobalRole });
-      }
-    } catch (roleError) {
-      logger.warn('Failed to update role in Keycloak (continuing)', {
-        keycloakId,
-        role: keycloakGlobalRole,
-        error: roleError.message
-      });
+
+  await executeAdminTask(async (kcAdminClient) => {
+    // Update basic fields
+    const keycloakUpdate = {};
+    if (email !== undefined) keycloakUpdate.email = email;
+    if (firstName !== undefined) keycloakUpdate.firstName = firstName;
+    if (lastName !== undefined) keycloakUpdate.lastName = lastName;
+    if (isActive !== undefined) keycloakUpdate.enabled = isActive;
+
+    if (Object.keys(keycloakUpdate).length > 0) {
+      await kcAdminClient.users.update({ id: keycloakId }, keycloakUpdate);
+      logger.info('User updated in Keycloak', { keycloakId, updates: Object.keys(keycloakUpdate) });
     }
-  }
+
+    // Update password if provided
+    if (password) {
+      await kcAdminClient.users.resetPassword({
+        id: keycloakId,
+        credential: {
+          temporary: false,
+          type: 'password',
+          value: password
+        }
+      });
+      logger.info('User password updated in Keycloak', { keycloakId });
+    }
+
+    // Update global role if provided
+    if (keycloakGlobalRole && keycloakGlobalRole !== currentRole) {
+      try {
+        // Get current roles
+        const currentRoles = await kcAdminClient.users.listRealmRoleMappings({ id: keycloakId });
+
+        // Remove old role if exists
+        const oldRole = currentRoles.find(r => KEYCLOAK_GLOBAL_ROLE_VALUES.includes(r.name));
+        if (oldRole) {
+          await kcAdminClient.users.delRealmRoleMappings({
+            id: keycloakId,
+            roles: [oldRole]
+          });
+        }
+
+        // Add new role
+        const newRole = await kcAdminClient.roles.findOneByName({ name: keycloakGlobalRole });
+        if (newRole) {
+          await kcAdminClient.users.addRealmRoleMappings({
+            id: keycloakId,
+            roles: [newRole]
+          });
+          logger.info('User global role updated in Keycloak', { keycloakId, oldRole: currentRole, newRole: keycloakGlobalRole });
+        }
+      } catch (roleError) {
+        logger.warn('Failed to update role in Keycloak (continuing)', {
+          keycloakId,
+          role: keycloakGlobalRole,
+          error: roleError.message
+        });
+      }
+    }
+  });
 };
 
 /**
@@ -436,12 +437,12 @@ export const updateUserInDB = async (userId, userData, context) => {
  */
 export const deleteUserFromKeycloak = async (keycloakId) => {
   logger.debug('Deleting user from Keycloak', { keycloakId });
-  
-  const kcAdminClient = await getAdminClient();
-  
-  // Disable user in Keycloak (soft delete)
-  await kcAdminClient.users.update({ id: keycloakId }, { enabled: false });
-  
+
+  await executeAdminTask(async (kcAdminClient) => {
+    // Disable user in Keycloak (soft delete)
+    await kcAdminClient.users.update({ id: keycloakId }, { enabled: false });
+  });
+
   logger.info('User disabled in Keycloak', { keycloakId });
 };
 
@@ -476,12 +477,12 @@ export const deleteUserFromDB = async (userId, context) => {
  */
 export const enableUserInKeycloak = async (keycloakId) => {
   logger.debug('Enabling user in Keycloak', { keycloakId });
-  
-  const kcAdminClient = await getAdminClient();
-  
-  // Enable user in Keycloak
-  await kcAdminClient.users.update({ id: keycloakId }, { enabled: true });
-  
+
+  await executeAdminTask(async (kcAdminClient) => {
+    // Enable user in Keycloak
+    await kcAdminClient.users.update({ id: keycloakId }, { enabled: true });
+  });
+
   logger.info('User enabled in Keycloak', { keycloakId });
 };
 
