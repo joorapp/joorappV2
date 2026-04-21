@@ -392,18 +392,69 @@ export const getAdminClient = async () => {
 };
 
 /**
+ * Serialize a Keycloak Admin API error for logs (Fetch `NetworkError`, Axios, or plain `Error`).
+ * Avoids assuming a single error shape; safe for production diagnostics.
+ *
+ * @param {unknown} error - Caught error
+ * @returns {string}
+ */
+export const formatKeycloakAdminErrorForLog = (error) => {
+  if (error == null) {
+    return String(error);
+  }
+  if (typeof error !== 'object') {
+    return String(error);
+  }
+  const parts = [];
+  const err = /** @type {Record<string, unknown>} */ (error);
+  if (typeof err.name === 'string') {
+    parts.push(`name=${err.name}`);
+  }
+  if (typeof err.message === 'string') {
+    parts.push(`message=${err.message}`);
+  }
+  const rawStatus = err.response?.status ?? err.responseStatus;
+  if (rawStatus != null && rawStatus !== '') {
+    parts.push(`httpStatus=${String(rawStatus)}`);
+  }
+  if (err.responseData != null) {
+    try {
+      const data = err.responseData;
+      const s =
+        typeof data === 'string' ? data : JSON.stringify(data);
+      parts.push(`responseData=${s.length > 800 ? `${s.slice(0, 800)}…` : s}`);
+    } catch {
+      parts.push('responseData=[unserializable]');
+    }
+  }
+  return parts.length > 0 ? parts.join(' | ') : String(error);
+};
+
+/**
  * True if an error from Keycloak Admin HTTP layer represents 401 Unauthorized.
- * Supports Axios-shaped errors from `@keycloak/keycloak-admin-client`.
+ * Defense in depth: HTTP status (Axios or Fetch `Response`) and message fallback — production
+ * logs have shown plain `Error`-shaped messages without a reliable `.response.status` check.
  *
  * @param {unknown} error - Caught error
  * @returns {boolean}
  */
-const isAdminApiUnauthorized = (error) => {
+export const isAdminApiUnauthorized = (error) => {
   if (!error || typeof error !== 'object') {
     return false;
   }
-  const status = error.response?.status ?? error.responseStatus;
-  return status === 401;
+  const err = /** @type {Record<string, unknown>} */ (error);
+  const rawStatus = err.response?.status ?? err.responseStatus;
+  if (rawStatus != null && rawStatus !== '') {
+    const statusNum = Number(rawStatus);
+    if (!Number.isNaN(statusNum) && statusNum === 401) {
+      return true;
+    }
+  }
+  const msg = typeof err.message === 'string' ? err.message : '';
+  if (msg.includes('401') || msg.includes('Unauthorized')) {
+    return true;
+  }
+  return false;
 };
 
 /**
@@ -433,19 +484,28 @@ export const executeAdminTask = async (task) => {
       return result;
     } catch (error) {
       lastError = error;
+      const keycloakErrorSummary = formatKeycloakAdminErrorForLog(error);
       if (attempt === 0 && isAdminApiUnauthorized(error)) {
         logger.warn(
-          '401 detected (likely session timeout). Clearing client and re-authenticating...',
+          'Keycloak admin API returned 401 — treating as unauthorized; clearing cached client and re-authenticating with client_credentials, then retrying the operation once.',
           {
             event: 'KEYCLOAK_ADMIN_401_RETRY',
+            phase: 'reauth_before_retry',
+            attempt: 1,
+            maxAttempts: 2,
             willRetryOnce: true,
-            httpStatus: error.response?.status ?? error.responseStatus
+            httpStatus: error?.response?.status ?? error?.responseStatus,
+            keycloakErrorSummary
           }
         );
-        logger.warn('KEYCLOAK_ADMIN_401_RETRY: retrying the same admin operation once after fresh client_credentials auth.', {
-          event: 'KEYCLOAK_ADMIN_401_RETRY',
-          phase: 'reauth_before_retry'
-        });
+        logger.warn(
+          'KEYCLOAK_ADMIN_401_RETRY: retry attempt starting (same admin task after fresh auth).',
+          {
+            event: 'KEYCLOAK_ADMIN_401_RETRY',
+            phase: 'retry_start',
+            keycloakErrorSummary
+          }
+        );
         kcAdminClient = null;
         adminTokenExpiryTimeMs = null;
         continue;
