@@ -1,4 +1,4 @@
-# JoorApp V2  ^`^t production stack (from repository root)
+# JoorApp V2 production stack (from repository root)
 # Usage: docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 #
 # Prerequisites: create .env.production (see PRODUCTION_ENV.md). Run DB migrations once after Postgres is up.
@@ -14,6 +14,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./nodeBE/postgres_init/init-create-extra-dbs.sql:/docker-entrypoint-initdb.d/01-create-extra-dbs.sql:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
@@ -27,8 +32,7 @@ services:
     image: quay.io/keycloak/keycloak:25.0.6
     container_name: joorapp-keycloak-prod
     command: ["start", "--import-realm"]
-    ports:
-      - "127.0.0.1:8080:8080"
+    # Removed exposed host port, Nginx routes to it internally
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
@@ -38,15 +42,18 @@ services:
       KC_DB_PASSWORD: ${DB_PASSWORD}
       KC_HTTP_ENABLED: "true"
       KC_HTTP_PORT: "8080"
-      # Reverse proxy (TLS terminates at Nginx / Caddy / load balancer on the host)
-      #KC_PROXY: edge
       KC_HOSTNAME: ${KC_HOSTNAME}
       KC_HOSTNAME_STRICT: "true"
       KC_HOSTNAME_STRICT_HTTPS: "true"
       KC_HTTP_RELATIVE_PATH: /auth
-      KC_PROXY_HEADERS: xforwarded # Tells Keycloak it's behind Nginx
+      KC_PROXY_HEADERS: xforwarded
     volumes:
       - ./nodeBE/keycloak_data/realm-export.json:/opt/keycloak/data/import/realm.json:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,17 +67,12 @@ services:
       dockerfile: Dockerfile
     image: joorapp-backend:${IMAGE_TAG:-prod}
     container_name: joorapp-backend-prod
-    ports:
-      - "${PORT}:3030"
-#    volumes:
- #     - /home/joorappadmin/joorapp-prod/.env.production:/app/.env:ro
+    # Removed exposed host port, Nginx routes to it internally
     env_file:
       - .env.production
     environment:
-      # Overrides host-oriented defaults from .env files
       DB_HOST: postgres
       DB_PORT: "5432"
-  #  command: ["sh", "-c", "sleep 10000"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,14 +94,32 @@ services:
         VITE_API_TIMEOUT: ${VITE_API_TIMEOUT:-10000}
     image: joorapp-frontend:${IMAGE_TAG:-prod}
     container_name: joorapp-frontend-prod
-    ports:
-      - "${HTTP_PORT}:80"
+    # Removed exposed host port, Nginx routes to it internally
     depends_on:
       - backend
     networks:
       - app_internal
       - web_public
     restart: unless-stopped
+
+  nginx:
+    image: nginx:latest
+    container_name: joorapp-nginx-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /var/www/certbot:/var/www/certbot
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - frontend
+      - backend
+      - keycloak
+    networks:
+      - app_internal
+      - web_public
 
 volumes:
   postgres_data:
