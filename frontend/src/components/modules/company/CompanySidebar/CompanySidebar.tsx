@@ -231,7 +231,11 @@ const CompanySidebar = (_props: CompanySidebarProps) => {
           path: '/company/projects',
           label: t('CompanySidebar.projectsList'),
         },
-       
+        {
+          key: 'taskList',
+          path: '/company/projects/tasks',
+          label: t('CompanySidebar.taskList'),
+        },
         {
           key: 'estimations',
           path: '/company/projects/estimations',

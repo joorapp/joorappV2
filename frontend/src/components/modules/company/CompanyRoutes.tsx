@@ -20,6 +20,8 @@ import CompanyEmployeesList from './CompanyEmployeesList/CompanyEmployeesList';
 import CompanyAssignRolesList from './CompanyAssignRolesList/CompanyAssignRolesList';
 import CompanyProjectsList from './CompanyProjectsList/CompanyProjectsList';
 import CompanyProjectOverview from './CompanyProjectsList/CompanyProjectOverview';
+import CompanyTaskList from './CompanyTaskList/CompanyTaskList';
+import CompanyTaskDetail from './CompanyTaskList/CompanyTaskDetail';
 import CompanyJobTitles from './CompanyJobTitles/CompanyJobTitles';
 import CompanyRolePermissions from './CompanyRolePermissions/CompanyRolePermissions';
 
@@ -43,6 +45,8 @@ const CompanyRoutes = () => {
         <Route path="staffs/assignRoles" element={<CompanyAssignRolesList />} />
         <Route path="projects" element={<CompanyProjectsList />} />
         <Route path="projects/:projectId/overview" element={<CompanyProjectOverview />} />
+        <Route path="projects/tasks" element={<CompanyTaskList />} />
+        <Route path="projects/tasks/:taskId" element={<CompanyTaskDetail />} />
         <Route path="projects/types" element={<CompanyProjectTypes />} />
         <Route path="projects/categories" element={<CompanyProjectCategories />} />
         <Route path="clients/payments" element={<ClientPaymentPage />} />

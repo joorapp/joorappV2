@@ -1,0 +1,274 @@
+@import './companyTaskShared.scss';
+
+.company-task-list {
+  .company-task-list-card {
+    border: 1px solid var(--bs-border-color, #e9ecef);
+    border-radius: 0.25rem;
+    overflow: hidden;
+  }
+
+  .company-task-list-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--bs-border-color, #e9ecef);
+    background: #fff;
+  }
+
+  .company-task-list-toolbar__left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .company-task-list-toolbar__sprint {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--bs-body-color);
+    white-space: nowrap;
+  }
+
+  .company-task-list-toolbar__right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .company-task-list-toolbar__create-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+    padding: 0.35rem 0.75rem;
+    line-height: 1.3;
+  }
+
+  .company-task-list-toolbar__filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    background: #fff;
+    color: var(--bs-body-color);
+    font-size: 0.8125rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 0.2rem;
+    line-height: 1.3;
+
+    &:hover {
+      background: #f8f9fa;
+    }
+  }
+
+  .company-task-list-toolbar__icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    background: transparent;
+    color: var(--bs-secondary-color);
+    border-radius: 0.2rem;
+
+    &:hover {
+      background: #f1f3f5;
+      color: var(--bs-body-color);
+    }
+  }
+
+  .company-task-list-table-wrap {
+    overflow-x: auto;
+  }
+
+  .company-task-list-table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+
+    th {
+      background: #f8f9fa;
+      color: #6c757d;
+      font-weight: 600;
+      font-size: 0.6875rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.45rem 0.75rem;
+      border-bottom: 1px solid #eef0f2;
+      vertical-align: middle;
+      color: var(--bs-body-color);
+    }
+
+    tbody td:nth-child(3) {
+      max-width: 22rem;
+      overflow: hidden;
+    }
+
+    tbody tr:not(.company-task-list-table__group-row):hover {
+      background: #fafbfc;
+    }
+  }
+
+  .company-task-list-table__col-type {
+    width: 9rem;
+  }
+
+  .company-task-list-table__type-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+
+    &--subtask {
+      padding-left: 0;
+    }
+  }
+
+  .company-task-list-table__subtask-toggle-spacer {
+    display: inline-block;
+    width: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .company-task-list-table__subtask-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: none;
+    background: transparent;
+    padding: 0;
+    color: var(--bs-body-color);
+    flex-shrink: 0;
+
+    .bx {
+      font-size: 1.125rem;
+      line-height: 1;
+    }
+
+    &:hover {
+      color: var(--bs-primary);
+    }
+  }
+
+  .company-task-list-table__col-id {
+    width: 4.5rem;
+  }
+
+  .company-task-list-table__col-subject {
+    min-width: 14rem;
+    max-width: 22rem;
+    width: 22rem;
+  }
+
+  .company-task-list-table__col-status {
+    width: 7rem;
+  }
+
+  .company-task-list-table__col-assignee {
+    min-width: 11rem;
+  }
+
+  .company-task-list-table__col-priority {
+    width: 5.5rem;
+  }
+
+  .company-task-list-table__col-time {
+    width: 5rem;
+    min-width: 5rem;
+    white-space: nowrap;
+  }
+
+  .company-task-list-table__col-progress {
+    width: 7.5rem;
+    min-width: 7.5rem;
+  }
+
+  .company-task-list-table__col-actions {
+    width: 5.5rem;
+    min-width: 5.5rem;
+    white-space: nowrap;
+  }
+
+  .company-task-list-table__group-row td {
+    background: #f1f3f5;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  }
+
+  .company-task-list-table__group-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-weight: 600;
+    color: var(--bs-body-color);
+
+    .bx {
+      color: var(--bs-secondary-color);
+      font-size: 1rem;
+      line-height: 1;
+    }
+  }
+
+  .company-task-list-table__subject-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    max-width: 100%;
+
+    > span:first-child {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &--subtask {
+      padding-left: calc(0.4rem + var(--task-depth, 1) * 1.6rem);
+    }
+  }
+
+  .company-task-list-table__type-cell--subtask {
+    padding-left: calc(0.4rem + var(--task-depth, 1) * 1.6rem);
+  }
+
+  .company-task-list-table__subtask-count {
+    flex-shrink: 0;
+    margin-left: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+    white-space: nowrap;
+  }
+
+  .company-task-list-table__subtask-row {
+    background: #fcfcfd;
+
+    td {
+      border-bottom-color: #f0f2f4;
+    }
+  }
+
+  .company-task-list-table__empty-cell {
+    color: var(--bs-secondary-color);
+  }
+}
