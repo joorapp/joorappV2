@@ -1,0 +1,5 @@
+{
+  "typescript.tsconfig": "frontend/tsconfig.json",
+  "typescript.tsdk": "frontend/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}
