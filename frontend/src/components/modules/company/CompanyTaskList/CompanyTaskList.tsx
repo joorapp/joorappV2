@@ -34,12 +34,8 @@ import {
   taskTypeClass,
   taskTypeLabelKey,
   updateTask,
-  type TaskDetail,
-  type TaskItem,
-  type TaskPriority,
-  type TaskStatusGroup,
-  type SubTaskItem,
 } from './companyTaskData';
+import type { SubTaskItem, TaskDetail, TaskItem, TaskPriority, TaskStatusGroup } from './companyTaskData';
 import { TaskStatusCell } from './TaskStatusCell';
 import { TaskSpentTimeCell } from './TaskSpentTimeCell';
 import { TaskRowActions } from './TaskRowActions';
